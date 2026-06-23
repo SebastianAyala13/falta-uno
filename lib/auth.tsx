@@ -7,6 +7,7 @@ import { supabase, supabaseConfigurado } from '@/lib/supabase';
 import type { Profile } from '@/types/database';
 
 const DEMO_KEY = 'faltauno.demo.profile';
+const PENDING_KEY = 'faltauno.pendingProfile';
 
 export interface DatosRegistro {
   nombre: string;
@@ -24,7 +25,8 @@ interface AuthState {
   /** `true` cuando corre sin backend (modo demo/local). */
   demo: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (datos: DatosRegistro) => Promise<void>;
+  /** Devuelve si quedó pendiente confirmar el correo (sin sesión inmediata). */
+  signUp: (datos: DatosRegistro) => Promise<{ needsConfirmation: boolean }>;
   signInAsGuest: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -95,8 +97,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .from('profiles')
       .select('*')
       .eq('id', session.user.id)
-      .single();
-    if (data) setProfile(data as Profile);
+      .maybeSingle();
+    if (data) {
+      setProfile(data as Profile);
+      return;
+    }
+    // No hay perfil aún: si quedó uno pendiente del registro (caso confirmación
+    // de email activada), lo creamos ahora que ya hay sesión válida.
+    const raw = await AsyncStorage.getItem(PENDING_KEY);
+    if (raw) {
+      const pendiente = JSON.parse(raw) as Record<string, unknown>;
+      pendiente.id = session.user.id;
+      await supabase.from('profiles').insert(pendiente as never);
+      await AsyncStorage.removeItem(PENDING_KEY);
+      const { data: creado } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      if (creado) setProfile(creado as Profile);
+    }
   }
 
   const value = useMemo<AuthState>(
@@ -122,30 +142,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const p = perfilDemo(datos);
           await AsyncStorage.setItem(DEMO_KEY, JSON.stringify(p));
           setProfile(p);
-          return;
+          return { needsConfirmation: false };
         }
         const { data, error } = await supabase.auth.signUp({
           email: datos.email,
           password: datos.password,
         });
         if (error) throw new Error(traducirError(error.message));
-        if (data.user) {
-          const nuevo = {
-            id: data.user.id,
-            nombre: datos.nombre,
-            email: datos.email,
-            ciudad: datos.ciudad,
-            posicion: datos.posicion,
-            nivel: datos.nivel,
-            celular: datos.celular,
-            avatar_url: null,
-          };
-          // cast: el cliente tipado de supabase-js degrada el insert a `never`
-          // con tipos de Database escritos a mano; el objeto es correcto en runtime.
+
+        // cast: el cliente tipado de supabase-js degrada el insert a `never`
+        // con tipos de Database escritos a mano; el objeto es correcto en runtime.
+        const nuevo = {
+          id: data.user?.id,
+          nombre: datos.nombre,
+          email: datos.email,
+          ciudad: datos.ciudad,
+          posicion: datos.posicion,
+          nivel: datos.nivel,
+          celular: datos.celular,
+          avatar_url: null,
+        };
+
+        if (data.session) {
+          // Sesión inmediata (confirmación de email desactivada): creamos el perfil ya.
           const { error: perr } = await supabase.from('profiles').insert(nuevo as never);
           if (perr) throw new Error(traducirError(perr.message));
-          if (data.session) await cargarPerfil(data.session);
+          await cargarPerfil(data.session);
+          return { needsConfirmation: false };
         }
+
+        // Confirmación pendiente: guardamos el perfil para crearlo al primer login.
+        await AsyncStorage.setItem(PENDING_KEY, JSON.stringify(nuevo));
+        return { needsConfirmation: true };
       },
 
       async signInAsGuest() {

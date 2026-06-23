@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import Chip from '@/components/Chip';
 import FadeIn from '@/components/FadeIn';
@@ -36,7 +36,7 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      await signUp({
+      const res = await signUp({
         nombre: nombre.trim(),
         email: email.trim(),
         password,
@@ -45,7 +45,15 @@ export default function Register() {
         nivel: nivel!,
         celular: celular.trim(),
       });
-      router.replace('/(tabs)');
+      if (res.needsConfirmation) {
+        Alert.alert(
+          'Revisá tu correo 📩',
+          'Te enviamos un enlace para confirmar tu cuenta. Confirmalo y entrá con tu correo y contraseña.',
+          [{ text: 'Ir a entrar', onPress: () => router.replace('/(auth)/login') }],
+        );
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos crear la cuenta.');
     } finally {

@@ -8,6 +8,7 @@ import type { PartidoConOrganizador, Profile } from '@/types/database';
 export const usuarioActual: Profile = {
   id: 'mock-user-1',
   nombre: 'Santiago',
+  email: 'santiago@faltauno.app',
   ciudad: 'Pereira',
   posicion: 'Mediocampista',
   nivel: 'Intermedio',

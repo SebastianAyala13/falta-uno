@@ -1,73 +1,85 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Avatar from '@/components/Avatar';
 import Badge from '@/components/Badge';
-import Button from '@/components/Button';
+import FadeIn from '@/components/FadeIn';
+import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
-import { usuarioActual } from '@/lib/mockData';
+import { useAuth } from '@/lib/auth';
+import { useStore } from '@/lib/store';
 
-export default function PerfilScreen() {
+export default function Perfil() {
   const router = useRouter();
-  const u = usuarioActual;
+  const { profile, signOut, demo } = useAuth();
+  const misPartidos = useStore((s) => s.misPartidos());
+
+  const u = profile;
+  const cerrarSesion = async () => {
+    await signOut();
+    router.replace('/(auth)/welcome');
+  };
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View className="flex-row items-center justify-between px-6 pb-4 pt-2">
-          <Text className="font-display text-3xl uppercase text-cream">Mi perfil</Text>
-          <Pressable
-            onPress={() => router.replace('/')}
-            hitSlop={12}
-            className="h-11 w-11 items-center justify-center rounded-full bg-card">
-            <Ionicons name="log-out-outline" size={22} color={Colors.cream} />
+    <Screen>
+      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+        <View className="flex-row items-center justify-between px-6 pb-2 pt-2">
+          <Text className="font-display text-4xl uppercase text-cream">Mi perfil</Text>
+          <Pressable onPress={cerrarSesion} hitSlop={12} className="h-11 w-11 items-center justify-center rounded-full border border-border bg-card">
+            <Ionicons name="log-out-outline" size={21} color={Colors.cream} />
           </Pressable>
         </View>
 
         {/* Tarjeta de perfil */}
-        <View className="mx-6 items-center rounded-3xl border border-border bg-card p-6">
-          <Avatar nombre={u.nombre} uri={u.avatar_url} size={96} />
-          <Text className="mt-4 font-display text-3xl uppercase text-cream">{u.nombre}</Text>
-
-          <View className="mt-1 flex-row items-center">
-            <Ionicons name="location-sharp" size={14} color={Colors.muted} />
-            <Text className="ml-1 font-body text-sm text-muted">{u.ciudad}</Text>
+        <FadeIn delay={60}>
+          <View className="mx-6 mt-2 overflow-hidden rounded-3xl border border-border">
+            <LinearGradient colors={['#10231C', '#0C1712']} style={{ padding: 24, alignItems: 'center' }}>
+              <View
+                className="rounded-full"
+                style={{ padding: 3, borderWidth: 2, borderColor: Colors.primary }}>
+                <Avatar nombre={u?.nombre ?? '?'} uri={u?.avatar_url} size={92} />
+              </View>
+              <Text className="mt-4 font-display text-3xl uppercase text-cream">{u?.nombre ?? 'Invitado'}</Text>
+              <View className="mt-1 flex-row items-center">
+                <Ionicons name="location-sharp" size={14} color={Colors.muted} />
+                <Text className="ml-1 font-body text-sm text-muted">{u?.ciudad ?? 'Pereira'}</Text>
+              </View>
+              <View className="mt-4 flex-row gap-2">
+                <Badge label={u?.posicion ?? 'Mediocampista'} tone="primary" />
+                <Badge label={u?.nivel ?? 'Intermedio'} tone="accent" />
+              </View>
+            </LinearGradient>
           </View>
-
-          <View className="mt-4 flex-row gap-2">
-            <Badge label={u.posicion} tone="primary" />
-            <Badge label={u.nivel} tone="accent" />
-          </View>
-        </View>
+        </FadeIn>
 
         {/* Stats */}
-        <View className="mx-6 mt-4 flex-row gap-3">
-          <Stat valor={String(u.partidos_jugados)} label="Partidos" />
-          <Stat valor={String(u.no_shows)} label="No-shows" tone={u.no_shows > 0 ? 'danger' : 'default'} />
-          <Stat valor={u.rating.toFixed(1)} label="Rating" icon="star" />
-        </View>
+        <FadeIn delay={120}>
+          <View className="mx-6 mt-4 flex-row gap-3">
+            <Stat valor={String(u?.partidos_jugados ?? 0)} label="Partidos" icon="football" />
+            <Stat valor={String(u?.no_shows ?? 0)} label="No-shows" icon="close-circle" tone={(u?.no_shows ?? 0) > 0 ? 'danger' : 'default'} />
+            <Stat valor={(u?.rating ?? 5).toFixed(1)} label="Rating" icon="star" tint={Colors.accent} />
+          </View>
+        </FadeIn>
 
-        {/* Editar */}
-        <View className="mx-6 mt-6">
-          <Button label="Editar perfil" variant="outline" />
-        </View>
+        {/* Acciones */}
+        <FadeIn delay={180}>
+          <View className="mx-6 mt-6 overflow-hidden rounded-3xl border border-border bg-card">
+            <Accion icon="ticket-outline" label="Mis partidos" valor={`${misPartidos.length}`} onPress={() => router.push('/mis-partidos')} />
+            <Accion icon="create-outline" label="Editar perfil" onPress={() => {}} />
+            <Accion icon="card-outline" label="Métodos de pago" onPress={() => {}} />
+            <Accion icon="shield-checkmark-outline" label="Seguridad" onPress={() => {}} ultimo />
+          </View>
+        </FadeIn>
 
-        {/* Info extra */}
-        <View className="mx-6 mt-6 rounded-3xl border border-border bg-card p-4">
-          <Text className="mb-3 font-body-semibold text-sm uppercase tracking-wide text-muted">
-            Cuenta
+        <FadeIn delay={220}>
+          <Text className="mt-6 text-center font-body text-xs text-muted">
+            Falta Uno · v1.0 {demo ? '· modo demo' : ''}
           </Text>
-          <FilaInfo icon="call-outline" label="Celular" valor={u.celular} />
-          <FilaInfo icon="football-outline" label="Posición" valor={u.posicion} />
-          <FilaInfo icon="trophy-outline" label="Nivel" valor={u.nivel} ultimo />
-        </View>
+        </FadeIn>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
@@ -76,42 +88,46 @@ function Stat({
   label,
   icon,
   tone = 'default',
+  tint = Colors.primary,
 }: {
   valor: string;
   label: string;
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof Ionicons.glyphMap;
   tone?: 'default' | 'danger';
+  tint?: string;
 }) {
   return (
     <View className="flex-1 items-center rounded-2xl border border-border bg-card py-4">
-      <View className="flex-row items-center">
-        {icon ? <Ionicons name={icon} size={16} color={Colors.accent} style={{ marginRight: 4 }} /> : null}
-        <Text className={`font-display text-2xl ${tone === 'danger' ? 'text-red-400' : 'text-cream'}`}>
-          {valor}
-        </Text>
-      </View>
-      <Text className="mt-1 font-body text-xs text-muted">{label}</Text>
+      <Ionicons name={icon} size={18} color={tone === 'danger' ? Colors.danger : tint} />
+      <Text className={`mt-2 font-display text-2xl ${tone === 'danger' ? 'text-red-400' : 'text-cream'}`}>
+        {valor}
+      </Text>
+      <Text className="font-body text-xs text-muted">{label}</Text>
     </View>
   );
 }
 
-function FilaInfo({
+function Accion({
   icon,
   label,
   valor,
+  onPress,
   ultimo = false,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  valor: string;
+  valor?: string;
+  onPress: () => void;
   ultimo?: boolean;
 }) {
   return (
-    <View
-      className={`flex-row items-center py-3 ${ultimo ? '' : 'border-b border-border'}`}>
-      <Ionicons name={icon} size={18} color={Colors.muted} />
-      <Text className="ml-3 flex-1 font-body text-sm text-muted">{label}</Text>
-      <Text className="font-body-semibold text-sm text-cream">{valor}</Text>
-    </View>
+    <Pressable onPress={onPress} className={`flex-row items-center px-4 py-4 active:bg-border/40 ${ultimo ? '' : 'border-b border-border'}`}>
+      <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
+        <Ionicons name={icon} size={18} color={Colors.primary} />
+      </View>
+      <Text className="ml-3 flex-1 font-body-semibold text-base text-cream">{label}</Text>
+      {valor ? <Text className="mr-2 font-body text-sm text-muted">{valor}</Text> : null}
+      <Ionicons name="chevron-forward" size={18} color={Colors.muted} />
+    </Pressable>
   );
 }

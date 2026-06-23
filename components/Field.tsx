@@ -1,21 +1,69 @@
-import { Text, TextInput, View, type TextInputProps } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
+import { Pressable, Text, TextInput, View, type TextInputProps } from 'react-native';
+
+import { Colors } from '@/constants/colors';
 
 interface FieldProps extends TextInputProps {
-  label: string;
+  label?: string;
   hint?: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  /** Activa el botón de mostrar/ocultar para contraseñas. */
+  toggleSecure?: boolean;
 }
 
-/** Campo de formulario con etiqueta, estilizado para el tema oscuro. */
-export default function Field({ label, hint, ...props }: FieldProps) {
+/** Campo de formulario premium: ícono, glow al enfocar y tema oscuro. */
+export default function Field({ label, hint, icon, toggleSecure, style, ...props }: FieldProps) {
+  const [focused, setFocused] = useState(false);
+  const [hidden, setHidden] = useState(true);
+
+  const multiline = props.multiline;
+
   return (
     <View className="mb-4 w-full">
-      <Text className="mb-2 font-body-semibold text-sm text-cream">{label}</Text>
-      <TextInput
-        placeholderTextColor="#8A968F"
-        className="h-14 w-full rounded-2xl border border-border bg-card px-4 font-body text-base text-cream"
-        {...props}
-      />
-      {hint ? <Text className="mt-1 font-body text-xs text-muted">{hint}</Text> : null}
+      {label ? (
+        <Text className="mb-2 font-body-semibold text-sm text-cream">{label}</Text>
+      ) : null}
+
+      <View
+        className="flex-row items-center rounded-2xl border bg-card px-4"
+        style={{
+          borderColor: focused ? Colors.primary : Colors.border,
+          minHeight: multiline ? 100 : 56,
+          alignItems: multiline ? 'flex-start' : 'center',
+          paddingVertical: multiline ? 14 : 0,
+          shadowColor: Colors.primary,
+          shadowOpacity: focused ? 0.25 : 0,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 0 },
+        }}>
+        {icon ? (
+          <Ionicons
+            name={icon}
+            size={20}
+            color={focused ? Colors.primary : Colors.muted}
+            style={{ marginRight: 10, marginTop: multiline ? 2 : 0 }}
+          />
+        ) : null}
+
+        <TextInput
+          placeholderTextColor={Colors.muted}
+          secureTextEntry={toggleSecure ? hidden : props.secureTextEntry}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          className="flex-1 font-body text-base text-cream"
+          style={[{ height: multiline ? 80 : 54, textAlignVertical: multiline ? 'top' : 'center' }, style]}
+          {...props}
+        />
+
+        {toggleSecure ? (
+          <Pressable onPress={() => setHidden((h) => !h)} hitSlop={10} className="pl-2">
+            <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={20} color={Colors.muted} />
+          </Pressable>
+        ) : null}
+      </View>
+
+      {hint ? <Text className="mt-1.5 font-body text-xs text-muted">{hint}</Text> : null}
     </View>
   );
 }

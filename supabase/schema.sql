@@ -9,6 +9,7 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   nombre text not null,
+  email text not null,
   ciudad text not null default 'Pereira',
   posicion text not null check (posicion in ('Portero','Defensa','Mediocampista','Delantero')),
   nivel text not null check (nivel in ('Casual','Intermedio','Competitivo')),
@@ -48,12 +49,26 @@ create table if not exists public.partido_jugadores (
   unique (partido_id, jugador_id)
 );
 
+-- Pagos de cupos (procesamiento real vía pasarela; aquí guardamos el registro)
+create table if not exists public.pagos (
+  id uuid primary key default gen_random_uuid(),
+  partido_id uuid not null references public.partidos (id) on delete cascade,
+  jugador_id uuid not null references public.profiles (id) on delete cascade,
+  medio text not null check (medio in ('nequi','pse','tarjeta','efectivo')),
+  monto int not null,
+  comision int not null default 0,
+  estado text not null default 'pendiente' check (estado in ('pendiente','aprobado','rechazado')),
+  referencia text not null,
+  created_at timestamptz not null default now()
+);
+
 -- ----------------------------------------------------------------------------
 -- Row Level Security (RLS)
 -- ----------------------------------------------------------------------------
 alter table public.profiles enable row level security;
 alter table public.partidos enable row level security;
 alter table public.partido_jugadores enable row level security;
+alter table public.pagos enable row level security;
 
 -- Perfiles: todos pueden leer; cada quien edita el suyo
 create policy "perfiles_lectura" on public.profiles for select using (true);
@@ -70,3 +85,7 @@ create policy "partidos_delete" on public.partidos for delete using (auth.uid() 
 create policy "inscripciones_lectura" on public.partido_jugadores for select using (true);
 create policy "inscripciones_insert" on public.partido_jugadores for insert with check (auth.uid() = jugador_id);
 create policy "inscripciones_delete" on public.partido_jugadores for delete using (auth.uid() = jugador_id);
+
+-- Pagos: cada jugador ve y crea solo los suyos
+create policy "pagos_lectura" on public.pagos for select using (auth.uid() = jugador_id);
+create policy "pagos_insert" on public.pagos for insert with check (auth.uid() = jugador_id);

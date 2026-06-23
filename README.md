@@ -22,15 +22,37 @@ Construida con **React Native + Expo**, navegación basada en archivos con **Exp
 
 ---
 
-## 📱 Pantallas
+## 📱 Pantallas y funcionalidades
 
-- **Onboarding / Splash** — logo, tagline y accesos (`Entrar` / `Registrarme`).
-- **Registro** — nombre, ciudad, posición, nivel, celular y contraseña.
-- **Home / Feed** — saludo, banner y "Partidos cerca de vos".
-- **Buscar partido** — buscador + filtros por zona, nivel y formato.
-- **Crear partido** — formulario completo de publicación.
-- **Mi perfil** — avatar, badges, stats (partidos, no-shows, rating).
-- **Tab bar** — Home · Buscar · **Crear** (botón "+" en Lima Eléctrica) · Perfil.
+- **Splash animado** — logo con glow pulsante; redirige según haya sesión.
+- **Onboarding / Welcome** — marca, tagline, mini-features y acceso como invitado.
+- **Login / Registro** — autenticación **real con Supabase** (email + contraseña),
+  validación, errores en español y modo demo cuando no hay backend.
+- **Home / Feed** — saludo, hero CTA con gradiente, stats rápidas y partidos cerca.
+- **Buscar partido** — buscador + filtros por zona, nivel y formato (en vivo).
+- **Crear partido** — formulario que **publica un partido real** en el store.
+- **Detalle de partido** — roster visual de cupos, organizador, desglose de precio
+  e **inscripción**.
+- **Checkout / Pago** — métodos colombianos (**Nequi, PSE, Tarjeta, Efectivo**),
+  procesamiento animado y **comprobante** con referencia. _(Pago simulado,
+  arquitectura lista para Wompi.)_
+- **Mis partidos** — los partidos en los que te inscribiste.
+- **Mi perfil** — avatar con anillo, badges, stats y cierre de sesión.
+- **Tab bar premium** — Home · Buscar · **Crear** (botón "+" en Lima Eléctrica) · Perfil,
+  con fondo translúcido (blur).
+
+### ✨ Nivel premium
+Rediseño total "estadio de noche": fondos con gradientes y halos de luz,
+glassmorphism, animaciones de entrada escalonadas (Reanimated), botones con glow,
+y **feedback háptico** en las acciones clave.
+
+### 🔐 Seguridad & 💳 Pagos
+- **Auth**: Supabase Auth (sesión persistida en el dispositivo) + RLS por usuario
+  en todas las tablas (`supabase/schema.sql`).
+- **Pagos**: el procesamiento es **simulado** (`lib/payments.ts`) pero el modelo de
+  datos (`pagos`), el desglose con comisión de servicio y el comprobante son reales.
+  Para producción se enchufa Wompi desde un backend (la llave privada **nunca** va
+  en el cliente).
 
 ---
 
@@ -60,6 +82,11 @@ La app funciona con **datos de prueba (mock)** sin backend. Para conectar Supaba
    ```
    (las encontrás en **Dashboard → Settings → API**).
 3. Creá las tablas ejecutando [`supabase/schema.sql`](./supabase/schema.sql) en el **SQL Editor** de Supabase.
+4. Para probar el login sin esperar correos de confirmación, en **Authentication →
+   Providers → Email** desactivá "Confirm email" (solo en desarrollo).
+
+> Sin credenciales, la app corre en **modo demo**: registro/login funcionan contra
+> el almacenamiento local del dispositivo, así podés probar todo el flujo ya mismo.
 
 ### 4. Arrancar la app
 ```bash

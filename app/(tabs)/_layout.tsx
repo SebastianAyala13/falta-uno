@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
 import { Platform, View } from 'react-native';
 
@@ -13,30 +14,39 @@ export default function TabsLayout() {
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.muted,
         tabBarStyle: {
-          backgroundColor: Colors.card,
+          position: 'absolute',
+          backgroundColor: 'rgba(13,18,15,0.85)',
           borderTopColor: Colors.border,
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 64,
+          height: Platform.OS === 'ios' ? 90 : 68,
           paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+          paddingBottom: Platform.OS === 'ios' ? 30 : 10,
         },
-        tabBarLabelStyle: {
-          fontFamily: 'Archivo-SemiBold',
-          fontSize: 11,
-        },
+        tabBarBackground: () => (
+          <BlurView
+            intensity={30}
+            tint="dark"
+            style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}
+          />
+        ),
+        tabBarLabelStyle: { fontFamily: 'Archivo-SemiBold', fontSize: 11 },
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="buscar"
         options={{
           title: 'Buscar',
-          tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'search' : 'search-outline'} size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -45,23 +55,22 @@ export default function TabsLayout() {
           title: 'Crear',
           tabBarLabel: () => null,
           tabBarIcon: () => (
-            // Botón "+" destacado en color de acento (Lima Eléctrica)
             <View
               style={{
-                top: Platform.OS === 'ios' ? -6 : -10,
-                height: 56,
-                width: 56,
-                borderRadius: 28,
+                top: Platform.OS === 'ios' ? -8 : -12,
+                height: 58,
+                width: 58,
+                borderRadius: 29,
                 backgroundColor: Colors.accent,
                 alignItems: 'center',
                 justifyContent: 'center',
                 shadowColor: Colors.accent,
-                shadowOpacity: 0.5,
-                shadowRadius: 10,
+                shadowOpacity: 0.6,
+                shadowRadius: 14,
                 shadowOffset: { width: 0, height: 4 },
-                elevation: 8,
+                elevation: 10,
               }}>
-              <Ionicons name="add" size={32} color={Colors.background} />
+              <Ionicons name="add" size={34} color={Colors.background} />
             </View>
           ),
         }}
@@ -70,7 +79,9 @@ export default function TabsLayout() {
         name="perfil"
         options={{
           title: 'Perfil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={24} color={color} />
+          ),
         }}
       />
     </Tabs>

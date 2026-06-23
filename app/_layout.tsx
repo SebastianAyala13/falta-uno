@@ -10,14 +10,14 @@ import {
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AuthProvider } from '@/lib/auth';
 import { Colors } from '@/constants/colors';
 
-// Mantenemos el splash nativo hasta que carguen las fuentes
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
@@ -30,29 +30,33 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => {});
-    }
+    if (fontsLoaded || fontError) SplashScreen.hideAsync().catch(() => {});
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.background }}>
       <SafeAreaProvider>
-        <StatusBar style="light" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: Colors.background },
-            animation: 'fade',
-          }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="register" />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
+        <AuthProvider>
+          <StatusBar style="light" />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: Colors.background },
+              animation: 'fade',
+            }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="partido/[id]" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen
+              name="checkout/[id]"
+              options={{ animation: 'slide_from_bottom', presentation: 'modal' }}
+            />
+            <Stack.Screen name="mis-partidos" options={{ animation: 'slide_from_right' }} />
+          </Stack>
+        </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

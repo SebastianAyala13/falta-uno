@@ -15,6 +15,7 @@ import type { Formato, Nivel, Posicion } from '@/constants/config';
 export interface Profile {
   id: string; // uuid (auth.users.id)
   nombre: string;
+  email: string;
   ciudad: string;
   posicion: Posicion;
   nivel: Nivel;
@@ -53,6 +54,21 @@ export interface PartidoJugador {
   created_at: string; // timestamptz
 }
 
+export type EstadoPago = 'pendiente' | 'aprobado' | 'rechazado';
+
+/** Pago de un cupo (procesamiento simulado, real-ready para Wompi). */
+export interface Pago {
+  id: string; // uuid
+  partido_id: string;
+  jugador_id: string;
+  medio: string; // MedioPagoId
+  monto: number; // total cobrado (cupo + comisión)
+  comision: number;
+  estado: EstadoPago;
+  referencia: string; // referencia legible tipo FU-XXXX
+  created_at: string;
+}
+
 /**
  * Forma del esquema esperado por `@supabase/supabase-js`.
  * Tiparlo así habilita autocompletado en `supabase.from('...')`.
@@ -65,23 +81,33 @@ export interface Database {
         Insert: Omit<Profile, 'created_at' | 'partidos_jugados' | 'no_shows' | 'rating'> &
           Partial<Pick<Profile, 'partidos_jugados' | 'no_shows' | 'rating'>>;
         Update: Partial<Profile>;
+        Relationships: [];
       };
       partidos: {
         Row: Partido;
         Insert: Omit<Partido, 'id' | 'created_at' | 'cupos_ocupados'> &
           Partial<Pick<Partido, 'cupos_ocupados'>>;
         Update: Partial<Partido>;
+        Relationships: [];
       };
       partido_jugadores: {
         Row: PartidoJugador;
         Insert: Omit<PartidoJugador, 'id' | 'created_at' | 'confirmado'> &
           Partial<Pick<PartidoJugador, 'confirmado'>>;
         Update: Partial<PartidoJugador>;
+        Relationships: [];
+      };
+      pagos: {
+        Row: Pago;
+        Insert: Omit<Pago, 'id' | 'created_at'>;
+        Update: Partial<Pago>;
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
 

@@ -1,41 +1,81 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Redirect } from 'expo-router';
+import { useEffect } from 'react';
 import { Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
-import Button from '@/components/Button';
-import { APP } from '@/constants/config';
+import { Colors } from '@/constants/colors';
+import { useAuth } from '@/lib/auth';
 
-/** Pantalla de bienvenida / onboarding. */
-export default function OnboardingScreen() {
-  const router = useRouter();
+export default function Index() {
+  const { profile, loading } = useAuth();
+
+  const logoScale = useSharedValue(0.6);
+  const logoGlow = useSharedValue(0.4);
+  const textY = useSharedValue(20);
+  const textOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    logoScale.value = withTiming(1, { duration: 700, easing: Easing.out(Easing.back(1.6)) });
+    logoGlow.value = withRepeat(withSequence(withTiming(1, { duration: 1100 }), withTiming(0.4, { duration: 1100 })), -1);
+    textOpacity.value = withDelay(380, withTiming(1, { duration: 600 }));
+    textY.value = withDelay(380, withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) }));
+  }, [logoGlow, logoScale, textOpacity, textY]);
+
+  const logoStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: logoScale.value }],
+    shadowOpacity: logoGlow.value,
+  }));
+  const textStyle = useAnimatedStyle(() => ({
+    opacity: textOpacity.value,
+    transform: [{ translateY: textY.value }],
+  }));
+
+  // Cuando termina de cargar la sesión, redirigimos
+  if (!loading) {
+    return <Redirect href={profile ? '/(tabs)' : '/(auth)/welcome'} />;
+  }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 justify-between px-6 pb-8 pt-16">
-        {/* Logo + tagline centrados */}
-        <View className="flex-1 items-center justify-center">
-          <View className="mb-6 h-24 w-24 items-center justify-center rounded-3xl bg-primary">
-            <Ionicons name="football" size={56} color="#0B0F0D" />
-          </View>
+    <View className="flex-1 items-center justify-center bg-background">
+      <LinearGradient colors={['#0B0F0D', '#0C1712', '#0B0F0D']} style={{ position: 'absolute', inset: 0 }} />
+      <View
+        pointerEvents="none"
+        className="absolute rounded-full"
+        style={{ width: 360, height: 360, backgroundColor: Colors.primary, opacity: 0.12 }}
+      />
 
-          <Text className="font-display text-6xl uppercase leading-none text-cream">Falta</Text>
-          <Text className="font-display text-6xl uppercase leading-none text-primary">Uno</Text>
+      <Animated.View
+        style={[
+          logoStyle,
+          {
+            height: 104,
+            width: 104,
+            borderRadius: 32,
+            backgroundColor: Colors.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+            shadowColor: Colors.primary,
+            shadowRadius: 30,
+            shadowOffset: { width: 0, height: 0 },
+          },
+        ]}>
+        <Ionicons name="football" size={60} color={Colors.background} />
+      </Animated.View>
 
-          <Text className="mt-6 max-w-[280px] text-center font-body text-base text-muted">
-            {APP.tagline}
-          </Text>
-        </View>
-
-        {/* Acciones */}
-        <View className="gap-3">
-          <Button label="Entrar" variant="primary" onPress={() => router.push('/(tabs)')} />
-          <Button label="Registrarme" variant="outline" onPress={() => router.push('/register')} />
-          <Text className="mt-2 text-center font-body text-xs text-muted">
-            Pereira · Risaralda 🇨🇴
-          </Text>
-        </View>
-      </View>
-    </SafeAreaView>
+      <Animated.View style={[textStyle, { alignItems: 'center', marginTop: 24 }]}>
+        <Text className="font-display text-5xl uppercase leading-none text-cream">Falta</Text>
+        <Text className="font-display text-5xl uppercase leading-none text-primary">Uno</Text>
+      </Animated.View>
+    </View>
   );
 }

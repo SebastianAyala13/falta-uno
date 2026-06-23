@@ -38,3 +38,57 @@ export const ZONAS = [
   'Álamos',
 ] as const;
 export type Zona = (typeof ZONAS)[number];
+
+/**
+ * Medios de pago (contexto colombiano).
+ * El procesamiento es simulado; `provider` marca a qué pasarela se enchufaría
+ * en producción (Wompi soporta Nequi, PSE, tarjeta y Bancolombia).
+ */
+export type MedioPagoId = 'nequi' | 'pse' | 'tarjeta' | 'efectivo';
+
+export interface MedioPago {
+  id: MedioPagoId;
+  nombre: string;
+  detalle: string;
+  icon: string; // nombre de Ionicons
+  provider: 'wompi' | 'efectivo';
+  instantaneo: boolean;
+}
+
+export const MEDIOS_PAGO: MedioPago[] = [
+  {
+    id: 'nequi',
+    nombre: 'Nequi',
+    detalle: 'Pago instantáneo desde tu Nequi',
+    icon: 'phone-portrait',
+    provider: 'wompi',
+    instantaneo: true,
+  },
+  {
+    id: 'pse',
+    nombre: 'PSE',
+    detalle: 'Débito desde tu banco',
+    icon: 'business',
+    provider: 'wompi',
+    instantaneo: true,
+  },
+  {
+    id: 'tarjeta',
+    nombre: 'Tarjeta',
+    detalle: 'Crédito o débito',
+    icon: 'card',
+    provider: 'wompi',
+    instantaneo: true,
+  },
+  {
+    id: 'efectivo',
+    nombre: 'Efectivo en cancha',
+    detalle: 'Le pagás al organizador al llegar',
+    icon: 'cash',
+    provider: 'efectivo',
+    instantaneo: false,
+  },
+];
+
+/** Comisión de servicio de Falta Uno (sobre el precio del cupo). */
+export const COMISION_SERVICIO = 0.08; // 8%

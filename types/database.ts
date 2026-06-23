@@ -1,0 +1,91 @@
+/**
+ * Tipos de la base de datos de Supabase para Falta Uno.
+ *
+ * Estos tipos describen las tablas del backend. Cuando conectes Supabase real,
+ * podés regenerarlos automáticamente con:
+ *
+ *   npx supabase gen types typescript --project-id <TU_PROJECT_ID> > types/database.ts
+ *
+ * Por ahora están escritos a mano para tipar el cliente y los datos mock.
+ */
+
+import type { Formato, Nivel, Posicion } from '@/constants/config';
+
+/** Perfil de un jugador. Relacionado 1:1 con auth.users de Supabase. */
+export interface Profile {
+  id: string; // uuid (auth.users.id)
+  nombre: string;
+  ciudad: string;
+  posicion: Posicion;
+  nivel: Nivel;
+  celular: string;
+  avatar_url: string | null;
+  partidos_jugados: number;
+  no_shows: number;
+  rating: number; // 0 - 5
+  created_at: string; // timestamptz
+}
+
+/** Un partido publicado por un usuario. */
+export interface Partido {
+  id: string; // uuid
+  organizador_id: string; // profiles.id
+  cancha: string;
+  zona: string;
+  fecha: string; // date (YYYY-MM-DD)
+  hora: string; // time (HH:mm)
+  formato: Formato;
+  nivel: Nivel;
+  precio: number; // precio por jugador (COP)
+  cupos_totales: number;
+  cupos_ocupados: number;
+  descripcion: string | null;
+  created_at: string; // timestamptz
+}
+
+/** Tabla pivote: jugadores inscritos en un partido. */
+export interface PartidoJugador {
+  id: string; // uuid
+  partido_id: string; // partidos.id
+  jugador_id: string; // profiles.id
+  posicion: Posicion;
+  confirmado: boolean;
+  created_at: string; // timestamptz
+}
+
+/**
+ * Forma del esquema esperado por `@supabase/supabase-js`.
+ * Tiparlo así habilita autocompletado en `supabase.from('...')`.
+ */
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: Profile;
+        Insert: Omit<Profile, 'created_at' | 'partidos_jugados' | 'no_shows' | 'rating'> &
+          Partial<Pick<Profile, 'partidos_jugados' | 'no_shows' | 'rating'>>;
+        Update: Partial<Profile>;
+      };
+      partidos: {
+        Row: Partido;
+        Insert: Omit<Partido, 'id' | 'created_at' | 'cupos_ocupados'> &
+          Partial<Pick<Partido, 'cupos_ocupados'>>;
+        Update: Partial<Partido>;
+      };
+      partido_jugadores: {
+        Row: PartidoJugador;
+        Insert: Omit<PartidoJugador, 'id' | 'created_at' | 'confirmado'> &
+          Partial<Pick<PartidoJugador, 'confirmado'>>;
+        Update: Partial<PartidoJugador>;
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+  };
+}
+
+/** Partido enriquecido con datos del organizador (para la UI / feeds). */
+export interface PartidoConOrganizador extends Partido {
+  organizador?: Pick<Profile, 'nombre' | 'avatar_url' | 'rating'>;
+}

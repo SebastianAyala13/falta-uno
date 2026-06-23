@@ -1,9 +1,16 @@
 -- ============================================================================
--- Falta Uno · Esquema de base de datos para Supabase
+-- Falta Uno · Esquema de base de datos para Supabase (COMPLETO)
 -- ----------------------------------------------------------------------------
 -- Ejecutá este script en el SQL Editor de tu proyecto Supabase
 -- (Dashboard → SQL Editor → New query → pegar → Run).
+--
+-- Es IDEMPOTENTE: se puede correr en una base nueva o re-correr sobre una
+-- existente sin errores (usa "if not exists" y "drop policy if exists").
 -- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- TABLAS
+-- ----------------------------------------------------------------------------
 
 -- Perfiles de jugadores (1:1 con auth.users)
 create table if not exists public.profiles (
@@ -40,6 +47,11 @@ create table if not exists public.partidos (
   foto_url text,
   created_at timestamptz not null default now()
 );
+
+-- Columnas extra (por si la tabla "partidos" ya existía de una versión previa)
+alter table public.partidos add column if not exists lat double precision;
+alter table public.partidos add column if not exists lng double precision;
+alter table public.partidos add column if not exists foto_url text;
 
 -- Inscripciones de jugadores a partidos
 create table if not exists public.partido_jugadores (
@@ -90,7 +102,7 @@ create table if not exists public.calificaciones (
 );
 
 -- ----------------------------------------------------------------------------
--- Row Level Security (RLS)
+-- ROW LEVEL SECURITY
 -- ----------------------------------------------------------------------------
 alter table public.profiles enable row level security;
 alter table public.partidos enable row level security;
@@ -100,32 +112,60 @@ alter table public.mensajes enable row level security;
 alter table public.calificaciones enable row level security;
 
 -- Perfiles: todos pueden leer; cada quien edita el suyo
+drop policy if exists "perfiles_lectura" on public.profiles;
+drop policy if exists "perfiles_propio_insert" on public.profiles;
+drop policy if exists "perfiles_propio_update" on public.profiles;
 create policy "perfiles_lectura" on public.profiles for select using (true);
 create policy "perfiles_propio_insert" on public.profiles for insert with check (auth.uid() = id);
 create policy "perfiles_propio_update" on public.profiles for update using (auth.uid() = id);
 
 -- Partidos: lectura pública; el organizador gestiona los suyos
+drop policy if exists "partidos_lectura" on public.partidos;
+drop policy if exists "partidos_insert" on public.partidos;
+drop policy if exists "partidos_update" on public.partidos;
+drop policy if exists "partidos_delete" on public.partidos;
 create policy "partidos_lectura" on public.partidos for select using (true);
 create policy "partidos_insert" on public.partidos for insert with check (auth.uid() = organizador_id);
 create policy "partidos_update" on public.partidos for update using (auth.uid() = organizador_id);
 create policy "partidos_delete" on public.partidos for delete using (auth.uid() = organizador_id);
 
 -- Inscripciones: lectura pública; cada jugador gestiona la suya
+drop policy if exists "inscripciones_lectura" on public.partido_jugadores;
+drop policy if exists "inscripciones_insert" on public.partido_jugadores;
+drop policy if exists "inscripciones_delete" on public.partido_jugadores;
 create policy "inscripciones_lectura" on public.partido_jugadores for select using (true);
 create policy "inscripciones_insert" on public.partido_jugadores for insert with check (auth.uid() = jugador_id);
 create policy "inscripciones_delete" on public.partido_jugadores for delete using (auth.uid() = jugador_id);
 
 -- Pagos: cada jugador ve y crea solo los suyos
+drop policy if exists "pagos_lectura" on public.pagos;
+drop policy if exists "pagos_insert" on public.pagos;
 create policy "pagos_lectura" on public.pagos for select using (auth.uid() = jugador_id);
 create policy "pagos_insert" on public.pagos for insert with check (auth.uid() = jugador_id);
 
 -- Mensajes: lectura pública del chat; cada quien publica como sí mismo
+drop policy if exists "mensajes_lectura" on public.mensajes;
+drop policy if exists "mensajes_insert" on public.mensajes;
 create policy "mensajes_lectura" on public.mensajes for select using (true);
 create policy "mensajes_insert" on public.mensajes for insert with check (auth.uid() = autor_id);
 
 -- Calificaciones: lectura pública (reputación); cada quien crea las suyas
+drop policy if exists "calificaciones_lectura" on public.calificaciones;
+drop policy if exists "calificaciones_insert" on public.calificaciones;
 create policy "calificaciones_lectura" on public.calificaciones for select using (true);
 create policy "calificaciones_insert" on public.calificaciones for insert with check (auth.uid() = autor_id);
 
--- Realtime: habilitar el chat en vivo
-alter publication supabase_realtime add table public.mensajes;
+-- ----------------------------------------------------------------------------
+-- REALTIME (chat en vivo) — se agrega solo si no estaba ya en la publicación
+-- ----------------------------------------------------------------------------
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'mensajes'
+  ) then
+    execute 'alter publication supabase_realtime add table public.mensajes';
+  end if;
+end $$;

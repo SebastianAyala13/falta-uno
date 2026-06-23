@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Avatar from '@/components/Avatar';
@@ -14,6 +15,8 @@ import { Colors } from '@/constants/colors';
 import { COMISION_SERVICIO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { fechaLarga, precioCOP } from '@/lib/format';
+import { coordsDePartido } from '@/lib/geo';
+import { cancelarRecordatorio } from '@/lib/notifications';
 import { useStore } from '@/lib/store';
 
 export default function PartidoDetalle() {
@@ -43,6 +46,19 @@ export default function PartidoDetalle() {
   const lleno = faltan <= 0;
   const comision = Math.round(partido.precio * COMISION_SERVICIO);
   const total = partido.precio + comision;
+  const coords = coordsDePartido(partido);
+
+  const abrirMapa = () => {
+    const label = encodeURIComponent(partido.cancha);
+    const url = Platform.select({
+      ios: `maps://?q=${label}&ll=${coords.latitude},${coords.longitude}`,
+      android: `geo:${coords.latitude},${coords.longitude}?q=${coords.latitude},${coords.longitude}(${label})`,
+      default: `https://www.google.com/maps/search/?api=1&query=${coords.latitude},${coords.longitude}`,
+    });
+    if (url) Linking.openURL(url).catch(() => {});
+  };
+
+  const irAlChat = () => router.push({ pathname: '/chat/[id]', params: { id } });
 
   const compartir = () => {
     Share.share({
@@ -62,6 +78,7 @@ export default function PartidoDetalle() {
         style: 'destructive',
         onPress: () => {
           salirse(id, profile?.id ?? 'demo');
+          cancelarRecordatorio(id);
           router.back();
         },
       },
@@ -165,6 +182,47 @@ export default function PartidoDetalle() {
                 <Ionicons name="star" size={14} color={Colors.accent} />
                 <Text className="font-body-semibold text-sm text-cream">{partido.organizador?.rating?.toFixed(1)}</Text>
               </View>
+            </View>
+          </FadeIn>
+
+          {/* Chat del parche */}
+          <FadeIn delay={200}>
+            <Pressable
+              onPress={irAlChat}
+              className="mb-4 flex-row items-center rounded-3xl border border-border bg-card p-4 active:bg-border/40">
+              <View className="h-11 w-11 items-center justify-center rounded-xl bg-accent/15">
+                <Ionicons name="chatbubbles" size={22} color={Colors.accent} />
+              </View>
+              <View className="ml-3 flex-1">
+                <Text className="font-body-bold text-base text-cream">Chat del parche</Text>
+                <Text className="font-body text-xs text-muted">Cuadrá detalles con los demás</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Colors.muted} />
+            </Pressable>
+          </FadeIn>
+
+          {/* Ubicación / mapa */}
+          <FadeIn delay={230}>
+            <View className="mb-4 overflow-hidden rounded-3xl border border-border bg-card">
+              <MapView
+                style={{ height: 160 }}
+                pointerEvents="none"
+                initialRegion={{
+                  latitude: coords.latitude,
+                  longitude: coords.longitude,
+                  latitudeDelta: 0.012,
+                  longitudeDelta: 0.012,
+                }}>
+                <Marker coordinate={coords} title={partido.cancha} description={partido.zona} />
+              </MapView>
+              <Pressable
+                onPress={abrirMapa}
+                className="flex-row items-center justify-center gap-2 border-t border-border py-3.5 active:bg-border/40">
+                <Ionicons name="navigate" size={18} color={Colors.primary} />
+                <Text className="font-body-bold text-sm uppercase tracking-wide text-primary">
+                  Cómo llegar
+                </Text>
+              </Pressable>
             </View>
           </FadeIn>
 

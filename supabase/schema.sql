@@ -35,6 +35,8 @@ create table if not exists public.partidos (
   cupos_totales int not null,
   cupos_ocupados int not null default 1,
   descripcion text,
+  lat double precision,
+  lng double precision,
   created_at timestamptz not null default now()
 );
 
@@ -62,6 +64,17 @@ create table if not exists public.pagos (
   created_at timestamptz not null default now()
 );
 
+-- Chat por partido
+create table if not exists public.mensajes (
+  id uuid primary key default gen_random_uuid(),
+  partido_id uuid not null references public.partidos (id) on delete cascade,
+  autor_id uuid not null references public.profiles (id) on delete cascade,
+  autor_nombre text not null,
+  texto text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists mensajes_partido_idx on public.mensajes (partido_id, created_at);
+
 -- ----------------------------------------------------------------------------
 -- Row Level Security (RLS)
 -- ----------------------------------------------------------------------------
@@ -69,6 +82,7 @@ alter table public.profiles enable row level security;
 alter table public.partidos enable row level security;
 alter table public.partido_jugadores enable row level security;
 alter table public.pagos enable row level security;
+alter table public.mensajes enable row level security;
 
 -- Perfiles: todos pueden leer; cada quien edita el suyo
 create policy "perfiles_lectura" on public.profiles for select using (true);
@@ -89,3 +103,10 @@ create policy "inscripciones_delete" on public.partido_jugadores for delete usin
 -- Pagos: cada jugador ve y crea solo los suyos
 create policy "pagos_lectura" on public.pagos for select using (auth.uid() = jugador_id);
 create policy "pagos_insert" on public.pagos for insert with check (auth.uid() = jugador_id);
+
+-- Mensajes: lectura pública del chat; cada quien publica como sí mismo
+create policy "mensajes_lectura" on public.mensajes for select using (true);
+create policy "mensajes_insert" on public.mensajes for insert with check (auth.uid() = autor_id);
+
+-- Realtime: habilitar el chat en vivo
+alter publication supabase_realtime add table public.mensajes;

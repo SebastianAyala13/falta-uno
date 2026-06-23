@@ -16,9 +16,11 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '@/lib/auth';
+import { configurarNotificaciones } from '@/lib/notifications';
 import { Colors } from '@/constants/colors';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+configurarNotificaciones();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -50,6 +52,7 @@ export default function RootLayout() {
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="partido/[id]" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="chat/[id]" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen
               name="checkout/[id]"
               options={{ animation: 'slide_from_bottom', presentation: 'modal' }}

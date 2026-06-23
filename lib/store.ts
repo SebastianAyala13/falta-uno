@@ -4,7 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { COMISION_SERVICIO, CUPOS_POR_FORMATO, type Formato, type Nivel } from '@/constants/config';
 import { partidosDisponibles } from '@/lib/mockData';
-import type { EstadoPago, Pago, PartidoConOrganizador } from '@/types/database';
+import type { EstadoPago, Mensaje, Pago, PartidoConOrganizador } from '@/types/database';
 
 export interface NuevoPartido {
   cancha: string;
@@ -21,10 +21,13 @@ interface StoreState {
   partidos: PartidoConOrganizador[];
   inscritos: string[]; // ids de partidos a los que el usuario se unió
   pagos: Pago[];
+  mensajes: Record<string, Mensaje[]>; // chat por partido (partidoId -> mensajes)
 
   getPartido: (id: string) => PartidoConOrganizador | undefined;
   estaInscrito: (id: string) => boolean;
   misPartidos: () => PartidoConOrganizador[];
+  getMensajes: (partidoId: string) => Mensaje[];
+  enviarMensaje: (partidoId: string, autor: { id: string; nombre: string }, texto: string) => void;
 
   crearPartido: (data: NuevoPartido, organizador: { id: string; nombre: string }) => string;
   /** Inscribe al usuario y registra el pago. Devuelve el pago creado. */
@@ -40,16 +43,62 @@ interface StoreState {
 const genId = (p: string) => `${p}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4)}`;
 const genRef = () => 'FU-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 
+// Mensajes de ejemplo para que el chat se sienta vivo en el demo
+const mensajesSeed: Record<string, Mensaje[]> = {
+  p1: [
+    {
+      id: 'm1',
+      partido_id: 'p1',
+      autor_id: 'u2',
+      autor_nombre: 'Andrés',
+      texto: 'Parce, ya está casi armado. Falta uno no más. ⚽',
+      created_at: '2026-06-22T18:00:00Z',
+    },
+    {
+      id: 'm2',
+      partido_id: 'p1',
+      autor_id: 'u7',
+      autor_nombre: 'Dani',
+      texto: 'Yo llevo los petos. ¿Alguien lleva balón?',
+      created_at: '2026-06-22T18:05:00Z',
+    },
+    {
+      id: 'm3',
+      partido_id: 'p1',
+      autor_id: 'u2',
+      autor_nombre: 'Andrés',
+      texto: 'Listo el balón. Nos vemos a las 8, no lleguen tarde llave 😅',
+      created_at: '2026-06-22T18:07:00Z',
+    },
+  ],
+};
+
 export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
       partidos: partidosDisponibles,
       inscritos: [],
       pagos: [],
+      mensajes: mensajesSeed,
 
       getPartido: (id) => get().partidos.find((p) => p.id === id),
       estaInscrito: (id) => get().inscritos.includes(id),
       misPartidos: () => get().partidos.filter((p) => get().inscritos.includes(p.id)),
+      getMensajes: (partidoId) => get().mensajes[partidoId] ?? [],
+
+      enviarMensaje: (partidoId, autor, texto) => {
+        const msg: Mensaje = {
+          id: genId('msg'),
+          partido_id: partidoId,
+          autor_id: autor.id,
+          autor_nombre: autor.nombre,
+          texto: texto.trim(),
+          created_at: new Date().toISOString(),
+        };
+        set((s) => ({
+          mensajes: { ...s.mensajes, [partidoId]: [...(s.mensajes[partidoId] ?? []), msg] },
+        }));
+      },
 
       crearPartido: (data, organizador) => {
         const id = genId('p');
@@ -116,7 +165,12 @@ export const useStore = create<StoreState>()(
       name: 'faltauno.store',
       storage: createJSONStorage(() => AsyncStorage),
       // Solo persistimos lo que el usuario generó; los partidos seed se recargan
-      partialize: (s) => ({ inscritos: s.inscritos, pagos: s.pagos, partidos: s.partidos }),
+      partialize: (s) => ({
+        inscritos: s.inscritos,
+        pagos: s.pagos,
+        partidos: s.partidos,
+        mensajes: s.mensajes,
+      }),
     },
   ),
 );

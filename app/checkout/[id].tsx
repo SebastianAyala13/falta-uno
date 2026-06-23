@@ -12,6 +12,7 @@ import { Colors } from '@/constants/colors';
 import { COMISION_SERVICIO, MEDIOS_PAGO, type MedioPago } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { precioCOP } from '@/lib/format';
+import { programarRecordatorio } from '@/lib/notifications';
 import { procesarPago } from '@/lib/payments';
 import { useStore } from '@/lib/store';
 import type { Pago } from '@/types/database';
@@ -29,6 +30,7 @@ export default function Checkout() {
   const [paso, setPaso] = useState<Paso>('metodo');
   const [medio, setMedio] = useState<MedioPago>(MEDIOS_PAGO[0]);
   const [pago, setPago] = useState<Pago | null>(null);
+  const [recordatorio, setRecordatorio] = useState(false);
 
   if (!partido) {
     return (
@@ -48,6 +50,8 @@ export default function Checkout() {
     const res = await procesarPago(medio.id, total);
     const nuevoPago = inscribirse(id, profile?.id ?? 'demo', medio.id, res.estado);
     setPago(nuevoPago);
+    const rec = await programarRecordatorio(partido);
+    setRecordatorio(rec.ok);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setPaso('listo');
   };
@@ -69,7 +73,7 @@ export default function Checkout() {
       </View>
 
       {paso === 'procesando' ? <Procesando medio={medio} /> : null}
-      {paso === 'listo' && pago ? <Comprobante pago={pago} medio={medio} cancha={partido.cancha} onClose={() => router.replace({ pathname: '/partido/[id]', params: { id } })} /> : null}
+      {paso === 'listo' && pago ? <Comprobante pago={pago} medio={medio} cancha={partido.cancha} recordatorio={recordatorio} onClose={() => router.replace({ pathname: '/partido/[id]', params: { id } })} /> : null}
 
       {paso === 'metodo' ? (
         <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
@@ -159,11 +163,13 @@ function Comprobante({
   pago,
   medio,
   cancha,
+  recordatorio,
   onClose,
 }: {
   pago: Pago;
   medio: MedioPago;
   cancha: string;
+  recordatorio: boolean;
   onClose: () => void;
 }) {
   const aprobado = pago.estado === 'aprobado';
@@ -198,6 +204,17 @@ function Comprobante({
           <Dato label="Total" valor={precioCOP(pago.monto)} total />
         </View>
       </FadeIn>
+
+      {recordatorio ? (
+        <FadeIn delay={180}>
+          <View className="mt-4 flex-row items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-3 py-3">
+            <Ionicons name="notifications" size={18} color={Colors.primary} />
+            <Text className="flex-1 font-body text-sm text-cream">
+              Te avisamos <Text className="text-primary">2 horas antes</Text> del partido. 🔔
+            </Text>
+          </View>
+        </FadeIn>
+      ) : null}
 
       <FadeIn delay={220}>
         <View className="mt-6">

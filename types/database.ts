@@ -41,7 +41,19 @@ export interface Partido {
   cupos_totales: number;
   cupos_ocupados: number;
   descripcion: string | null;
+  lat?: number | null; // ubicación de la cancha (opcional)
+  lng?: number | null;
   created_at: string; // timestamptz
+}
+
+/** Mensaje del chat de un partido. */
+export interface Mensaje {
+  id: string;
+  partido_id: string;
+  autor_id: string;
+  autor_nombre: string;
+  texto: string;
+  created_at: string;
 }
 
 /** Tabla pivote: jugadores inscritos en un partido. */
@@ -101,6 +113,12 @@ export interface Database {
         Row: Pago;
         Insert: Omit<Pago, 'id' | 'created_at'>;
         Update: Partial<Pago>;
+        Relationships: [];
+      };
+      mensajes: {
+        Row: Mensaje;
+        Insert: Omit<Mensaje, 'id' | 'created_at'>;
+        Update: Partial<Mensaje>;
         Relationships: [];
       };
     };

@@ -31,8 +31,12 @@ Construida con **React Native + Expo**, navegación basada en archivos con **Exp
 - **Home / Feed** — saludo, hero CTA con gradiente, stats rápidas y partidos cerca.
 - **Buscar partido** — buscador + filtros por zona, nivel y formato (en vivo).
 - **Crear partido** — formulario que **publica un partido real** en el store.
-- **Detalle de partido** — roster visual de cupos, organizador, desglose de precio
-  e **inscripción**.
+- **Detalle de partido** — roster visual de cupos, organizador, **mapa de la cancha**
+  con "Cómo llegar", acceso al **chat**, desglose de precio e **inscripción**.
+- **Chat del parche** — chat por partido con burbujas (local-first; tabla `mensajes`
+  + Realtime listos en Supabase para chat en vivo).
+- **Recordatorios** — al inscribirte, se programa una **notificación local 2 h antes**
+  del partido (`expo-notifications`).
 - **Checkout / Pago** — métodos colombianos (**Nequi, PSE, Tarjeta, Efectivo**),
   procesamiento animado y **comprobante** con referencia. _(Pago simulado,
   arquitectura lista para Wompi.)_
@@ -142,5 +146,9 @@ falta-uno/
 
 - Los datos de partidos y perfil son **mock** (en `lib/mockData.ts`) mientras no conectes Supabase.
 - Los formularios de registro y creación ya están cableados a la navegación; los `TODO:` marcan dónde enganchar las queries reales de Supabase.
+- **Mapas**: en **Expo Go** funcionan sin configuración. Para un build de producción
+  (EAS) en Android necesitás una **Google Maps API key** en `app.json`.
+- **Notificaciones**: se usan **locales programadas** (funcionan en Expo Go). Las
+  **push remotas** requieren un build de desarrollo/EAS y un token de Expo Push.
 
 Hecho con 💚 para la gallada de Pereira.

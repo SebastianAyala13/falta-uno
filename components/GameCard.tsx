@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import Avatar from '@/components/Avatar';
 import ProgressBar from '@/components/ProgressBar';
@@ -22,22 +24,38 @@ export default function GameCard({ partido, destacado = false }: GameCardProps) 
   const urgente = faltan === 1;
   const ratio = partido.cupos_ocupados / partido.cupos_totales;
 
+  const scale = useSharedValue(1);
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
   return (
     <Pressable
-      onPress={() => router.push({ pathname: '/partido/[id]', params: { id: partido.id } })}
-      className="mb-4 overflow-hidden rounded-3xl border border-border bg-card active:opacity-90"
-      style={
-        destacado
-          ? {
-              borderColor: Colors.primary + '66',
-              shadowColor: Colors.primary,
-              shadowOpacity: 0.25,
-              shadowRadius: 18,
-              shadowOffset: { width: 0, height: 8 },
-              elevation: 6,
-            }
-          : undefined
-      }>
+      onPressIn={() => (scale.value = withTiming(0.975, { duration: 90 }))}
+      onPressOut={() => (scale.value = withTiming(1, { duration: 130 }))}
+      onPress={() => {
+        Haptics.selectionAsync();
+        router.push({ pathname: '/partido/[id]', params: { id: partido.id } });
+      }}
+      style={{ marginBottom: 16 }}>
+      <Animated.View
+        style={[
+          animated,
+          {
+            overflow: 'hidden',
+            borderRadius: 24,
+            borderWidth: 1,
+            borderColor: destacado ? Colors.primary + '66' : Colors.border,
+            backgroundColor: Colors.card,
+          },
+          destacado
+            ? {
+                shadowColor: Colors.primary,
+                shadowOpacity: 0.25,
+                shadowRadius: 18,
+                shadowOffset: { width: 0, height: 8 },
+                elevation: 6,
+              }
+            : null,
+        ]}>
       {/* Franja superior con estado de cupos */}
       <View
         className="flex-row items-center justify-between px-4 py-2"
@@ -107,6 +125,7 @@ export default function GameCard({ partido, destacado = false }: GameCardProps) 
           </View>
         </View>
       </View>
+      </Animated.View>
     </Pressable>
   );
 }

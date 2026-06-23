@@ -55,6 +55,8 @@ export default function RootLayout() {
               options={{ animation: 'slide_from_bottom', presentation: 'modal' }}
             />
             <Stack.Screen name="mis-partidos" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="mis-pagos" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="editar-perfil" options={{ animation: 'slide_from_right' }} />
           </Stack>
         </AuthProvider>
       </SafeAreaProvider>

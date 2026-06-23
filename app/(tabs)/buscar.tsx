@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { ScrollView, Text, TextInput, View } from 'react-native';
+import { RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 
 import Chip from '@/components/Chip';
 import FadeIn from '@/components/FadeIn';
@@ -35,6 +35,12 @@ export default function Buscar() {
 
   const hayFiltros = zona || nivel || formato || query;
 
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 700);
+  };
+
   return (
     <Screen>
       <FadeIn delay={40}>
@@ -56,7 +62,12 @@ export default function Buscar() {
         </View>
       </FadeIn>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 110 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} colors={[Colors.primary]} />
+        }>
         <FadeIn delay={120}>
           <View className="px-6">
             <Filtro titulo="Zona">

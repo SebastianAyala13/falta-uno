@@ -29,6 +29,7 @@ interface AuthState {
   signUp: (datos: DatosRegistro) => Promise<{ needsConfirmation: boolean }>;
   signInAsGuest: () => Promise<void>;
   signOut: () => Promise<void>;
+  updateProfile: (cambios: Partial<Profile>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -186,6 +187,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (supabaseConfigurado) await supabase.auth.signOut();
         await AsyncStorage.removeItem(DEMO_KEY);
         setProfile(null);
+      },
+
+      async updateProfile(cambios) {
+        if (!profile) return;
+        const actualizado = { ...profile, ...cambios };
+        if (!supabaseConfigurado) {
+          await AsyncStorage.setItem(DEMO_KEY, JSON.stringify(actualizado));
+          setProfile(actualizado);
+          return;
+        }
+        const { error } = await supabase
+          .from('profiles')
+          .update(cambios as never)
+          .eq('id', profile.id);
+        if (error) throw new Error(traducirError(error.message));
+        setProfile(actualizado);
       },
     }),
     [profile, loading],

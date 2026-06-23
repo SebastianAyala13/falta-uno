@@ -37,7 +37,14 @@ Construida con **React Native + Expo**, navegación basada en archivos con **Exp
   procesamiento animado y **comprobante** con referencia. _(Pago simulado,
   arquitectura lista para Wompi.)_
 - **Mis partidos** — los partidos en los que te inscribiste.
+- **Mis pagos** — historial de comprobantes con estado.
+- **Editar perfil** — actualizá nombre, ciudad, celular, posición y nivel (sincroniza
+  con Supabase).
 - **Mi perfil** — avatar con anillo, badges, stats y cierre de sesión.
+
+> **Facilidad de uso:** selectores nativos de **fecha y hora** al crear partido,
+> **pull-to-refresh** en los feeds, **compartir partido** (WhatsApp/etc.),
+> animaciones de press con háptica y cero botones muertos.
 - **Tab bar premium** — Home · Buscar · **Crear** (botón "+" en Lima Eléctrica) · Perfil,
   con fondo translúcido (blur).
 

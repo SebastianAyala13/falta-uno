@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 
 import Chip from '@/components/Chip';
+import DateTimeField from '@/components/DateTimeField';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
@@ -80,10 +81,10 @@ export default function Crear() {
 
             <View className="flex-row gap-3">
               <View className="flex-1">
-                <Field label="Fecha" icon="calendar-outline" placeholder="2026-06-25" value={fecha} onChangeText={setFecha} />
+                <DateTimeField label="Fecha" mode="date" value={fecha} onChange={setFecha} minToday />
               </View>
               <View className="flex-1">
-                <Field label="Hora" icon="time-outline" placeholder="20:00" value={hora} onChangeText={setHora} />
+                <DateTimeField label="Hora" mode="time" value={hora} onChange={setHora} />
               </View>
             </View>
           </FadeIn>

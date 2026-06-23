@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Avatar from '@/components/Avatar';
@@ -44,6 +44,16 @@ export default function PartidoDetalle() {
   const comision = Math.round(partido.precio * COMISION_SERVICIO);
   const total = partido.precio + comision;
 
+  const compartir = () => {
+    Share.share({
+      message:
+        `⚽ ${partido.cancha} (${partido.formato}) · ${partido.zona}, Pereira\n` +
+        `${fechaLarga(partido.fecha)} a las ${partido.hora}\n` +
+        `${faltan === 1 ? '¡Falta 1!' : `Faltan ${faltan}`} · ${precioCOP(partido.precio)} por jugador\n\n` +
+        `Cuadrate conmigo en Falta Uno 👟🔥`,
+    });
+  };
+
   const confirmarSalida = () => {
     Alert.alert('¿Salir del partido?', 'Tu cupo queda libre para otro jugador.', [
       { text: 'Cancelar', style: 'cancel' },
@@ -74,7 +84,7 @@ export default function PartidoDetalle() {
                 <Pressable onPress={() => router.back()} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-black/30">
                   <Ionicons name="chevron-back" size={22} color={Colors.cream} />
                 </Pressable>
-                <Pressable hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-black/30">
+                <Pressable onPress={compartir} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-black/30">
                   <Ionicons name="share-social-outline" size={20} color={Colors.cream} />
                 </Pressable>
               </View>

@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import Avatar from '@/components/Avatar';
 import FadeIn from '@/components/FadeIn';
@@ -20,11 +21,20 @@ export default function Home() {
   const nombre = profile?.nombre ?? 'crack';
   const cerca = partidos.slice(0, 4);
 
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 700);
+  };
+
   return (
     <Screen>
       <ScrollView
         contentContainerStyle={{ paddingBottom: 110 }}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} colors={[Colors.primary]} />
+        }>
         {/* Header */}
         <FadeIn delay={40}>
           <View className="flex-row items-center justify-between px-6 pb-4 pt-2">

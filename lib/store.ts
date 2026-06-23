@@ -4,7 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { COMISION_SERVICIO, CUPOS_POR_FORMATO, type Formato, type Nivel } from '@/constants/config';
 import { partidosDisponibles } from '@/lib/mockData';
-import type { EstadoPago, Mensaje, Pago, PartidoConOrganizador } from '@/types/database';
+import type { Calificacion, EstadoPago, Mensaje, Pago, PartidoConOrganizador } from '@/types/database';
 
 export interface NuevoPartido {
   cancha: string;
@@ -15,6 +15,7 @@ export interface NuevoPartido {
   nivel: Nivel;
   precio: number;
   descripcion: string;
+  foto_url?: string | null;
 }
 
 interface StoreState {
@@ -22,12 +23,19 @@ interface StoreState {
   inscritos: string[]; // ids de partidos a los que el usuario se unió
   pagos: Pago[];
   mensajes: Record<string, Mensaje[]>; // chat por partido (partidoId -> mensajes)
+  calificaciones: Calificacion[]; // reputación
 
   getPartido: (id: string) => PartidoConOrganizador | undefined;
   estaInscrito: (id: string) => boolean;
   misPartidos: () => PartidoConOrganizador[];
   getMensajes: (partidoId: string) => Mensaje[];
   enviarMensaje: (partidoId: string, autor: { id: string; nombre: string }, texto: string) => void;
+  yaCalifico: (partidoId: string) => boolean;
+  calificarPartido: (
+    partidoId: string,
+    autorId: string,
+    data: { estrellas: number; organizador_estrellas: number; hubo_no_show: boolean; comentario: string },
+  ) => void;
 
   crearPartido: (data: NuevoPartido, organizador: { id: string; nombre: string }) => string;
   /** Inscribe al usuario y registra el pago. Devuelve el pago creado. */
@@ -80,6 +88,7 @@ export const useStore = create<StoreState>()(
       inscritos: [],
       pagos: [],
       mensajes: mensajesSeed,
+      calificaciones: [],
 
       getPartido: (id) => get().partidos.find((p) => p.id === id),
       estaInscrito: (id) => get().inscritos.includes(id),
@@ -115,6 +124,7 @@ export const useStore = create<StoreState>()(
           cupos_totales: CUPOS_POR_FORMATO[data.formato],
           cupos_ocupados: 1, // el organizador cuenta como inscrito
           descripcion: data.descripcion || null,
+          foto_url: data.foto_url ?? null,
           created_at: new Date().toISOString(),
           organizador: { nombre: organizador.nombre, avatar_url: null, rating: 5 },
         };
@@ -150,6 +160,22 @@ export const useStore = create<StoreState>()(
         return pago;
       },
 
+      yaCalifico: (partidoId) => get().calificaciones.some((c) => c.partido_id === partidoId),
+
+      calificarPartido: (partidoId, autorId, data) => {
+        const cal: Calificacion = {
+          id: genId('cal'),
+          partido_id: partidoId,
+          autor_id: autorId,
+          estrellas: data.estrellas,
+          organizador_estrellas: data.organizador_estrellas,
+          hubo_no_show: data.hubo_no_show,
+          comentario: data.comentario.trim(),
+          created_at: new Date().toISOString(),
+        };
+        set((s) => ({ calificaciones: [cal, ...s.calificaciones] }));
+      },
+
       salirse: (partidoId) => {
         set((s) => ({
           inscritos: s.inscritos.filter((id) => id !== partidoId),
@@ -170,6 +196,7 @@ export const useStore = create<StoreState>()(
         pagos: s.pagos,
         partidos: s.partidos,
         mensajes: s.mensajes,
+        calificaciones: s.calificaciones,
       }),
     },
   ),

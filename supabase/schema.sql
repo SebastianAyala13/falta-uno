@@ -37,6 +37,7 @@ create table if not exists public.partidos (
   descripcion text,
   lat double precision,
   lng double precision,
+  foto_url text,
   created_at timestamptz not null default now()
 );
 
@@ -75,6 +76,19 @@ create table if not exists public.mensajes (
 );
 create index if not exists mensajes_partido_idx on public.mensajes (partido_id, created_at);
 
+-- Calificaciones (reputación) tras un partido
+create table if not exists public.calificaciones (
+  id uuid primary key default gen_random_uuid(),
+  partido_id uuid not null references public.partidos (id) on delete cascade,
+  autor_id uuid not null references public.profiles (id) on delete cascade,
+  estrellas int not null check (estrellas between 1 and 5),
+  organizador_estrellas int not null check (organizador_estrellas between 1 and 5),
+  hubo_no_show boolean not null default false,
+  comentario text,
+  created_at timestamptz not null default now(),
+  unique (partido_id, autor_id)
+);
+
 -- ----------------------------------------------------------------------------
 -- Row Level Security (RLS)
 -- ----------------------------------------------------------------------------
@@ -83,6 +97,7 @@ alter table public.partidos enable row level security;
 alter table public.partido_jugadores enable row level security;
 alter table public.pagos enable row level security;
 alter table public.mensajes enable row level security;
+alter table public.calificaciones enable row level security;
 
 -- Perfiles: todos pueden leer; cada quien edita el suyo
 create policy "perfiles_lectura" on public.profiles for select using (true);
@@ -107,6 +122,10 @@ create policy "pagos_insert" on public.pagos for insert with check (auth.uid() =
 -- Mensajes: lectura pública del chat; cada quien publica como sí mismo
 create policy "mensajes_lectura" on public.mensajes for select using (true);
 create policy "mensajes_insert" on public.mensajes for insert with check (auth.uid() = autor_id);
+
+-- Calificaciones: lectura pública (reputación); cada quien crea las suyas
+create policy "calificaciones_lectura" on public.calificaciones for select using (true);
+create policy "calificaciones_insert" on public.calificaciones for insert with check (auth.uid() = autor_id);
 
 -- Realtime: habilitar el chat en vivo
 alter publication supabase_realtime add table public.mensajes;

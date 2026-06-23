@@ -12,6 +12,8 @@ import { useStore } from '@/lib/store';
 export default function MisPartidos() {
   const router = useRouter();
   const misPartidos = useStore((s) => s.misPartidos());
+  const calificaciones = useStore((s) => s.calificaciones);
+  const yaCalifico = (id: string) => calificaciones.some((c) => c.partido_id === id);
 
   return (
     <Screen edges={['top']}>
@@ -37,11 +39,24 @@ export default function MisPartidos() {
             </View>
           </FadeIn>
         ) : (
-          misPartidos.map((p, i) => (
-            <FadeIn key={p.id} delay={60 + i * 60}>
-              <GameCard partido={p} />
-            </FadeIn>
-          ))
+          misPartidos.map((p, i) => {
+            const calificado = yaCalifico(p.id);
+            return (
+              <FadeIn key={p.id} delay={60 + i * 60}>
+                <GameCard partido={p} />
+                <Pressable
+                  onPress={() => !calificado && router.push({ pathname: '/calificar/[id]', params: { id: p.id } })}
+                  disabled={calificado}
+                  className="-mt-2 mb-4 flex-row items-center justify-center gap-2 rounded-2xl border py-3"
+                  style={{ borderColor: calificado ? Colors.border : Colors.accent + '66', backgroundColor: calificado ? 'transparent' : Colors.accent + '12' }}>
+                  <Ionicons name={calificado ? 'checkmark-circle' : 'star'} size={16} color={calificado ? Colors.muted : Colors.accent} />
+                  <Text className="font-body-bold text-sm uppercase tracking-wide" style={{ color: calificado ? Colors.muted : Colors.accent }}>
+                    {calificado ? 'Calificado' : 'Calificar partido'}
+                  </Text>
+                </Pressable>
+              </FadeIn>
+            );
+          })
         )}
       </ScrollView>
     </Screen>

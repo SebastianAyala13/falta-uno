@@ -12,6 +12,7 @@ import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
 import { NIVELES, POSICIONES, type Nivel, type Posicion } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
+import { elegirImagen } from '@/lib/images';
 
 export default function EditarPerfil() {
   const router = useRouter();
@@ -22,8 +23,14 @@ export default function EditarPerfil() {
   const [celular, setCelular] = useState(profile?.celular ?? '');
   const [posicion, setPosicion] = useState<Posicion>(profile?.posicion ?? 'Mediocampista');
   const [nivel, setNivel] = useState<Nivel>(profile?.nivel ?? 'Intermedio');
+  const [avatar, setAvatar] = useState<string | null>(profile?.avatar_url ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const cambiarFoto = async () => {
+    const uri = await elegirImagen([1, 1]);
+    if (uri) setAvatar(uri);
+  };
 
   const guardar = async () => {
     setError(null);
@@ -33,7 +40,7 @@ export default function EditarPerfil() {
     }
     setLoading(true);
     try {
-      await updateProfile({ nombre: nombre.trim(), ciudad: ciudad.trim(), celular: celular.trim(), posicion, nivel });
+      await updateProfile({ nombre: nombre.trim(), ciudad: ciudad.trim(), celular: celular.trim(), posicion, nivel, avatar_url: avatar });
       router.back();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos guardar.');
@@ -54,10 +61,13 @@ export default function EditarPerfil() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <FadeIn delay={50} className="mb-5 items-center">
-            <View className="rounded-full" style={{ padding: 3, borderWidth: 2, borderColor: Colors.primary }}>
-              <Avatar nombre={nombre || '?'} uri={profile?.avatar_url} size={84} />
-            </View>
-            <Pressable className="mt-3 flex-row items-center gap-1.5 rounded-full bg-card px-3 py-2">
+            <Pressable onPress={cambiarFoto} className="rounded-full" style={{ padding: 3, borderWidth: 2, borderColor: Colors.primary }}>
+              <Avatar nombre={nombre || '?'} uri={avatar} size={84} />
+              <View className="absolute bottom-0 right-0 h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-accent">
+                <Ionicons name="camera" size={13} color={Colors.background} />
+              </View>
+            </Pressable>
+            <Pressable onPress={cambiarFoto} className="mt-3 flex-row items-center gap-1.5 rounded-full bg-card px-3 py-2">
               <Ionicons name="camera-outline" size={16} color={Colors.primary} />
               <Text className="font-body-semibold text-xs text-primary">Cambiar foto</Text>
             </Pressable>

@@ -33,10 +33,13 @@ Construida con **React Native + Expo**, navegación basada en archivos con **Exp
 - **Crear partido** — formulario que **publica un partido real** en el store.
 - **Detalle de partido** — roster visual de cupos, organizador, **mapa de la cancha**
   con "Cómo llegar", acceso al **chat**, desglose de precio e **inscripción**.
-- **Chat del parche** — chat por partido con burbujas (local-first; tabla `mensajes`
-  + Realtime listos en Supabase para chat en vivo).
+- **Chat del parche** — chat por partido con **Supabase Realtime** (en vivo entre
+  dispositivos) y fallback local-first automático si no hay backend.
 - **Recordatorios** — al inscribirte, se programa una **notificación local 2 h antes**
   del partido (`expo-notifications`).
+- **Fotos** — foto de **perfil** y de **cancha** con `expo-image-picker`.
+- **Reputación** — calificá el partido y al organizador con estrellas, reportá
+  no-shows y dejá comentario (pantalla Calificar, desde Mis Partidos).
 - **Checkout / Pago** — métodos colombianos (**Nequi, PSE, Tarjeta, Efectivo**),
   procesamiento animado y **comprobante** con referencia. _(Pago simulado,
   arquitectura lista para Wompi.)_

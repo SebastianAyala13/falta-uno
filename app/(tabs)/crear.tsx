@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import Chip from '@/components/Chip';
 import DateTimeField from '@/components/DateTimeField';
@@ -13,6 +14,7 @@ import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
 import { CUPOS_POR_FORMATO, FORMATOS, NIVELES, ZONAS, type Formato, type Nivel, type Zona } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
+import { elegirImagen } from '@/lib/images';
 import { useStore } from '@/lib/store';
 
 export default function Crear() {
@@ -28,7 +30,13 @@ export default function Crear() {
   const [nivel, setNivel] = useState<Nivel | null>(null);
   const [precio, setPrecio] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [foto, setFoto] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const agregarFoto = async () => {
+    const uri = await elegirImagen([16, 9]);
+    if (uri) setFoto(uri);
+  };
 
   const onSubmit = () => {
     setError(null);
@@ -46,6 +54,7 @@ export default function Crear() {
         nivel: nivel!,
         precio: parseInt(precio, 10) || 0,
         descripcion: descripcion.trim(),
+        foto_url: foto,
       },
       { id: profile?.id ?? 'demo', nombre: profile?.nombre ?? 'Vos' },
     );
@@ -70,6 +79,28 @@ export default function Crear() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <FadeIn delay={100}>
+            {/* Foto de la cancha */}
+            <Text className="mb-2 font-body-semibold text-sm text-cream">Foto de la cancha</Text>
+            <Pressable
+              onPress={agregarFoto}
+              className="mb-4 h-40 items-center justify-center overflow-hidden rounded-2xl border bg-card"
+              style={{ borderColor: Colors.border, borderStyle: foto ? 'solid' : 'dashed' }}>
+              {foto ? (
+                <>
+                  <Image source={{ uri: foto }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                  <View className="absolute bottom-2 right-2 flex-row items-center gap-1 rounded-full bg-black/60 px-3 py-1.5">
+                    <Ionicons name="camera" size={14} color={Colors.cream} />
+                    <Text className="font-body-semibold text-xs text-cream">Cambiar</Text>
+                  </View>
+                </>
+              ) : (
+                <View className="items-center">
+                  <Ionicons name="image-outline" size={32} color={Colors.muted} />
+                  <Text className="mt-2 font-body text-sm text-muted">Agregá una foto (opcional)</Text>
+                </View>
+              )}
+            </Pressable>
+
             <Field label="Nombre de la cancha" icon="football-outline" placeholder="Ej. Cancha La Bombonera" value={cancha} onChangeText={setCancha} autoCapitalize="words" />
 
             <Text className="mb-2 font-body-semibold text-sm text-cream">Zona</Text>

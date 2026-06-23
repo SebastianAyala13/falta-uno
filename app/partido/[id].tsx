@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, Linking, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
@@ -90,7 +91,12 @@ export default function PartidoDetalle() {
       <ScrollView contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View className="overflow-hidden">
-          <LinearGradient colors={[Colors.secondary, '#0C1712']} style={{ paddingBottom: 24 }}>
+          {partido.foto_url ? (
+            <Image source={{ uri: partido.foto_url }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" />
+          ) : null}
+          <LinearGradient
+            colors={partido.foto_url ? ['rgba(11,15,13,0.30)', 'rgba(11,15,13,0.94)'] : [Colors.secondary, '#0C1712']}
+            style={{ paddingBottom: 24 }}>
             <View
               pointerEvents="none"
               className="absolute rounded-full"

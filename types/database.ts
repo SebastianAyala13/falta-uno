@@ -43,7 +43,20 @@ export interface Partido {
   descripcion: string | null;
   lat?: number | null; // ubicación de la cancha (opcional)
   lng?: number | null;
+  foto_url?: string | null; // foto de la cancha (opcional)
   created_at: string; // timestamptz
+}
+
+/** Calificación que un jugador deja tras un partido (sistema de reputación). */
+export interface Calificacion {
+  id: string;
+  partido_id: string;
+  autor_id: string;
+  estrellas: number; // experiencia del partido (1-5)
+  organizador_estrellas: number; // calificación al organizador (1-5)
+  hubo_no_show: boolean; // ¿faltó alguien sin avisar?
+  comentario: string;
+  created_at: string;
 }
 
 /** Mensaje del chat de un partido. */
@@ -119,6 +132,12 @@ export interface Database {
         Row: Mensaje;
         Insert: Omit<Mensaje, 'id' | 'created_at'>;
         Update: Partial<Mensaje>;
+        Relationships: [];
+      };
+      calificaciones: {
+        Row: Calificacion;
+        Insert: Omit<Calificacion, 'id' | 'created_at'>;
+        Update: Partial<Calificacion>;
         Relationships: [];
       };
     };

@@ -8,6 +8,7 @@ import Avatar from '@/components/Avatar';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
+import { useChatMensajes } from '@/lib/chat';
 import { useStore } from '@/lib/store';
 import type { Mensaje } from '@/types/database';
 
@@ -24,15 +25,14 @@ export default function Chat() {
   const { profile } = useAuth();
 
   const partido = useStore((s) => s.getPartido(id));
-  const mensajes = useStore((s) => s.getMensajes(id));
-  const enviarMensaje = useStore((s) => s.enviarMensaje);
+  const { mensajes, enviar: enviarMensaje, enVivo } = useChatMensajes(id);
 
   const [texto, setTexto] = useState('');
   const listRef = useRef<FlatList<Mensaje>>(null);
 
   const enviar = () => {
     if (!texto.trim()) return;
-    enviarMensaje(id, { id: profile?.id ?? 'demo', nombre: profile?.nombre ?? 'Vos' }, texto);
+    enviarMensaje({ id: profile?.id ?? 'demo', nombre: profile?.nombre ?? 'Vos' }, texto);
     setTexto('');
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
   };
@@ -51,7 +51,10 @@ export default function Chat() {
           <Text className="font-body-bold text-base text-cream" numberOfLines={1}>
             {partido?.cancha ?? 'Chat del partido'}
           </Text>
-          <Text className="font-body text-xs text-muted">Chat del parche</Text>
+          <View className="flex-row items-center gap-1.5">
+            {enVivo ? <View className="h-2 w-2 rounded-full bg-primary" /> : null}
+            <Text className="font-body text-xs text-muted">{enVivo ? 'En vivo' : 'Chat del parche'}</Text>
+          </View>
         </View>
       </View>
 

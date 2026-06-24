@@ -138,40 +138,42 @@ export default function PartidoDetalle() {
             </View>
           </FadeIn>
 
-          {/* Cupos / roster */}
+          {/* Cupos / roster con caras */}
           <FadeIn delay={120}>
-            <View className="mb-4 rounded-3xl border border-border bg-card p-4">
+            <View className="mb-4 rounded-lg border border-borderStrong bg-card p-4">
               <View className="mb-3 flex-row items-center justify-between">
                 <Text className="font-display text-xl uppercase text-cream">La llave</Text>
-                <Text className={`font-body-bold text-sm ${lleno ? 'text-muted' : 'text-accent'}`}>
-                  {lleno ? 'Cupo lleno' : faltan === 1 ? '¡Falta 1!' : `Faltan ${faltan}`}
-                </Text>
+                <View className="flex-row items-center gap-1 rounded-full px-2.5 py-1" style={{ backgroundColor: (lleno ? Colors.muted : faltan === 1 ? Colors.accent : Colors.primary) + '22' }}>
+                  <Ionicons name={lleno ? 'lock-closed' : 'flame'} size={12} color={lleno ? Colors.muted : faltan === 1 ? Colors.accent : Colors.primary} />
+                  <Text className="font-body-bold text-xs uppercase" style={{ color: lleno ? Colors.muted : faltan === 1 ? Colors.accent : Colors.primary }}>
+                    {lleno ? 'Cupo lleno' : faltan === 1 ? '¡Falta 1!' : `Faltan ${faltan}`}
+                  </Text>
+                </View>
               </View>
               <ProgressBar value={partido.cupos_ocupados / partido.cupos_totales} urgente={faltan === 1} />
               <Text className="mb-3 mt-2 font-body text-xs text-muted">
                 {partido.cupos_ocupados} de {partido.cupos_totales} jugadores cuadrados
               </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {Array.from({ length: partido.cupos_totales }).map((_, i) => {
-                  const ocupado = i < partido.cupos_ocupados;
-                  return (
+              <View className="flex-row flex-wrap" style={{ gap: 4 }}>
+                {rosterNombres(partido, inscrito).map((nombre, i) => (
+                  <View key={i} style={{ width: 58 }} className="mb-2 items-center">
+                    <Avatar nombre={nombre} size={44} />
+                    <Text className="mt-1 font-body text-[10px] text-cream" numberOfLines={1}>{nombre}</Text>
+                  </View>
+                ))}
+                {!lleno && !inscrito ? (
+                  <Pressable
+                    onPress={() => router.push({ pathname: '/checkout/[id]', params: { id } })}
+                    style={{ width: 58 }}
+                    className="mb-2 items-center">
                     <View
-                      key={i}
-                      className="h-10 w-10 items-center justify-center rounded-full"
-                      style={{
-                        backgroundColor: ocupado ? Colors.primary + '22' : 'transparent',
-                        borderWidth: ocupado ? 0 : 1.5,
-                        borderColor: Colors.border,
-                        borderStyle: ocupado ? 'solid' : 'dashed',
-                      }}>
-                      <Ionicons
-                        name={ocupado ? 'person' : 'add'}
-                        size={ocupado ? 17 : 18}
-                        color={ocupado ? Colors.primary : Colors.muted}
-                      />
+                      className="h-11 w-11 items-center justify-center rounded-full"
+                      style={{ borderWidth: 1.5, borderColor: Colors.accent, borderStyle: 'dashed' }}>
+                      <Ionicons name="add" size={20} color={Colors.accent} />
                     </View>
-                  );
-                })}
+                    <Text className="mt-1 font-body-semibold text-[10px] text-accent" numberOfLines={1}>Vos</Text>
+                  </Pressable>
+                ) : null}
               </View>
             </View>
           </FadeIn>
@@ -282,6 +284,23 @@ export default function PartidoDetalle() {
       </View>
     </View>
   );
+}
+
+// Nombres del parche para mostrar las "caras" del roster (mock determinista).
+const NOMBRES_PARCHE = [
+  'Mateo', 'Dani', 'Juan', 'Nico', 'Santi', 'Cris', 'Pipe', 'Tato', 'Richi', 'Lucho',
+  'Sergio', 'Brayan', 'Kevin', 'Jhon', 'Edwin', 'Yair', 'Maicol', 'Caco', 'Memo', 'Wbeimar',
+];
+
+function rosterNombres(partido: { cupos_ocupados: number; organizador?: { nombre?: string } }, inscrito: boolean): string[] {
+  const n = Math.max(0, partido.cupos_ocupados);
+  const nombres: string[] = [];
+  for (let i = 0; i < n; i++) {
+    if (i === 0) nombres.push(partido.organizador?.nombre ?? 'Organizador');
+    else nombres.push(NOMBRES_PARCHE[(i - 1) % NOMBRES_PARCHE.length]);
+  }
+  if (inscrito && nombres.length) nombres[nombres.length - 1] = 'Vos';
+  return nombres;
 }
 
 function InfoCard({ icon, titulo, valor }: { icon: keyof typeof Ionicons.glyphMap; titulo: string; valor: string }) {

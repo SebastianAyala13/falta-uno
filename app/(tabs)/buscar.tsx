@@ -1,17 +1,25 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 
 import Chip from '@/components/Chip';
+import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import GameCard from '@/components/GameCard';
 import Screen from '@/components/Screen';
+import { GameCardSkeleton } from '@/components/Skeleton';
 import { Colors } from '@/constants/colors';
 import { FORMATOS, NIVELES, ZONAS } from '@/constants/config';
 import { useStore } from '@/lib/store';
 
 export default function Buscar() {
   const partidos = useStore((s) => s.partidos);
+
+  const [cargando, setCargando] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setCargando(false), 650);
+    return () => clearTimeout(t);
+  }, []);
 
   const [query, setQuery] = useState('');
   const [zona, setZona] = useState<string | null>(null);
@@ -107,13 +115,18 @@ export default function Buscar() {
         </View>
 
         <View className="px-6">
-          {resultados.length === 0 ? (
-            <View className="mt-12 items-center">
-              <Ionicons name="sad-outline" size={44} color={Colors.muted} />
-              <Text className="mt-3 text-center font-body text-sm text-muted">
-                No hay partidos con esos filtros, parce.{'\n'}Probá quitando alguno.
-              </Text>
-            </View>
+          {cargando ? (
+            <>
+              <GameCardSkeleton />
+              <GameCardSkeleton />
+              <GameCardSkeleton />
+            </>
+          ) : resultados.length === 0 ? (
+            <EmptyState
+              icon="search-outline"
+              titulo={hayFiltros ? 'Nada con esos filtros' : 'Tu zona está quieta'}
+              texto={hayFiltros ? 'Probá quitando alguno, parce.' : 'Nadie ha armado pichanga por acá. Sé el primero 👟'}
+            />
           ) : (
             resultados.map((p, i) => (
               <FadeIn key={p.id} delay={60 + i * 50}>

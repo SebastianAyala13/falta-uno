@@ -96,7 +96,7 @@ export default function Chat() {
               disabled={!texto.trim()}
               className="h-12 w-12 items-center justify-center rounded-full"
               style={{ backgroundColor: texto.trim() ? Colors.primary : Colors.border }}>
-              <Ionicons name="send" size={18} color={texto.trim() ? Colors.background : Colors.muted} />
+              <Ionicons name="send" size={18} color={texto.trim() ? Colors.ink : Colors.muted} />
             </Pressable>
           </View>
         </SafeAreaView>
@@ -121,8 +121,8 @@ function Burbuja({ msg, mio }: { msg: Mensaje; mio: boolean }) {
         {!mio ? (
           <Text className="mb-0.5 font-body-semibold text-xs text-primary">{msg.autor_nombre}</Text>
         ) : null}
-        <Text className={`font-body text-[15px] ${mio ? 'text-background' : 'text-cream'}`}>{msg.texto}</Text>
-        <Text className={`mt-1 text-right font-body text-[10px] ${mio ? 'text-background/60' : 'text-muted'}`}>
+        <Text className={`font-body text-[15px] ${mio ? 'text-ink' : 'text-cream'}`}>{msg.texto}</Text>
+        <Text className={`mt-1 text-right font-body text-[10px] ${mio ? 'text-ink/60' : 'text-muted'}`}>
           {hora(msg.created_at)}
         </Text>
       </View>

@@ -92,6 +92,27 @@ export const THEMES: Theme[] = [
     swatch: '#F97316',
     palette: { ...DARK_NEUTRALS, primary: '#F97316', primary2: '#FB923C', accent: '#FDBA74', secondary: '#C2410C' },
   },
+  {
+    id: 'blanco',
+    label: 'Blanco',
+    dark: false,
+    swatch: '#FFFFFF',
+    palette: {
+      primary: '#10B981',
+      primary2: '#34D399',
+      accent: '#C6FF3D',
+      secondary: '#047857',
+      background: '#F2F5F2', // Crema Cal — fondo claro
+      card: '#FFFFFF',
+      cream: '#101512', // texto principal (oscuro sobre claro)
+      muted: '#5B6660',
+      border: '#E3E9E5',
+      borderStrong: '#CDD6D0',
+      ink: '#0B0F0D', // texto sobre CTA (emerald/lima) — siempre oscuro
+      danger: '#DC2626',
+      warning: '#D97706',
+    },
+  },
 ];
 
 export const DEFAULT_THEME_ID = 'esmeralda';

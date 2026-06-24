@@ -64,17 +64,17 @@ export default function GameCard({ partido, destacado = false }: GameCardProps) 
           <Ionicons
             name={lleno ? 'lock-closed' : 'flame'}
             size={13}
-            color={lleno ? Colors.muted : Colors.background}
+            color={lleno ? Colors.muted : Colors.ink}
           />
           <Text
             className="font-body-bold text-xs uppercase tracking-wider"
-            style={{ color: lleno ? Colors.muted : Colors.background }}>
+            style={{ color: lleno ? Colors.muted : Colors.ink }}>
             {lleno ? 'Cupo lleno' : faltan === 1 ? '¡Falta 1, parce!' : `Faltan ${faltan}`}
           </Text>
         </View>
         <Text
           className="font-body-bold text-xs uppercase"
-          style={{ color: lleno ? Colors.muted : Colors.background }}>
+          style={{ color: lleno ? Colors.muted : Colors.ink }}>
           {partido.formato}
         </Text>
       </View>

@@ -91,7 +91,7 @@ export default function Index() {
             shadowOffset: { width: 0, height: 0 },
           },
         ]}>
-        <Ionicons name="football" size={64} color={Colors.background} />
+        <Ionicons name="football" size={64} color={Colors.ink} />
       </Animated.View>
 
       <Animated.View style={[textStyle, { alignItems: 'center', marginTop: 26 }]}>

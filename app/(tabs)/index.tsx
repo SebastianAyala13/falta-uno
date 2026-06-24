@@ -73,8 +73,8 @@ export default function Home() {
                 Armá tu partido y que la gente se cuadre sola.
               </Text>
               <View className="mt-4 flex-row items-center gap-2 self-start rounded-xl bg-accent px-4 py-2.5">
-                <Ionicons name="add-circle" size={18} color={Colors.background} />
-                <Text className="font-body-bold text-sm uppercase text-background">Crear partido</Text>
+                <Ionicons name="add-circle" size={18} color={Colors.ink} />
+                <Text className="font-body-bold text-sm uppercase text-ink">Crear partido</Text>
               </View>
             </LinearGradient>
           </Pressable>

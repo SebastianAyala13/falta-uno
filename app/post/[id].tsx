@@ -102,8 +102,8 @@ export default function PostDetalle() {
                 <Pressable
                   onPress={() => router.push({ pathname: '/calificar/[id]', params: { id: post.partido_id! } })}
                   className="mt-3 flex-row items-center justify-center gap-2 rounded-xl bg-accent py-2.5 active:opacity-80">
-                  <Ionicons name="star" size={16} color={Colors.background} />
-                  <Text className="font-body-bold text-sm uppercase text-background">Calificar el partido</Text>
+                  <Ionicons name="star" size={16} color={Colors.ink} />
+                  <Text className="font-body-bold text-sm uppercase text-ink">Calificar el partido</Text>
                 </Pressable>
               ) : null}
 
@@ -158,7 +158,7 @@ export default function PostDetalle() {
               disabled={!texto.trim()}
               className="h-12 w-12 items-center justify-center rounded-full"
               style={{ backgroundColor: texto.trim() ? Colors.primary : Colors.border }}>
-              <Ionicons name="send" size={18} color={texto.trim() ? Colors.background : Colors.muted} />
+              <Ionicons name="send" size={18} color={texto.trim() ? Colors.ink : Colors.muted} />
             </Pressable>
           </View>
         </SafeAreaView>

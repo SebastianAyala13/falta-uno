@@ -32,14 +32,14 @@ export default function Welcome() {
               shadowRadius: 26,
               shadowOffset: { width: 0, height: 0 },
             }}>
-            <Ionicons name="football" size={54} color={Colors.background} />
+            <Ionicons name="football" size={54} color={Colors.ink} />
           </View>
 
           <Text className="font-display text-7xl uppercase leading-[0.92] text-cream">Falta</Text>
           <View className="flex-row items-end">
             <Text className="font-display text-7xl uppercase leading-[0.92] text-primary">Uno</Text>
             <View className="mb-3 ml-3 rounded-full bg-accent px-3 py-1">
-              <Text className="font-body-bold text-[10px] uppercase tracking-wider text-background">
+              <Text className="font-body-bold text-[10px] uppercase tracking-wider text-ink">
                 Pereira
               </Text>
             </View>

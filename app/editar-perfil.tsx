@@ -64,7 +64,7 @@ export default function EditarPerfil() {
             <Pressable onPress={cambiarFoto} className="rounded-full" style={{ padding: 3, borderWidth: 2, borderColor: Colors.primary }}>
               <Avatar nombre={nombre || '?'} uri={avatar} size={84} />
               <View className="absolute bottom-0 right-0 h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-accent">
-                <Ionicons name="camera" size={13} color={Colors.background} />
+                <Ionicons name="camera" size={13} color={Colors.ink} />
               </View>
             </Pressable>
             <Pressable onPress={cambiarFoto} className="mt-3 flex-row items-center gap-1.5 rounded-full bg-card px-3 py-2">

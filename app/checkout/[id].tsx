@@ -185,7 +185,7 @@ function Comprobante({
             shadowRadius: 24,
             shadowOffset: { width: 0, height: 0 },
           }}>
-          <Ionicons name={aprobado ? 'checkmark' : 'time'} size={56} color={Colors.background} />
+          <Ionicons name={aprobado ? 'checkmark' : 'time'} size={56} color={Colors.ink} />
         </View>
         <Text className="mt-5 font-display text-4xl uppercase text-cream">
           {aprobado ? '¡Listo, parce!' : 'Cupo reservado'}

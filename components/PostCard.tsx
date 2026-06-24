@@ -88,8 +88,8 @@ export default function PostCard({ post, comentarios = 0 }: PostCardProps) {
         <Pressable
           onPress={() => router.push({ pathname: '/calificar/[id]', params: { id: post.partido_id! } })}
           className="mx-4 mt-3 flex-row items-center justify-center gap-2 rounded-xl bg-accent py-2.5 active:opacity-80">
-          <Ionicons name="star" size={16} color={Colors.background} />
-          <Text className="font-body-bold text-sm uppercase text-background">Calificar el partido</Text>
+          <Ionicons name="star" size={16} color={Colors.ink} />
+          <Text className="font-body-bold text-sm uppercase text-ink">Calificar el partido</Text>
         </Pressable>
       ) : null}
 

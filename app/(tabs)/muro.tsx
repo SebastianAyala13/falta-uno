@@ -60,7 +60,7 @@ export default function Muro() {
           <Avatar nombre={profile?.nombre ?? 'Vos'} uri={profile?.avatar_url} size={36} />
           <Text className="flex-1 font-body text-sm text-muted">¿Qué se cuenta, parce?</Text>
           <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">
-            <Ionicons name="add" size={20} color={Colors.background} />
+            <Ionicons name="add" size={20} color={Colors.ink} />
           </View>
         </Pressable>
       </FadeIn>
@@ -80,7 +80,7 @@ export default function Muro() {
               }}>
               <Text
                 className="font-body-semibold text-sm"
-                style={{ color: activo ? Colors.background : Colors.cream }}>
+                style={{ color: activo ? Colors.ink : Colors.cream }}>
                 {f.label}
               </Text>
             </Pressable>

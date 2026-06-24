@@ -85,7 +85,7 @@ export default function Apariencia() {
         </View>
 
         <Text className="mt-6 text-center font-body text-xs text-muted">
-          Más temas en camino, incluido el modo claro ☀️
+          Tu color queda guardado para la próxima vez ⚽
         </Text>
       </ScrollView>
     </Screen>

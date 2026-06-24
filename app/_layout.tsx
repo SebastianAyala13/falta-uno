@@ -12,12 +12,15 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { vars } from 'nativewind';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '@/lib/auth';
 import { configurarNotificaciones } from '@/lib/notifications';
 import { Colors } from '@/constants/colors';
+import { useThemeMeta, useThemeVars } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 configurarNotificaciones();
@@ -31,6 +34,9 @@ export default function RootLayout() {
     'Archivo-Bold': Archivo_700Bold,
   });
 
+  const themeVars = useThemeVars();
+  const themeMeta = useThemeMeta();
+
   useEffect(() => {
     if (fontsLoaded || fontError) SplashScreen.hideAsync().catch(() => {});
   }, [fontsLoaded, fontError]);
@@ -39,9 +45,11 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.background }}>
+      {/* La capa de variables del tema: todas las clases de color heredan de acá */}
+      <View style={[{ flex: 1 }, vars(themeVars)]}>
       <SafeAreaProvider>
         <AuthProvider>
-          <StatusBar style="light" />
+          <StatusBar style={themeMeta.dark ? 'light' : 'dark'} />
           <Stack
             screenOptions={{
               headerShown: false,
@@ -66,9 +74,11 @@ export default function RootLayout() {
             <Stack.Screen name="mis-partidos" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="mis-pagos" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="editar-perfil" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="apariencia" options={{ animation: 'slide_from_right' }} />
           </Stack>
         </AuthProvider>
       </SafeAreaProvider>
+      </View>
     </GestureHandlerRootView>
   );
 }

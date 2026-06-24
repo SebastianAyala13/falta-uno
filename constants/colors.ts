@@ -1,26 +1,26 @@
 /**
- * Tokens de marca — Falta Uno
- * Estos colores también están declarados en `tailwind.config.js` para NativeWind.
- * Usá esta constante cuando necesités el valor en JS/TS (ej. props nativas como
- * `barStyle`, `tintColor`, gradientes o íconos) en vez de clases de Tailwind.
+ * `Colors` — acceso a la paleta del **tema activo** desde JS (íconos, degradados,
+ * props nativas). Es un proxy: `Colors.primary` siempre devuelve el color del
+ * tema seleccionado. Para que un componente se re-renderice al instante cuando
+ * cambia el tema, usá el hook `useTheme()` de `@/lib/theme`.
+ *
+ * Los tokens y temas viven en `constants/themes.ts`.
  */
-export const Colors = {
-  primary: '#10B981', // Esmeralda — color principal de la marca
-  primary2: '#34D399', // Esmeralda clara — variante / highlights
-  background: '#0B0F0D', // Negro Tribuna — fondo de la app
-  accent: '#C6FF3D', // Lima Eléctrica — SOLO urgencia + CTA principal
-  secondary: '#047857', // Verde Bosque — gradientes
-  cream: '#F6F9F6', // Crema Cal — texto principal
+import { DEFAULT_THEME_ID, getTheme, type Palette } from '@/constants/themes';
 
-  // Apoyo (derivados para tarjetas, bordes y texto secundario)
-  card: '#141A17',
-  border: '#1F2A24',
-  borderStrong: '#243A2F', // bordes de tarjetas destacadas
-  muted: '#9AA69F', // texto secundario — subido para contraste AA
-  danger: '#EF4444',
-  warning: '#F59E0B',
-} as const;
+let _activeId: string = DEFAULT_THEME_ID;
 
-export type ColorToken = keyof typeof Colors;
+/** Cambia el tema activo para los lectores de `Colors` (lo llama el store). */
+export function setActiveColors(id: string) {
+  _activeId = id;
+}
+
+export const Colors = new Proxy({} as Palette, {
+  get(_target, prop: string) {
+    return getTheme(_activeId).palette[prop as keyof Palette];
+  },
+}) as Palette;
+
+export type ColorToken = keyof Palette;
 
 export default Colors;

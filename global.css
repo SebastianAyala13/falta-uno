@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Tema por defecto (Esmeralda · oscuro). En runtime, el layout raíz sobreescribe
+   estas variables con el tema activo vía NativeWind `vars()` (ver themes.ts). */
+:root {
+  --c-primary: 16 185 129;
+  --c-primary2: 52 211 153;
+  --c-accent: 198 255 61;
+  --c-secondary: 4 120 87;
+  --c-bg: 11 15 13;
+  --c-card: 20 26 23;
+  --c-text: 246 249 246;
+  --c-muted: 154 166 159;
+  --c-border: 31 42 36;
+  --c-border-strong: 36 58 47;
+  --c-ink: 11 15 13;
+}

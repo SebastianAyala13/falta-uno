@@ -6,18 +6,23 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Tokens de marca — Falta Uno
-        primary: '#10B981', // Esmeralda
-        primary2: '#34D399', // Esmeralda clara
-        background: '#0B0F0D', // Negro Tribuna
-        accent: '#C6FF3D', // Lima Eléctrica (urgencia + CTA)
-        secondary: '#047857', // Verde Bosque
-        cream: '#F6F9F6', // Crema Cal (texto principal)
-        // grises de apoyo para tarjetas / bordes sobre el fondo oscuro
-        card: '#141A17',
-        muted: '#9AA69F', // subido para contraste AA
-        border: '#1F2A24',
-        borderStrong: '#243A2F',
+        // Tokens de marca — leen del tema activo vía variables CSS (ver themes.ts).
+        // Esto hace que cambiar de tema actualice TODAS las clases en vivo.
+        primary: 'rgb(var(--c-primary) / <alpha-value>)',
+        primary2: 'rgb(var(--c-primary2) / <alpha-value>)',
+        accent: 'rgb(var(--c-accent) / <alpha-value>)',
+        secondary: 'rgb(var(--c-secondary) / <alpha-value>)',
+        background: 'rgb(var(--c-bg) / <alpha-value>)',
+        card: 'rgb(var(--c-card) / <alpha-value>)',
+        cream: 'rgb(var(--c-text) / <alpha-value>)',
+        muted: 'rgb(var(--c-muted) / <alpha-value>)',
+        border: 'rgb(var(--c-border) / <alpha-value>)',
+        borderStrong: 'rgb(var(--c-border-strong) / <alpha-value>)',
+        // texto/ícono sobre superficies de color (CTA accent/primary)
+        ink: 'rgb(var(--c-ink) / <alpha-value>)',
+        // semánticos (constantes en todos los temas)
+        danger: '#EF4444',
+        warning: '#F59E0B',
       },
       borderRadius: {
         // Radios fijos del sistema de diseño

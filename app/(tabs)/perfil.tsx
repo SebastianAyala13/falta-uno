@@ -69,6 +69,7 @@ export default function Perfil() {
           <View className="mx-6 mt-6 overflow-hidden rounded-3xl border border-border bg-card">
             <Accion icon="ticket-outline" label="Mis partidos" valor={`${misPartidos.length}`} onPress={() => router.push('/mis-partidos')} />
             <Accion icon="receipt-outline" label="Mis pagos" onPress={() => router.push('/mis-pagos')} />
+            <Accion icon="color-palette-outline" label="Apariencia" onPress={() => router.push('/apariencia')} />
             <Accion icon="create-outline" label="Editar perfil" onPress={() => router.push('/editar-perfil')} ultimo />
           </View>
         </FadeIn>

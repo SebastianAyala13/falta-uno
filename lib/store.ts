@@ -2,7 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { setActiveColors } from '@/constants/colors';
 import { COMISION_SERVICIO, CUPOS_POR_FORMATO, type Formato, type Nivel } from '@/constants/config';
+import { DEFAULT_THEME_ID } from '@/constants/themes';
 import { matchDateTime } from '@/lib/format';
 import { partidosDisponibles, postsSeed } from '@/lib/mockData';
 import type {
@@ -51,7 +53,9 @@ interface StoreState {
   calificaciones: Calificacion[]; // reputación
   posts: Post[]; // muro social
   comentarios: Record<string, Comentario[]>; // comentarios por post (postId -> comentarios)
+  temaId: string; // id del tema de color activo
 
+  setTema: (id: string) => void;
   getPartido: (id: string) => PartidoConOrganizador | undefined;
   estaInscrito: (id: string) => boolean;
   misPartidos: () => PartidoConOrganizador[];
@@ -126,6 +130,12 @@ export const useStore = create<StoreState>()(
       calificaciones: [],
       posts: postsSeed,
       comentarios: {},
+      temaId: DEFAULT_THEME_ID,
+
+      setTema: (id) => {
+        setActiveColors(id);
+        set({ temaId: id });
+      },
 
       getPartido: (id) => get().partidos.find((p) => p.id === id),
       estaInscrito: (id) => get().inscritos.includes(id),
@@ -315,7 +325,12 @@ export const useStore = create<StoreState>()(
         calificaciones: s.calificaciones,
         posts: s.posts,
         comentarios: s.comentarios,
+        temaId: s.temaId,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Al recuperar el tema persistido, sincronizamos el proxy de Colors (JS)
+        if (state?.temaId) setActiveColors(state.temaId);
+      },
     },
   ),
 );

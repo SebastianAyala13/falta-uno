@@ -10,11 +10,12 @@ import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { useStore } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 
 export default function Perfil() {
   const router = useRouter();
   const { profile, signOut, demo } = useAuth();
-  const misPartidos = useStore((s) => s.misPartidos());
+  const misPartidos = useStore(useShallow((s) => s.misPartidos()));
 
   const u = profile;
   const cerrarSesion = async () => {

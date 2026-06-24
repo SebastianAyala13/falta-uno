@@ -8,10 +8,11 @@ import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
 import { useStore } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 
 export default function MisPartidos() {
   const router = useRouter();
-  const misPartidos = useStore((s) => s.misPartidos());
+  const misPartidos = useStore(useShallow((s) => s.misPartidos()));
   const calificaciones = useStore((s) => s.calificaciones);
   const yaCalifico = (id: string) => calificaciones.some((c) => c.partido_id === id);
 

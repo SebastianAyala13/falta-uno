@@ -11,12 +11,13 @@ import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { useStore } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 
 export default function Home() {
   const router = useRouter();
   const { profile } = useAuth();
   const partidos = useStore((s) => s.partidos);
-  const misPartidos = useStore((s) => s.misPartidos());
+  const misPartidos = useStore(useShallow((s) => s.misPartidos()));
 
   const nombre = profile?.nombre ?? 'crack';
   const cerca = partidos.slice(0, 4);

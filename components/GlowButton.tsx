@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/lib/theme';
 
 type Variant = 'primary' | 'accent' | 'outline' | 'dark';
 
@@ -17,13 +17,6 @@ interface GlowButtonProps {
   haptic?: boolean;
 }
 
-const styles: Record<Variant, { bg: string; text: string; glow: string; border?: string }> = {
-  primary: { bg: Colors.primary, text: Colors.background, glow: Colors.primary },
-  accent: { bg: Colors.accent, text: Colors.background, glow: Colors.accent },
-  outline: { bg: 'transparent', text: Colors.cream, glow: 'transparent', border: Colors.border },
-  dark: { bg: Colors.card, text: Colors.cream, glow: '#000000', border: Colors.border },
-};
-
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /** Botón principal premium: glow de marca, animación de press y háptica. */
@@ -36,6 +29,14 @@ export default function GlowButton({
   icon,
   haptic = true,
 }: GlowButtonProps) {
+  const c = useTheme();
+  const styles: Record<Variant, { bg: string; text: string; glow: string; border?: string }> = {
+    primary: { bg: c.primary, text: c.ink, glow: c.primary },
+    accent: { bg: c.accent, text: c.ink, glow: c.accent },
+    outline: { bg: 'transparent', text: c.cream, glow: 'transparent', border: c.border },
+    dark: { bg: c.card, text: c.cream, glow: '#000000', border: c.border },
+  };
+
   const scale = useSharedValue(1);
   const s = styles[variant];
   const inactivo = disabled || loading;

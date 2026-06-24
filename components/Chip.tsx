@@ -20,7 +20,7 @@ export default function Chip({ label, selected = false, onPress }: ChipProps) {
       }`}>
       <Text
         className={`font-body-semibold text-sm ${
-          selected ? 'text-background' : 'text-cream'
+          selected ? 'text-ink' : 'text-cream'
         }`}>
         {label}
       </Text>

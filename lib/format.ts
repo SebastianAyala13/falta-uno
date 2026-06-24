@@ -29,3 +29,24 @@ export function fechaLarga(fecha: string): string {
 export function precioCOP(valor: number): string {
   return '$' + valor.toLocaleString('es-CO');
 }
+
+/** Combina fecha ("2026-06-23") + hora ("20:00") en un Date local. */
+export function matchDateTime(fecha: string, hora: string): Date {
+  const [y, m, d] = fecha.split('-').map(Number);
+  const [hh, mm] = hora.split(':').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0);
+}
+
+/** ISO -> "hace 2 h", "hace 5 min", "ahora". */
+export function tiempoRelativo(iso: string): string {
+  const diff = Date.now() - Date.parse(iso);
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'ahora';
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `hace ${d} d`;
+  const sem = Math.floor(d / 7);
+  return `hace ${sem} sem`;
+}

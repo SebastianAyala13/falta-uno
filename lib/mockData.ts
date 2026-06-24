@@ -3,7 +3,7 @@
  * Se usan mientras no haya backend conectado. Cuando integres Supabase,
  * reemplazá estas constantes por queries reales a `supabase.from(...)`.
  */
-import type { PartidoConOrganizador, Profile } from '@/types/database';
+import type { PartidoConOrganizador, Post, Profile } from '@/types/database';
 
 export const usuarioActual: Profile = {
   id: 'mock-user-1',
@@ -105,6 +105,46 @@ export const partidosDisponibles: PartidoConOrganizador[] = [
     descripcion: 'Llave de toda la vida busca rivales. Cuadrá tu equipo.',
     created_at: '2026-06-22T07:00:00Z',
     organizador: { nombre: 'Felipe', avatar_url: null, rating: 4.7 },
+  },
+];
+
+/** Posts de ejemplo para que el muro se sienta vivo desde el arranque. */
+export const postsSeed: Post[] = [
+  {
+    id: 'post-seed-1',
+    tipo: 'encuentro',
+    autor_id: 'u2',
+    autor_nombre: 'Andrés',
+    autor_avatar: null,
+    texto: 'Partidazo anoche en La Bombonera 🔥 quedó 6-5, se definió en el último minuto. ¿Quién se le mide la otra semana?',
+    foto_url: null,
+    partido_id: 'p1',
+    likes: ['u3', 'u4', 'u5'],
+    created_at: '2026-06-22T23:30:00Z',
+  },
+  {
+    id: 'post-seed-2',
+    tipo: 'pregunta',
+    autor_id: 'u4',
+    autor_nombre: 'Camilo',
+    autor_avatar: null,
+    texto: '¿Mejor cancha sintética en Pereira para 7v7? Estoy armando un parche fijo los jueves, parce 🙌',
+    foto_url: null,
+    partido_id: null,
+    likes: ['u2'],
+    created_at: '2026-06-22T15:10:00Z',
+  },
+  {
+    id: 'post-seed-3',
+    tipo: 'pregunta',
+    autor_id: 'u6',
+    autor_nombre: 'Felipe',
+    autor_avatar: null,
+    texto: '¿Ustedes con qué guayos juegan en sintética? Las mías ya están lisas y me resbalo todo el tiempo 😅',
+    foto_url: null,
+    partido_id: null,
+    likes: ['u3', 'u5'],
+    created_at: '2026-06-21T19:45:00Z',
   },
 ];
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { supabase, supabaseConfigurado } from '@/lib/supabase';
 import { useStore } from '@/lib/store';
@@ -15,7 +16,7 @@ export interface Autor {
  * cae a un chat local persistido en el store. Mismo API para ambos.
  */
 export function useChatMensajes(partidoId: string) {
-  const mensajesLocal = useStore((s) => s.getMensajes(partidoId));
+  const mensajesLocal = useStore(useShallow((s) => s.getMensajes(partidoId)));
   const enviarLocal = useStore((s) => s.enviarMensaje);
 
   const [remoto, setRemoto] = useState<Mensaje[]>([]);

@@ -3,8 +3,33 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { COMISION_SERVICIO, CUPOS_POR_FORMATO, type Formato, type Nivel } from '@/constants/config';
-import { partidosDisponibles } from '@/lib/mockData';
-import type { Calificacion, EstadoPago, Mensaje, Pago, PartidoConOrganizador } from '@/types/database';
+import { matchDateTime } from '@/lib/format';
+import { partidosDisponibles, postsSeed } from '@/lib/mockData';
+import type {
+  Calificacion,
+  Comentario,
+  EstadoPago,
+  Mensaje,
+  Pago,
+  PartidoConOrganizador,
+  Post,
+  PostTipo,
+} from '@/types/database';
+
+/** Datos para crear un post desde la UI. */
+export interface NuevoPost {
+  tipo: PostTipo;
+  texto: string;
+  foto_url?: string | null;
+  partido_id?: string | null;
+}
+
+/** Autor de un post/comentario (el usuario actual). */
+export interface AutorPost {
+  id: string;
+  nombre: string;
+  avatar_url?: string | null;
+}
 
 export interface NuevoPartido {
   cancha: string;
@@ -24,6 +49,8 @@ interface StoreState {
   pagos: Pago[];
   mensajes: Record<string, Mensaje[]>; // chat por partido (partidoId -> mensajes)
   calificaciones: Calificacion[]; // reputación
+  posts: Post[]; // muro social
+  comentarios: Record<string, Comentario[]>; // comentarios por post (postId -> comentarios)
 
   getPartido: (id: string) => PartidoConOrganizador | undefined;
   estaInscrito: (id: string) => boolean;
@@ -36,6 +63,14 @@ interface StoreState {
     autorId: string,
     data: { estrellas: number; organizador_estrellas: number; hubo_no_show: boolean; comentario: string },
   ) => void;
+
+  // --- Muro social ---
+  getComentarios: (postId: string) => Comentario[];
+  crearPost: (data: NuevoPost, autor: AutorPost) => string;
+  toggleLike: (postId: string, userId: string) => void;
+  comentar: (postId: string, autor: AutorPost, texto: string) => void;
+  /** Crea posts-recap para los partidos del usuario que ya terminaron. */
+  generarRecapsPendientes: (userId: string, ahoraISO: string) => void;
 
   crearPartido: (data: NuevoPartido, organizador: { id: string; nombre: string }) => string;
   /** Inscribe al usuario y registra el pago. Devuelve el pago creado. */
@@ -89,6 +124,8 @@ export const useStore = create<StoreState>()(
       pagos: [],
       mensajes: mensajesSeed,
       calificaciones: [],
+      posts: postsSeed,
+      comentarios: {},
 
       getPartido: (id) => get().partidos.find((p) => p.id === id),
       estaInscrito: (id) => get().inscritos.includes(id),
@@ -107,6 +144,85 @@ export const useStore = create<StoreState>()(
         set((s) => ({
           mensajes: { ...s.mensajes, [partidoId]: [...(s.mensajes[partidoId] ?? []), msg] },
         }));
+      },
+
+      // --- Muro social ---
+      getComentarios: (postId) => get().comentarios[postId] ?? [],
+
+      crearPost: (data, autor) => {
+        const id = genId('post');
+        const nuevo: Post = {
+          id,
+          tipo: data.tipo,
+          autor_id: autor.id,
+          autor_nombre: autor.nombre,
+          autor_avatar: autor.avatar_url ?? null,
+          texto: data.texto.trim(),
+          foto_url: data.foto_url ?? null,
+          partido_id: data.partido_id ?? null,
+          likes: [],
+          created_at: new Date().toISOString(),
+        };
+        set((s) => ({ posts: [nuevo, ...s.posts] }));
+        return id;
+      },
+
+      toggleLike: (postId, userId) => {
+        set((s) => ({
+          posts: s.posts.map((p) =>
+            p.id === postId
+              ? {
+                  ...p,
+                  likes: p.likes.includes(userId)
+                    ? p.likes.filter((u) => u !== userId)
+                    : [...p.likes, userId],
+                }
+              : p,
+          ),
+        }));
+      },
+
+      comentar: (postId, autor, texto) => {
+        const limpio = texto.trim();
+        if (!limpio) return;
+        const c: Comentario = {
+          id: genId('com'),
+          post_id: postId,
+          autor_id: autor.id,
+          autor_nombre: autor.nombre,
+          texto: limpio,
+          created_at: new Date().toISOString(),
+        };
+        set((s) => ({
+          comentarios: { ...s.comentarios, [postId]: [...(s.comentarios[postId] ?? []), c] },
+        }));
+      },
+
+      generarRecapsPendientes: (userId, ahoraISO) => {
+        const ahora = Date.parse(ahoraISO);
+        const { partidos, inscritos, posts } = get();
+        const conRecap = new Set(
+          posts.filter((p) => p.tipo === 'recap' && p.partido_id).map((p) => p.partido_id),
+        );
+        const nuevos: Post[] = [];
+        for (const partido of partidos) {
+          if (!inscritos.includes(partido.id)) continue;
+          if (conRecap.has(partido.id)) continue;
+          if (matchDateTime(partido.fecha, partido.hora).getTime() > ahora) continue; // todavía no termina
+          nuevos.push({
+            id: genId('post'),
+            tipo: 'recap',
+            autor_id: 'sistema',
+            autor_nombre: 'Falta Uno',
+            autor_avatar: null,
+            texto: `⚽ El partido en ${partido.cancha} ya terminó. ¿Cómo estuvo, parce? Contá la hazaña y calificá a la gallada. 🔥`,
+            foto_url: partido.foto_url ?? null,
+            partido_id: partido.id,
+            likes: [],
+            created_at: new Date().toISOString(),
+          });
+        }
+        if (nuevos.length) set((s) => ({ posts: [...nuevos, ...s.posts] }));
       },
 
       crearPartido: (data, organizador) => {
@@ -197,6 +313,8 @@ export const useStore = create<StoreState>()(
         partidos: s.partidos,
         mensajes: s.mensajes,
         calificaciones: s.calificaciones,
+        posts: s.posts,
+        comentarios: s.comentarios,
       }),
     },
   ),

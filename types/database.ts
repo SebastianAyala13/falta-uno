@@ -69,6 +69,33 @@ export interface Mensaje {
   created_at: string;
 }
 
+/** Tipo de publicación del muro social. */
+export type PostTipo = 'recap' | 'encuentro' | 'pregunta';
+
+/** Publicación del muro social (recap automático, encuentro o pregunta). */
+export interface Post {
+  id: string;
+  tipo: PostTipo;
+  autor_id: string;
+  autor_nombre: string;
+  autor_avatar: string | null;
+  texto: string;
+  foto_url: string | null;
+  partido_id: string | null; // ligado a un partido (recap/encuentro)
+  likes: string[]; // ids de usuarios que dieron like
+  created_at: string;
+}
+
+/** Comentario sobre un post del muro. */
+export interface Comentario {
+  id: string;
+  post_id: string;
+  autor_id: string;
+  autor_nombre: string;
+  texto: string;
+  created_at: string;
+}
+
 /** Tabla pivote: jugadores inscritos en un partido. */
 export interface PartidoJugador {
   id: string; // uuid
@@ -138,6 +165,18 @@ export interface Database {
         Row: Calificacion;
         Insert: Omit<Calificacion, 'id' | 'created_at'>;
         Update: Partial<Calificacion>;
+        Relationships: [];
+      };
+      posts: {
+        Row: Post;
+        Insert: Omit<Post, 'id' | 'created_at' | 'likes'> & Partial<Pick<Post, 'likes'>>;
+        Update: Partial<Post>;
+        Relationships: [];
+      };
+      comentarios: {
+        Row: Comentario;
+        Insert: Omit<Comentario, 'id' | 'created_at'>;
+        Update: Partial<Comentario>;
         Relationships: [];
       };
     };

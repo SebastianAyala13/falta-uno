@@ -101,6 +101,30 @@ create table if not exists public.calificaciones (
   unique (partido_id, autor_id)
 );
 
+-- Muro social: publicaciones
+create table if not exists public.posts (
+  id uuid primary key default gen_random_uuid(),
+  tipo text not null check (tipo in ('recap','encuentro','pregunta')),
+  autor_id uuid references public.profiles (id) on delete cascade,
+  autor_nombre text not null,
+  autor_avatar text,
+  texto text not null,
+  foto_url text,
+  partido_id uuid references public.partidos (id) on delete set null,
+  likes uuid[] not null default '{}',
+  created_at timestamptz not null default now()
+);
+
+-- Muro social: comentarios
+create table if not exists public.comentarios (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid not null references public.posts (id) on delete cascade,
+  autor_id uuid not null references public.profiles (id) on delete cascade,
+  autor_nombre text not null,
+  texto text not null,
+  created_at timestamptz not null default now()
+);
+
 -- ----------------------------------------------------------------------------
 -- ROW LEVEL SECURITY
 -- ----------------------------------------------------------------------------
@@ -110,6 +134,8 @@ alter table public.partido_jugadores enable row level security;
 alter table public.pagos enable row level security;
 alter table public.mensajes enable row level security;
 alter table public.calificaciones enable row level security;
+alter table public.posts enable row level security;
+alter table public.comentarios enable row level security;
 
 -- Perfiles: todos pueden leer; cada quien edita el suyo
 drop policy if exists "perfiles_lectura" on public.profiles;
@@ -155,6 +181,23 @@ drop policy if exists "calificaciones_insert" on public.calificaciones;
 create policy "calificaciones_lectura" on public.calificaciones for select using (true);
 create policy "calificaciones_insert" on public.calificaciones for insert with check (auth.uid() = autor_id);
 
+-- Posts: lectura pública; cada quien crea/edita/borra los suyos
+drop policy if exists "posts_lectura" on public.posts;
+drop policy if exists "posts_insert" on public.posts;
+drop policy if exists "posts_update" on public.posts;
+drop policy if exists "posts_delete" on public.posts;
+create policy "posts_lectura" on public.posts for select using (true);
+create policy "posts_insert" on public.posts for insert with check (auth.uid() = autor_id);
+-- update abierto para permitir likes de cualquier usuario autenticado
+create policy "posts_update" on public.posts for update using (auth.role() = 'authenticated');
+create policy "posts_delete" on public.posts for delete using (auth.uid() = autor_id);
+
+-- Comentarios: lectura pública; cada quien publica como sí mismo
+drop policy if exists "comentarios_lectura" on public.comentarios;
+drop policy if exists "comentarios_insert" on public.comentarios;
+create policy "comentarios_lectura" on public.comentarios for select using (true);
+create policy "comentarios_insert" on public.comentarios for insert with check (auth.uid() = autor_id);
+
 -- ----------------------------------------------------------------------------
 -- REALTIME (chat en vivo) — se agrega solo si no estaba ya en la publicación
 -- ----------------------------------------------------------------------------
@@ -168,4 +211,18 @@ begin
   ) then
     execute 'alter publication supabase_realtime add table public.mensajes';
   end if;
+end $$;
+
+-- Muro en vivo: posts y comentarios a la publicación de realtime
+do $$
+declare t text;
+begin
+  foreach t in array array['posts','comentarios'] loop
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
+    ) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
 end $$;

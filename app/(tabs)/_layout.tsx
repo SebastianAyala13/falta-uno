@@ -76,6 +76,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="muro"
+        options={{
+          title: 'Muro',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'newspaper' : 'newspaper-outline'} size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="perfil"
         options={{
           title: 'Perfil',

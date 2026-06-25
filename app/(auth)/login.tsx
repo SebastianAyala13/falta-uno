@@ -49,7 +49,7 @@ export default function Login() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <FadeIn delay={60}>
-            <Text className="font-display text-5xl uppercase leading-[0.95] text-cream">
+            <Text className="font-display text-5xl uppercase text-cream" style={{ lineHeight: 50, paddingTop: 4 }}>
               De vuelta{'\n'}al <Text className="text-primary">verde</Text>
             </Text>
             <Text className="mb-8 mt-3 font-body text-base text-muted">

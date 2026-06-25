@@ -117,7 +117,7 @@ export default function PartidoDetalle() {
                   <Badge label={partido.formato} tone="accent" />
                   <Badge label={partido.nivel} tone="neutral" />
                 </View>
-                <Text className="mt-3 font-display text-5xl uppercase leading-[0.95] text-cream">
+                <Text className="mt-3 font-display text-5xl uppercase text-cream" style={{ lineHeight: 50, paddingTop: 4 }}>
                   {partido.cancha}
                 </Text>
                 <View className="mt-2 flex-row items-center">

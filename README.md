@@ -151,6 +151,34 @@ eas submit --platform android   # necesita cuenta Google Play (US$25 única vez)
 > build/version code sube solo en cada build. Subí `version` en `app.json` para
 > los releases visibles al usuario (ej. 1.0.1).
 
+### ✅ Checklist de cumplimiento (App Store + Play Store)
+Lo que ya está resuelto en la app y lo que tenés que completar vos al publicar:
+
+**Listo en el código:**
+- **Permisos con descripción** (fotos) en `app.json` (iOS `infoPlist` + plugin de
+  image-picker). Solo se piden permisos que la app usa.
+- **Eliminar cuenta dentro de la app** (Perfil → Eliminar cuenta) — **requisito
+  obligatorio** de Apple y Google para apps con login.
+- **Cifrado:** `ITSAppUsesNonExemptEncryption: false` (evita el trámite de
+  export compliance de Apple).
+- **Login propio** (email/contraseña): no usamos login social, así que **no** se
+  exige "Sign in with Apple".
+- **Pagos:** el flujo cobra un **servicio del mundo real** (cupo en una cancha),
+  que está **exento de las compras in-app (IAP)** de Apple. Hoy es simulado.
+
+**Tenés que completar al publicar:**
+1. **Política de privacidad + términos:** publicá una página y poné su URL en
+   App Store Connect / Play Console. En la app ya hay un link a
+   `https://faltauno.app/privacidad` (cambialo por el tuyo en `app/(tabs)/perfil.tsx`).
+2. **Borrado de cuenta del backend:** la app borra el perfil y los datos; para
+   eliminar **también** el usuario de Supabase Auth, creá una Edge Function
+   `delete-user` (con `service_role`) — la app ya la invoca. Google además pide
+   una **URL pública de solicitud de borrado**.
+3. **Formularios de privacidad:** completá *App Privacy* (Apple) y *Data safety*
+   (Google) declarando que recolectás email, nombre y contenido que el usuario sube.
+4. **Capturas + ficha** de cada tienda (ícono ya sale del logo).
+5. **Google Maps API key** (Android) en `app.json` (ver arriba).
+
 ---
 
 ## 🗂️ Estructura del proyecto

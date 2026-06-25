@@ -66,7 +66,7 @@ export default function Crear() {
     <Screen>
       <FadeIn delay={40}>
         <View className="px-6 pb-1 pt-2">
-          <Text className="font-display text-4xl uppercase text-cream">Crear partido</Text>
+          <Text className="font-display text-4xl uppercase text-cream" style={{ lineHeight: 44, paddingTop: 2 }}>Crear partido</Text>
           <Text className="mt-1 font-body text-sm text-muted">
             Armá el parche y dejá que la gente se cuadre.
           </Text>

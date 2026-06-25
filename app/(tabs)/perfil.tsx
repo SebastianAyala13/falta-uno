@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 
 import Avatar from '@/components/Avatar';
 import Badge from '@/components/Badge';
@@ -14,8 +14,27 @@ import { useShallow } from 'zustand/react/shallow';
 
 export default function Perfil() {
   const router = useRouter();
-  const { profile, signOut, demo } = useAuth();
+  const { profile, signOut, eliminarCuenta, demo } = useAuth();
   const misPartidos = useStore(useShallow((s) => s.misPartidos()));
+
+  const abrirPrivacidad = () => Linking.openURL('https://faltauno.app/privacidad').catch(() => {});
+  const borrarCuenta = () => {
+    Alert.alert(
+      '¿Eliminar tu cuenta?',
+      'Se borrarán tu perfil y tus datos. Esta acción no se puede deshacer, parce.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            await eliminarCuenta();
+            router.replace('/(auth)/welcome');
+          },
+        },
+      ],
+    );
+  };
 
   const u = profile;
   const jugados = u?.partidos_jugados ?? 0;
@@ -30,7 +49,7 @@ export default function Perfil() {
     <Screen>
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
         <View className="flex-row items-center justify-between px-6 pb-2 pt-2">
-          <Text className="font-display text-4xl uppercase text-cream">Mi perfil</Text>
+          <Text className="font-display text-4xl uppercase text-cream" style={{ lineHeight: 44, paddingTop: 2 }}>Mi perfil</Text>
           <Pressable onPress={cerrarSesion} hitSlop={12} className="h-11 w-11 items-center justify-center rounded-full border border-border bg-card">
             <Ionicons name="log-out-outline" size={21} color={Colors.cream} />
           </Pressable>
@@ -103,7 +122,26 @@ export default function Perfil() {
           </View>
         </FadeIn>
 
-        <FadeIn delay={220}>
+        {/* Cuenta y legal */}
+        <FadeIn delay={210}>
+          <View className="mx-6 mt-4 overflow-hidden rounded-md border border-border bg-card">
+            <Pressable onPress={abrirPrivacidad} className="flex-row items-center border-b border-border px-4 py-4 active:bg-border/40">
+              <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
+                <Ionicons name="shield-checkmark-outline" size={18} color={Colors.primary} />
+              </View>
+              <Text className="ml-3 flex-1 font-body-semibold text-base text-cream">Privacidad y términos</Text>
+              <Ionicons name="open-outline" size={18} color={Colors.muted} />
+            </Pressable>
+            <Pressable onPress={borrarCuenta} className="flex-row items-center px-4 py-4 active:bg-border/40">
+              <View className="h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: Colors.danger + '22' }}>
+                <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+              </View>
+              <Text className="ml-3 flex-1 font-body-semibold text-base" style={{ color: Colors.danger }}>Eliminar cuenta</Text>
+            </Pressable>
+          </View>
+        </FadeIn>
+
+        <FadeIn delay={240}>
           <Text className="mt-6 text-center font-body text-xs text-muted">
             Falta Uno · v1.0 {demo ? '· modo demo' : ''}
           </Text>

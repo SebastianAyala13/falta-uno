@@ -187,7 +187,7 @@ function Comprobante({
           }}>
           <Ionicons name={aprobado ? 'checkmark' : 'time'} size={56} color={Colors.ink} />
         </View>
-        <Text className="mt-5 font-display text-4xl uppercase text-cream">
+        <Text className="mt-5 font-display text-4xl uppercase text-cream" style={{ lineHeight: 44, paddingTop: 2 }}>
           {aprobado ? '¡Listo, parce!' : 'Cupo reservado'}
         </Text>
         <Text className="mt-2 text-center font-body text-sm text-muted">

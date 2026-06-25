@@ -29,6 +29,8 @@ interface AuthState {
   signUp: (datos: DatosRegistro) => Promise<{ needsConfirmation: boolean }>;
   signInAsGuest: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** Elimina la cuenta y sus datos (requerido por App Store y Play Store). */
+  eliminarCuenta: () => Promise<void>;
   updateProfile: (cambios: Partial<Profile>) => Promise<void>;
 }
 
@@ -185,6 +187,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       async signOut() {
         if (supabaseConfigurado) await supabase.auth.signOut();
+        await AsyncStorage.removeItem(DEMO_KEY);
+        setProfile(null);
+      },
+
+      async eliminarCuenta() {
+        if (!supabaseConfigurado) {
+          // Modo demo: borramos los datos locales del usuario
+          await AsyncStorage.multiRemove([DEMO_KEY, PENDING_KEY]);
+          setProfile(null);
+          return;
+        }
+        // Borra el perfil del usuario. La eliminación total del usuario de Auth
+        // se hace con una Edge Function `delete-user` (service_role) — ver README.
+        const uid = profile?.id;
+        if (uid) {
+          await supabase.from('profiles').delete().eq('id', uid);
+          await supabase.functions.invoke('delete-user').catch(() => {});
+        }
+        await supabase.auth.signOut();
         await AsyncStorage.removeItem(DEMO_KEY);
         setProfile(null);
       },

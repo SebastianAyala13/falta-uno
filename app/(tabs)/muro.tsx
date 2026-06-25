@@ -47,7 +47,7 @@ export default function Muro() {
       {/* Header */}
       <FadeIn delay={40}>
         <View className="px-6 pb-2 pt-2">
-          <Text className="font-display text-4xl uppercase text-cream">El Muro</Text>
+          <Text className="font-display text-4xl uppercase text-cream" style={{ lineHeight: 44, paddingTop: 2 }}>El Muro</Text>
           <Text className="mt-1 font-body text-sm text-muted">Lo que se cuece en la cancha, parce.</Text>
         </View>
       </FadeIn>

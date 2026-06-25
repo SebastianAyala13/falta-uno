@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import Chip from '@/components/Chip';
 import FadeIn from '@/components/FadeIn';
@@ -9,7 +9,7 @@ import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
-import { APP, NIVELES, POSICIONES, type Nivel, type Posicion } from '@/constants/config';
+import { APP, NIVELES, POSICIONES, URL_PRIVACIDAD, URL_TERMINOS, type Nivel, type Posicion } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 
 export default function Register() {
@@ -23,15 +23,20 @@ export default function Register() {
   const [nivel, setNivel] = useState<Nivel | null>(null);
   const [celular, setCelular] = useState('');
   const [password, setPassword] = useState('');
+  const [acepta, setAcepta] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const valido = nombre && email && posicion && nivel && password.length >= 6;
+  const valido = nombre && email && posicion && nivel && password.length >= 6 && acepta;
 
   const onSubmit = async () => {
     setError(null);
-    if (!valido) {
+    if (!nombre || !email || !posicion || !nivel || password.length < 6) {
       setError('Completá nombre, correo, posición, nivel y una contraseña de 6+ caracteres.');
+      return;
+    }
+    if (!acepta) {
+      setError('Para crear tu cuenta tenés que aceptar los Términos y la Política de Privacidad.');
       return;
     }
     setLoading(true);
@@ -121,7 +126,32 @@ export default function Register() {
               </Text>
             ) : null}
 
-            <GlowButton label="Crear cuenta" variant="accent" icon="rocket" loading={loading} onPress={onSubmit} />
+            {/* Aceptación de Términos / EULA — requisito App Store 1.2 y Google Play */}
+            <Pressable
+              onPress={() => setAcepta((v) => !v)}
+              className="mb-2 flex-row items-start gap-3 rounded-2xl border border-border bg-card p-3.5 active:border-primary/50">
+              <View
+                className="mt-0.5 h-6 w-6 items-center justify-center rounded-md border-2"
+                style={{
+                  borderColor: acepta ? Colors.primary : Colors.border,
+                  backgroundColor: acepta ? Colors.primary : 'transparent',
+                }}>
+                {acepta ? <Ionicons name="checkmark" size={16} color={Colors.ink} /> : null}
+              </View>
+              <Text className="flex-1 font-body text-sm text-cream">
+                Acepto los{' '}
+                <Text className="text-primary" onPress={() => Linking.openURL(URL_TERMINOS).catch(() => {})}>
+                  Términos
+                </Text>{' '}
+                y la{' '}
+                <Text className="text-primary" onPress={() => Linking.openURL(URL_PRIVACIDAD).catch(() => {})}>
+                  Política de Privacidad
+                </Text>
+                . Entiendo que Falta Uno tiene tolerancia cero con el contenido objetable y el acoso.
+              </Text>
+            </Pressable>
+
+            <GlowButton label="Crear cuenta" variant="accent" icon="rocket" loading={loading} onPress={onSubmit} disabled={!acepta} />
           </FadeIn>
 
           <Pressable onPress={() => router.replace('/(auth)/login')} className="mt-6 py-2">

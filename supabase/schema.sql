@@ -125,6 +125,28 @@ create table if not exists public.comentarios (
   created_at timestamptz not null default now()
 );
 
+-- Moderación: reportes de contenido objetable (App Store 1.2 / Google UGC)
+create table if not exists public.reportes (
+  id uuid primary key default gen_random_uuid(),
+  tipo text not null check (tipo in ('post','comentario','mensaje')),
+  contenido_id text not null,
+  autor_id uuid references public.profiles (id) on delete set null,
+  reportado_por uuid not null references public.profiles (id) on delete cascade,
+  motivo text not null check (motivo in ('spam','acoso','sexual','odio','otro')),
+  texto text,
+  created_at timestamptz not null default now()
+);
+create index if not exists reportes_created_idx on public.reportes (created_at desc);
+
+-- Moderación: bloqueos entre usuarios
+create table if not exists public.bloqueos (
+  id uuid primary key default gen_random_uuid(),
+  usuario_id uuid not null references public.profiles (id) on delete cascade,
+  bloqueado_id uuid not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (usuario_id, bloqueado_id)
+);
+
 -- ----------------------------------------------------------------------------
 -- ROW LEVEL SECURITY
 -- ----------------------------------------------------------------------------
@@ -136,6 +158,8 @@ alter table public.mensajes enable row level security;
 alter table public.calificaciones enable row level security;
 alter table public.posts enable row level security;
 alter table public.comentarios enable row level security;
+alter table public.reportes enable row level security;
+alter table public.bloqueos enable row level security;
 
 -- Perfiles: todos pueden leer; cada quien edita el suyo
 drop policy if exists "perfiles_lectura" on public.profiles;
@@ -197,6 +221,18 @@ drop policy if exists "comentarios_lectura" on public.comentarios;
 drop policy if exists "comentarios_insert" on public.comentarios;
 create policy "comentarios_lectura" on public.comentarios for select using (true);
 create policy "comentarios_insert" on public.comentarios for insert with check (auth.uid() = autor_id);
+
+-- Reportes: cualquier usuario autenticado puede reportar; solo el equipo (service_role) lee
+drop policy if exists "reportes_insert" on public.reportes;
+create policy "reportes_insert" on public.reportes for insert with check (auth.uid() = reportado_por);
+
+-- Bloqueos: cada quien gestiona los suyos
+drop policy if exists "bloqueos_lectura" on public.bloqueos;
+drop policy if exists "bloqueos_insert" on public.bloqueos;
+drop policy if exists "bloqueos_delete" on public.bloqueos;
+create policy "bloqueos_lectura" on public.bloqueos for select using (auth.uid() = usuario_id);
+create policy "bloqueos_insert" on public.bloqueos for insert with check (auth.uid() = usuario_id);
+create policy "bloqueos_delete" on public.bloqueos for delete using (auth.uid() = usuario_id);
 
 -- ----------------------------------------------------------------------------
 -- REALTIME (chat en vivo) — se agrega solo si no estaba ya en la publicación

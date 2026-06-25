@@ -8,6 +8,7 @@ import Badge from '@/components/Badge';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
+import { URL_PRIVACIDAD } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { useStore } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -17,7 +18,7 @@ export default function Perfil() {
   const { profile, signOut, eliminarCuenta, demo } = useAuth();
   const misPartidos = useStore(useShallow((s) => s.misPartidos()));
 
-  const abrirPrivacidad = () => Linking.openURL('https://faltauno.app/privacidad').catch(() => {});
+  const abrirPrivacidad = () => Linking.openURL(URL_PRIVACIDAD).catch(() => {});
   const borrarCuenta = () => {
     Alert.alert(
       '¿Eliminar tu cuenta?',

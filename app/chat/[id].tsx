@@ -1,14 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Avatar from '@/components/Avatar';
+import ModeracionBoton from '@/components/ModeracionBoton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { useChatMensajes } from '@/lib/chat';
+import { MENSAJE_BLOQUEO_FILTRO, contieneContenidoObjetable } from '@/lib/moderation';
 import { useStore } from '@/lib/store';
 import type { Mensaje } from '@/types/database';
 
@@ -25,13 +27,21 @@ export default function Chat() {
   const { profile } = useAuth();
 
   const partido = useStore((s) => s.getPartido(id));
-  const { mensajes, enviar: enviarMensaje, enVivo } = useChatMensajes(id);
+  const bloqueados = useStore((s) => s.bloqueados);
+  const { mensajes: mensajesRaw, enviar: enviarMensaje, enVivo } = useChatMensajes(id);
+
+  // Ocultamos los mensajes de usuarios bloqueados (moderación UGC)
+  const mensajes = mensajesRaw.filter((m) => !bloqueados.includes(m.autor_id));
 
   const [texto, setTexto] = useState('');
   const listRef = useRef<FlatList<Mensaje>>(null);
 
   const enviar = () => {
     if (!texto.trim()) return;
+    if (contieneContenidoObjetable(texto)) {
+      Alert.alert('Revisá tu mensaje', MENSAJE_BLOQUEO_FILTRO);
+      return;
+    }
     enviarMensaje({ id: profile?.id ?? 'demo', nombre: profile?.nombre ?? 'Vos' }, texto);
     setTexto('');
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
@@ -126,6 +136,16 @@ function Burbuja({ msg, mio }: { msg: Mensaje; mio: boolean }) {
           {hora(msg.created_at)}
         </Text>
       </View>
+      {!mio ? (
+        <ModeracionBoton
+          tipo="mensaje"
+          contenidoId={msg.id}
+          autorId={msg.autor_id}
+          autorNombre={msg.autor_nombre}
+          texto={msg.texto}
+          size={16}
+        />
+      ) : null}
     </View>
   );
 }

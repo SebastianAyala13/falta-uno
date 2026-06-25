@@ -26,6 +26,7 @@ export default function Muro() {
 
   const posts = useStore((s) => s.posts);
   const comentarios = useStore((s) => s.comentarios);
+  const bloqueados = useStore((s) => s.bloqueados);
   const generarRecaps = useStore((s) => s.generarRecapsPendientes);
 
   const [filtro, setFiltro] = useState<Filtro>('todos');
@@ -36,11 +37,13 @@ export default function Muro() {
   }, [generarRecaps, profile?.id]);
 
   const visibles = useMemo(() => {
-    if (filtro === 'todos') return posts;
+    // Ocultamos el contenido de usuarios bloqueados (moderación UGC)
+    const base = posts.filter((p) => !bloqueados.includes(p.autor_id));
+    if (filtro === 'todos') return base;
     // los recaps cuentan como "encuentros"
-    if (filtro === 'encuentro') return posts.filter((p) => p.tipo === 'encuentro' || p.tipo === 'recap');
-    return posts.filter((p) => p.tipo === filtro);
-  }, [posts, filtro]);
+    if (filtro === 'encuentro') return base.filter((p) => p.tipo === 'encuentro' || p.tipo === 'recap');
+    return base.filter((p) => p.tipo === filtro);
+  }, [posts, filtro, bloqueados]);
 
   return (
     <Screen edges={['top']}>

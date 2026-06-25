@@ -3,13 +3,14 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { elegirImagen } from '@/lib/images';
+import { MENSAJE_BLOQUEO_FILTRO, contieneContenidoObjetable } from '@/lib/moderation';
 import { useStore } from '@/lib/store';
 import type { PostTipo } from '@/types/database';
 
@@ -34,6 +35,10 @@ export default function CrearPost() {
 
   const publicar = () => {
     if (!texto.trim()) return;
+    if (contieneContenidoObjetable(texto)) {
+      Alert.alert('Revisá tu publicación', MENSAJE_BLOQUEO_FILTRO);
+      return;
+    }
     crearPost(
       { tipo, texto, foto_url: foto },
       { id: profile?.id ?? 'demo', nombre: profile?.nombre ?? 'Vos', avatar_url: profile?.avatar_url },

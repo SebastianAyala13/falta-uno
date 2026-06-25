@@ -9,7 +9,7 @@ import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
-import { COMISION_SERVICIO, MEDIOS_PAGO, type MedioPago } from '@/constants/config';
+import { COMISION_SERVICIO, MEDIOS_PAGO_ACTIVOS, type MedioPago } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { precioCOP } from '@/lib/format';
 import { programarRecordatorio } from '@/lib/notifications';
@@ -28,7 +28,7 @@ export default function Checkout() {
   const inscribirse = useStore((s) => s.inscribirse);
 
   const [paso, setPaso] = useState<Paso>('metodo');
-  const [medio, setMedio] = useState<MedioPago>(MEDIOS_PAGO[0]);
+  const [medio, setMedio] = useState<MedioPago>(MEDIOS_PAGO_ACTIVOS[0]);
   const [pago, setPago] = useState<Pago | null>(null);
   const [recordatorio, setRecordatorio] = useState(false);
 
@@ -93,7 +93,7 @@ export default function Checkout() {
           <FadeIn delay={120}>
             <Text className="mb-3 font-display text-xl uppercase text-cream">¿Cómo pagás?</Text>
             <View className="gap-3">
-              {MEDIOS_PAGO.map((m) => {
+              {MEDIOS_PAGO_ACTIVOS.map((m) => {
                 const sel = medio.id === m.id;
                 return (
                   <Pressable

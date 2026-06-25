@@ -96,6 +96,32 @@ export interface Comentario {
   created_at: string;
 }
 
+/** Tipo de contenido que se puede reportar. */
+export type TipoContenido = 'post' | 'comentario' | 'mensaje';
+
+/** Motivo por el que se reporta un contenido (moderación UGC). */
+export type MotivoReporte = 'spam' | 'acoso' | 'sexual' | 'odio' | 'otro';
+
+/** Reporte de contenido objetable (requisito App Store 1.2 / Google UGC). */
+export interface Reporte {
+  id: string;
+  tipo: TipoContenido;
+  contenido_id: string; // id del post/comentario/mensaje reportado
+  autor_id: string; // autor del contenido reportado
+  reportado_por: string; // usuario que reporta
+  motivo: MotivoReporte;
+  texto: string; // copia del contenido para revisión
+  created_at: string;
+}
+
+/** Bloqueo de un usuario por parte de otro (no vuelve a ver su contenido). */
+export interface Bloqueo {
+  id: string;
+  usuario_id: string; // quien bloquea
+  bloqueado_id: string; // a quién bloquea
+  created_at: string;
+}
+
 /** Tabla pivote: jugadores inscritos en un partido. */
 export interface PartidoJugador {
   id: string; // uuid
@@ -177,6 +203,18 @@ export interface Database {
         Row: Comentario;
         Insert: Omit<Comentario, 'id' | 'created_at'>;
         Update: Partial<Comentario>;
+        Relationships: [];
+      };
+      reportes: {
+        Row: Reporte;
+        Insert: Omit<Reporte, 'id' | 'created_at'>;
+        Update: Partial<Reporte>;
+        Relationships: [];
+      };
+      bloqueos: {
+        Row: Bloqueo;
+        Insert: Omit<Bloqueo, 'id' | 'created_at'>;
+        Update: Partial<Bloqueo>;
         Relationships: [];
       };
     };

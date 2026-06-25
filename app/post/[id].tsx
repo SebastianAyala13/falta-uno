@@ -3,15 +3,17 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import Avatar from '@/components/Avatar';
+import ModeracionBoton from '@/components/ModeracionBoton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { tiempoRelativo } from '@/lib/format';
+import { MENSAJE_BLOQUEO_FILTRO, contieneContenidoObjetable } from '@/lib/moderation';
 import { useStore } from '@/lib/store';
 import type { Comentario } from '@/types/database';
 
@@ -21,7 +23,9 @@ export default function PostDetalle() {
   const { profile } = useAuth();
 
   const post = useStore((s) => s.posts.find((p) => p.id === id));
-  const comentarios = useStore(useShallow((s) => s.getComentarios(id)));
+  const comentariosRaw = useStore(useShallow((s) => s.getComentarios(id)));
+  const bloqueados = useStore((s) => s.bloqueados);
+  const comentarios = comentariosRaw.filter((c) => !bloqueados.includes(c.autor_id));
   const toggleLike = useStore((s) => s.toggleLike);
   const comentar = useStore((s) => s.comentar);
 
@@ -48,6 +52,10 @@ export default function PostDetalle() {
 
   const enviar = () => {
     if (!texto.trim()) return;
+    if (contieneContenidoObjetable(texto)) {
+      Alert.alert('Revisá tu comentario', MENSAJE_BLOQUEO_FILTRO);
+      return;
+    }
     comentar(id, { id: uid, nombre: profile?.nombre ?? 'Vos', avatar_url: profile?.avatar_url }, texto);
     setTexto('');
   };
@@ -90,6 +98,13 @@ export default function PostDetalle() {
                   <Text className="font-body-bold text-base text-cream">{post.autor_nombre}</Text>
                   <Text className="font-body text-xs text-muted">{tiempoRelativo(post.created_at)}</Text>
                 </View>
+                <ModeracionBoton
+                  tipo="post"
+                  contenidoId={post.id}
+                  autorId={post.autor_id}
+                  autorNombre={post.autor_nombre}
+                  texto={post.texto}
+                />
               </View>
 
               <Text className="mt-3 font-body text-[15px] leading-5 text-cream">{post.texto}</Text>
@@ -134,7 +149,17 @@ export default function PostDetalle() {
               <View className="flex-1 rounded-2xl border border-border bg-card px-3.5 py-2.5">
                 <View className="flex-row items-center justify-between">
                   <Text className="font-body-semibold text-xs text-primary">{item.autor_nombre}</Text>
-                  <Text className="font-body text-[10px] text-muted">{tiempoRelativo(item.created_at)}</Text>
+                  <View className="flex-row items-center gap-2">
+                    <Text className="font-body text-[10px] text-muted">{tiempoRelativo(item.created_at)}</Text>
+                    <ModeracionBoton
+                      tipo="comentario"
+                      contenidoId={item.id}
+                      autorId={item.autor_id}
+                      autorNombre={item.autor_nombre}
+                      texto={item.texto}
+                      size={15}
+                    />
+                  </View>
                 </View>
                 <Text className="mt-0.5 font-body text-[15px] text-cream">{item.texto}</Text>
               </View>

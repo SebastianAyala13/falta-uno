@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 import Avatar from '@/components/Avatar';
+import ModeracionBoton from '@/components/ModeracionBoton';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { tiempoRelativo } from '@/lib/format';
@@ -69,6 +70,13 @@ export default function PostCard({ post, comentarios = 0 }: PostCardProps) {
             {meta.label}
           </Text>
         </View>
+        <ModeracionBoton
+          tipo="post"
+          contenidoId={post.id}
+          autorId={post.autor_id}
+          autorNombre={post.autor_nombre}
+          texto={post.texto}
+        />
       </View>
 
       {/* Texto */}

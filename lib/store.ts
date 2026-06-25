@@ -7,6 +7,7 @@ import { COMISION_SERVICIO, CUPOS_POR_FORMATO, type Formato, type Nivel } from '
 import { DEFAULT_THEME_ID } from '@/constants/themes';
 import { matchDateTime } from '@/lib/format';
 import { partidosDisponibles, postsSeed } from '@/lib/mockData';
+import { supabase, supabaseConfigurado } from '@/lib/supabase';
 import type {
   Calificacion,
   Comentario,
@@ -16,6 +17,7 @@ import type {
   PartidoConOrganizador,
   Post,
   PostTipo,
+  Reporte,
 } from '@/types/database';
 
 /** Datos para crear un post desde la UI. */
@@ -53,6 +55,8 @@ interface StoreState {
   calificaciones: Calificacion[]; // reputación
   posts: Post[]; // muro social
   comentarios: Record<string, Comentario[]>; // comentarios por post (postId -> comentarios)
+  bloqueados: string[]; // ids de usuarios bloqueados por el usuario actual (moderación UGC)
+  reportes: Reporte[]; // reportes de contenido objetable
   temaId: string; // id del tema de color activo
 
   setTema: (id: string) => void;
@@ -75,6 +79,16 @@ interface StoreState {
   comentar: (postId: string, autor: AutorPost, texto: string) => void;
   /** Crea posts-recap para los partidos del usuario que ya terminaron. */
   generarRecapsPendientes: (userId: string, ahoraISO: string) => void;
+
+  // --- Moderación UGC (App Store 1.2 / Google Play) ---
+  /** ¿El usuario actual bloqueó a este autor? */
+  estaBloqueado: (userId: string) => boolean;
+  /** Bloquea a un usuario: deja de ver su contenido. */
+  bloquearUsuario: (userId: string) => void;
+  /** Quita el bloqueo de un usuario. */
+  desbloquearUsuario: (userId: string) => void;
+  /** Registra un reporte de contenido objetable para revisión. */
+  reportarContenido: (data: Omit<Reporte, 'id' | 'created_at'>) => void;
 
   crearPartido: (data: NuevoPartido, organizador: { id: string; nombre: string }) => string;
   /** Inscribe al usuario y registra el pago. Devuelve el pago creado. */
@@ -130,6 +144,8 @@ export const useStore = create<StoreState>()(
       calificaciones: [],
       posts: postsSeed,
       comentarios: {},
+      bloqueados: [],
+      reportes: [],
       temaId: DEFAULT_THEME_ID,
 
       setTema: (id) => {
@@ -235,6 +251,42 @@ export const useStore = create<StoreState>()(
         if (nuevos.length) set((s) => ({ posts: [...nuevos, ...s.posts] }));
       },
 
+      // --- Moderación UGC ---
+      estaBloqueado: (userId) => get().bloqueados.includes(userId),
+
+      bloquearUsuario: (userId) => {
+        set((s) =>
+          s.bloqueados.includes(userId) ? s : { bloqueados: [...s.bloqueados, userId] },
+        );
+      },
+
+      desbloquearUsuario: (userId) => {
+        set((s) => ({ bloqueados: s.bloqueados.filter((id) => id !== userId) }));
+      },
+
+      reportarContenido: (data) => {
+        const reporte: Reporte = {
+          id: genId('rep'),
+          ...data,
+          created_at: new Date().toISOString(),
+        };
+        set((s) => ({ reportes: [reporte, ...s.reportes] }));
+        // Con Supabase configurado, persistimos el reporte para revisión del equipo.
+        if (supabaseConfigurado) {
+          supabase
+            .from('reportes')
+            .insert({
+              tipo: data.tipo,
+              contenido_id: data.contenido_id,
+              autor_id: data.autor_id,
+              reportado_por: data.reportado_por,
+              motivo: data.motivo,
+              texto: data.texto,
+            } as never)
+            .then(() => {});
+        }
+      },
+
       crearPartido: (data, organizador) => {
         const id = genId('p');
         const nuevo: PartidoConOrganizador = {
@@ -325,6 +377,8 @@ export const useStore = create<StoreState>()(
         calificaciones: s.calificaciones,
         posts: s.posts,
         comentarios: s.comentarios,
+        bloqueados: s.bloqueados,
+        reportes: s.reportes,
         temaId: s.temaId,
       }),
       onRehydrateStorage: () => (state) => {

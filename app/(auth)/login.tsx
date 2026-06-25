@@ -91,6 +91,12 @@ export default function Login() {
             ) : null}
 
             <GlowButton label="Entrar" icon="log-in" loading={loading} onPress={onSubmit} />
+
+            <Pressable onPress={() => router.push('/(auth)/recuperar')} className="mt-4 py-1">
+              <Text className="text-center font-body-semibold text-sm text-primary">
+                ¿Olvidaste tu contraseña?
+              </Text>
+            </Pressable>
           </FadeIn>
 
           <Pressable onPress={() => router.replace('/(auth)/register')} className="mt-6 py-2">

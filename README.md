@@ -166,18 +166,37 @@ Lo que ya está resuelto en la app y lo que tenés que completar vos al publicar
 - **Pagos:** el flujo cobra un **servicio del mundo real** (cupo en una cancha),
   que está **exento de las compras in-app (IAP)** de Apple. Hoy es simulado.
 
-**Tenés que completar al publicar:**
-1. **Política de privacidad + términos:** publicá una página y poné su URL en
-   App Store Connect / Play Console. En la app ya hay un link a
-   `https://faltauno.app/privacidad` (cambialo por el tuyo en `app/(tabs)/perfil.tsx`).
-2. **Borrado de cuenta del backend:** la app borra el perfil y los datos; para
-   eliminar **también** el usuario de Supabase Auth, creá una Edge Function
-   `delete-user` (con `service_role`) — la app ya la invoca. Google además pide
-   una **URL pública de solicitud de borrado**.
-3. **Formularios de privacidad:** completá *App Privacy* (Apple) y *Data safety*
-   (Google) declarando que recolectás email, nombre y contenido que el usuario sube.
-4. **Capturas + ficha** de cada tienda (ícono ya sale del logo).
+**Recursos que ya dejé listos en el repo:**
+- **Páginas legales** en `legal/` (`privacidad.html`, `terminos.html`,
+  `eliminar-cuenta.html`) — hosteálas (ej. GitHub Pages, Vercel, tu dominio) y
+  reemplazá los `[PLACEHOLDERS]` (nombre legal, correo, fecha, URL).
+- **Edge Function de borrado** en `supabase/functions/delete-user/` —
+  desplegá con `supabase functions deploy delete-user` (la app ya la invoca).
+- Recordatorio de pago **transparente** ("no custodiamos dinero") en el checkout.
+- **Recuperación de contraseña** (login → "¿Olvidaste tu contraseña?").
+- **Privacy manifest de iOS** declarado en `app.json` (`ios.privacyManifests`).
+
+**Tenés que completar al publicar (fuera del código):**
+1. **Hostear** las 3 páginas legales y poner sus URLs en App Store Connect y
+   Play Console. Actualizá el link de la app en `app/(tabs)/perfil.tsx`
+   (`abrirPrivacidad`) por tu URL real.
+2. **Formularios de datos:** *App Privacy* (Apple) y *Data safety* (Google),
+   declarando: email, nombre, celular, fotos y contenido que sube el usuario,
+   y los proveedores (Supabase, etc.).
+3. **Cuenta demo para revisores:** la app tiene **modo invitado** (Welcome →
+   "Echar un vistazo como invitado") que da acceso a todo sin registro — indicáselo
+   al revisor, o creá un usuario demo y pasá las credenciales en las notas de revisión.
+4. **Ficha de tienda:** 2+ capturas reales por tienda, descripción, categoría
+   (Deportes), correo de soporte, **clasificación por edad** y países.
 5. **Google Maps API key** (Android) en `app.json` (ver arriba).
+
+**Requisitos técnicos a tener en cuenta:**
+- **Android:** se publica en **.aab** (EAS production ya lo genera) y apunta a
+  **API 35 (Android 15)** con SDK 54. Si tu cuenta de Play Console es nueva
+  (posterior a nov-2023), Google exige una **prueba cerrada con ≥12 testers por
+  14 días** antes de producción.
+- **iOS:** desde el **28-abr-2026** Apple exige compilar con **Xcode 26 / SDK iOS 26+**.
+  EAS usa imágenes actualizadas; corré el build con la imagen más reciente.
 
 ---
 

@@ -25,6 +25,8 @@ interface AuthState {
   /** `true` cuando corre sin backend (modo demo/local). */
   demo: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  /** Envía el correo de recuperación de contraseña. */
+  resetPassword: (email: string) => Promise<void>;
   /** Devuelve si quedó pendiente confirmar el correo (sin sesión inmediata). */
   signUp: (datos: DatosRegistro) => Promise<{ needsConfirmation: boolean }>;
   signInAsGuest: () => Promise<void>;
@@ -137,6 +139,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw new Error(traducirError(error.message));
+      },
+
+      async resetPassword(email) {
+        if (!supabaseConfigurado) return; // demo: no-op (la UI muestra el mensaje)
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: 'faltauno://reset',
+        });
         if (error) throw new Error(traducirError(error.message));
       },
 

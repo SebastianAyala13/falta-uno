@@ -123,9 +123,9 @@ export default function Checkout() {
 
           <FadeIn delay={200}>
             <View className="mt-4 flex-row items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2.5">
-              <Ionicons name="shield-checkmark" size={16} color={Colors.primary} />
+              <Ionicons name="information-circle" size={16} color={Colors.primary} />
               <Text className="flex-1 font-body text-xs text-muted">
-                Pago protegido. Si el partido se cae, te devolvemos la plata.
+                Falta Uno no custodia tu dinero: el pago es un acuerdo con el organizador del partido.
               </Text>
             </View>
 

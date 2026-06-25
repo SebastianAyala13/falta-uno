@@ -42,3 +42,6 @@ example
 # generated native folders
 /ios
 /android
+
+# Archivos fuente de multimedia (originales; los usados viven en assets/brand)
+multimedia/

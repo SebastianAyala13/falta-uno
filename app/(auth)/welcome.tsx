@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
@@ -7,7 +8,6 @@ import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
-import { APP } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 
 export default function Welcome() {
@@ -25,29 +25,21 @@ export default function Welcome() {
         {/* Marca */}
         <FadeIn delay={80} className="flex-1 justify-center">
           <View
-            className="mb-7 h-24 w-24 items-center justify-center rounded-[28px] bg-primary"
+            className="self-center overflow-hidden rounded-3xl border border-border"
             style={{
+              backgroundColor: '#0B0F0D',
               shadowColor: Colors.primary,
-              shadowOpacity: 0.6,
-              shadowRadius: 26,
+              shadowOpacity: 0.4,
+              shadowRadius: 30,
               shadowOffset: { width: 0, height: 0 },
             }}>
-            <Ionicons name="football" size={54} color={Colors.ink} />
+            <Image source={require('../../assets/brand/logo.png')} style={{ width: 260, height: 260 }} contentFit="contain" />
           </View>
-
-          <Text className="font-display text-7xl uppercase leading-[0.92] text-cream">Falta</Text>
-          <View className="flex-row items-end">
-            <Text className="font-display text-7xl uppercase leading-[0.92] text-primary">Uno</Text>
-            <View className="mb-3 ml-3 rounded-full bg-accent px-3 py-1">
-              <Text className="font-body-bold text-[10px] uppercase tracking-wider text-ink">
-                Pereira
-              </Text>
-            </View>
+          <View className="mt-4 self-center rounded-full bg-accent px-4 py-1.5">
+            <Text className="font-body-bold text-[11px] uppercase tracking-wider text-ink">
+              Pereira · Risaralda
+            </Text>
           </View>
-
-          <Text className="mt-5 max-w-[300px] font-body text-lg leading-6 text-muted">
-            {APP.tagline}
-          </Text>
 
           {/* Mini features */}
           <View className="mt-8 gap-3">

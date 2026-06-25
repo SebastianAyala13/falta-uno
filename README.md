@@ -110,6 +110,49 @@ Escaneá el QR con **Expo Go** o presioná `a` (Android) / `i` (iOS) / `w` (web)
 
 ---
 
+## 🚢 Publicar en App Store y Play Store
+
+El proyecto ya está configurado para builds de producción con **EAS** (bundle IDs,
+versiones, permisos, ícono y splash con el logo, `eas.json`).
+
+### 1. Instalar y entrar
+```bash
+npm install -g eas-cli
+eas login           # con tu cuenta de Expo (expo.dev)
+eas init            # vincula el repo y agrega tu projectId al app.json
+```
+
+### 2. Antes del primer build
+- **IDs de la app** (ya puestos, cambialos si querés): iOS `com.faltauno.app`,
+  Android `com.faltauno.app` en `app.json`.
+- **Google Maps (Android):** reemplazá `TU_GOOGLE_MAPS_ANDROID_API_KEY` en
+  `app.json` → `android.config.googleMaps.apiKey` por tu key de Google Cloud
+  (Maps SDK for Android). iOS usa Apple Maps, no necesita key.
+- **Supabase:** poné las credenciales reales en `.env` (ver arriba) para que auth,
+  chat y datos funcionen en producción.
+
+### 3. Compilar
+```bash
+eas build --platform ios --profile production
+eas build --platform android --profile production
+```
+Para probar antes en tu dispositivo sin las stores:
+```bash
+eas build --platform android --profile preview   # genera un APK instalable
+```
+
+### 4. Subir a las tiendas
+```bash
+eas submit --platform ios       # necesita cuenta Apple Developer (US$99/año)
+eas submit --platform android   # necesita cuenta Google Play (US$25 única vez)
+```
+
+> **Versionado:** `eas.json` usa `autoIncrement` en producción, así que el
+> build/version code sube solo en cada build. Subí `version` en `app.json` para
+> los releases visibles al usuario (ej. 1.0.1).
+
+---
+
 ## 🗂️ Estructura del proyecto
 
 ```

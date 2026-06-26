@@ -9,13 +9,13 @@ export const APP = {
 } as const;
 
 /**
- * Base pública donde se hostean las páginas legales.
- * 👉 Reemplazá por tu dominio real (ej. https://faltauno.app o tu GitHub Pages).
+ * Base pública donde se hostean las páginas legales (repo público falta-uno-legal en GitHub Pages).
+ * Si más adelante usás un dominio propio, cambiá solo esta constante.
  * Lo usan el registro (aceptación de términos) y el Perfil.
  */
-export const LEGAL_URL = 'https://faltauno.app';
-export const URL_PRIVACIDAD = `${LEGAL_URL}/privacidad`;
-export const URL_TERMINOS = `${LEGAL_URL}/terminos`;
+export const LEGAL_URL = 'https://sebastianayala13.github.io/falta-uno-legal';
+export const URL_PRIVACIDAD = `${LEGAL_URL}/privacidad.html`;
+export const URL_TERMINOS = `${LEGAL_URL}/terminos.html`;
 
 /** Posiciones de juego disponibles en el registro y perfil. */
 export const POSICIONES = ['Portero', 'Defensa', 'Mediocampista', 'Delantero'] as const;

@@ -211,12 +211,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
           return;
         }
-        // Borra el perfil del usuario. La eliminación total del usuario de Auth
-        // se hace con una Edge Function `delete-user` (service_role) — ver README.
-        const uid = profile?.id;
-        if (uid) {
-          await supabase.from('profiles').delete().eq('id', uid);
-          await supabase.functions.invoke('delete-user').catch(() => {});
+        // La eliminación real (perfil + usuario de Auth) la hace la Edge Function
+        // `delete-user` con service_role (el cliente no tiene policy de DELETE).
+        // Si falla, NO cerramos sesión y propagamos el error para avisar al usuario.
+        const { error } = await supabase.functions.invoke('delete-user');
+        if (error) {
+          throw new Error('No pudimos eliminar tu cuenta. Intentá de nuevo o escribinos a soporte.');
         }
         await supabase.auth.signOut();
         await AsyncStorage.removeItem(DEMO_KEY);

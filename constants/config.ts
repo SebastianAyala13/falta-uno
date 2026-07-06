@@ -56,18 +56,26 @@ export const ZONAS = [
 export type Zona = (typeof ZONAS)[number];
 
 /**
- * Medios de pago (contexto colombiano).
- * El procesamiento es simulado; `provider` marca a qué pasarela se enchufaría
- * en producción (Wompi soporta Nequi, PSE, tarjeta y Bancolombia).
+ * `true` cuando la pasarela Lemon Squeezy está habilitada para esta build.
+ * La llave secreta de la API NUNCA va en el cliente: vive en las Edge Functions
+ * de Supabase (`create-checkout` y `lemonsqueezy-webhook`).
  */
-export type MedioPagoId = 'nequi' | 'pse' | 'tarjeta' | 'efectivo';
+export const LEMONSQUEEZY_CONFIGURADO = !!process.env.EXPO_PUBLIC_LEMONSQUEEZY_ENABLED;
+
+/**
+ * Medios de pago (contexto colombiano).
+ * `provider` marca qué pasarela procesa el pago: 'lemonsqueezy' abre un
+ * checkout real en el navegador; 'efectivo' es acuerdo directo con el
+ * organizador. Los medios con provider 'wompi' quedan como referencia futura.
+ */
+export type MedioPagoId = 'nequi' | 'pse' | 'tarjeta' | 'efectivo' | 'online';
 
 export interface MedioPago {
   id: MedioPagoId;
   nombre: string;
   detalle: string;
   icon: string; // nombre de Ionicons
-  provider: 'wompi' | 'efectivo';
+  provider: 'wompi' | 'efectivo' | 'lemonsqueezy';
   instantaneo: boolean;
 }
 
@@ -104,18 +112,27 @@ export const MEDIOS_PAGO: MedioPago[] = [
     provider: 'efectivo',
     instantaneo: false,
   },
+  {
+    id: 'online',
+    nombre: 'Tarjeta / PSE / Nequi',
+    detalle: 'Pago seguro con Lemon Squeezy',
+    icon: 'card',
+    provider: 'lemonsqueezy',
+    instantaneo: true,
+  },
 ];
 
 /**
  * Medios de pago ACTIVOS en producción.
  *
- * Por ahora solo "efectivo" (pago real al organizador en la cancha). Nequi/PSE/
- * Tarjeta quedan ocultos hasta integrar la pasarela real (Wompi): mostrar un
- * pago simulado que diga "Aprobado" sin procesar nada es causa de rechazo en
- * App Store (2.1) y Google Play. Cuando Wompi esté integrado, ampliá este filtro.
+ * "Efectivo" está siempre (pago real al organizador en la cancha). "Online"
+ * (Lemon Squeezy) aparece solo cuando `EXPO_PUBLIC_LEMONSQUEEZY_ENABLED` está
+ * seteada: es un checkout REAL procesado por la pasarela y confirmado por
+ * webhook en el servidor. Nunca mostramos un pago simulado que finja
+ * "Aprobado": eso es causa de rechazo en App Store (2.1) y Google Play.
  */
 export const MEDIOS_PAGO_ACTIVOS: MedioPago[] = MEDIOS_PAGO.filter(
-  (m) => m.provider === 'efectivo',
+  (m) => m.id === 'efectivo' || (m.id === 'online' && LEMONSQUEEZY_CONFIGURADO),
 );
 
 /** Comisión de servicio de Falta Uno (sobre el precio del cupo). */

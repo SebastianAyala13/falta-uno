@@ -91,18 +91,24 @@ interface StoreState {
   reportarContenido: (data: Omit<Reporte, 'id' | 'created_at'>) => void;
 
   crearPartido: (data: NuevoPartido, organizador: { id: string; nombre: string }) => string;
-  /** Inscribe al usuario y registra el pago. Devuelve el pago creado. */
+  /**
+   * Inscribe al usuario y registra el pago. Devuelve el pago creado.
+   * `referencia` permite pasar una referencia ya generada (p. ej. la que se
+   * envió al checkout de Lemon Squeezy) para poder conciliarla con el webhook.
+   */
   inscribirse: (
     partidoId: string,
     jugadorId: string,
     medio: string,
     estado: EstadoPago,
+    referencia?: string,
   ) => Pago;
   salirse: (partidoId: string, jugadorId: string) => void;
 }
 
 const genId = (p: string) => `${p}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4)}`;
-const genRef = () => 'FU-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+/** Referencia legible de pago tipo FU-XXXXXX (se comparte con la pasarela). */
+export const genRef = () => 'FU-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 
 // Mensajes de ejemplo para que el chat se sienta vivo en el demo
 const mensajesSeed: Record<string, Mensaje[]> = {
@@ -310,7 +316,7 @@ export const useStore = create<StoreState>()(
         return id;
       },
 
-      inscribirse: (partidoId, jugadorId, medio, estado) => {
+      inscribirse: (partidoId, jugadorId, medio, estado, referencia) => {
         const partido = get().getPartido(partidoId);
         const precio = partido?.precio ?? 0;
         const comision = Math.round(precio * COMISION_SERVICIO);
@@ -322,7 +328,7 @@ export const useStore = create<StoreState>()(
           monto: precio + comision,
           comision,
           estado,
-          referencia: genRef(),
+          referencia: referencia ?? genRef(),
           created_at: new Date().toISOString(),
         };
 

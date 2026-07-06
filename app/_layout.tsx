@@ -75,6 +75,7 @@ export default function RootLayout() {
             <Stack.Screen name="mis-pagos" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="editar-perfil" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="apariencia" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="reset" options={{ animation: 'slide_from_bottom' }} />
           </Stack>
         </AuthProvider>
       </SafeAreaProvider>

@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import FadeIn from '@/components/FadeIn';
@@ -13,8 +14,8 @@ import { COMISION_SERVICIO, MEDIOS_PAGO_ACTIVOS, type MedioPago } from '@/consta
 import { useAuth } from '@/lib/auth';
 import { precioCOP } from '@/lib/format';
 import { programarRecordatorio } from '@/lib/notifications';
-import { procesarPago } from '@/lib/payments';
-import { useStore } from '@/lib/store';
+import { crearCheckoutOnline, procesarPago } from '@/lib/payments';
+import { genRef, useStore } from '@/lib/store';
 import type { Pago } from '@/types/database';
 
 type Paso = 'metodo' | 'procesando' | 'listo';
@@ -42,18 +43,45 @@ export default function Checkout() {
     );
   }
 
-  const comision = Math.round(partido.precio * COMISION_SERVICIO);
+  // El servicio de Falta Uno solo aplica al pago online (que la app procesa).
+  // En efectivo la app no cobra nada, así que no se suma comisión.
+  const comision = medio.provider === 'lemonsqueezy' ? Math.round(partido.precio * COMISION_SERVICIO) : 0;
   const total = partido.precio + comision;
 
   const pagar = async () => {
     setPaso('procesando');
-    const res = await procesarPago(medio.id, total);
-    const nuevoPago = inscribirse(id, profile?.id ?? 'demo', medio.id, res.estado);
-    setPago(nuevoPago);
-    const rec = await programarRecordatorio(partido);
-    setRecordatorio(rec.ok);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setPaso('listo');
+    try {
+      let nuevoPago: Pago;
+      if (medio.id === 'online') {
+        // Checkout real de Lemon Squeezy en el navegador externo. El pago
+        // queda 'pendiente' en el cliente: el estado 'aprobado' lo escribe
+        // SOLO el servidor (webhook) cuando la pasarela confirma el cobro.
+        const referencia = genRef();
+        const { url } = await crearCheckoutOnline({
+          partidoId: id,
+          jugadorId: profile?.id ?? 'demo',
+          monto: total,
+          referencia,
+          email: profile?.email,
+        });
+        await WebBrowser.openBrowserAsync(url);
+        nuevoPago = inscribirse(id, profile?.id ?? 'demo', medio.id, 'pendiente', referencia);
+      } else {
+        const res = await procesarPago(medio.id, total);
+        nuevoPago = inscribirse(id, profile?.id ?? 'demo', medio.id, res.estado);
+      }
+      setPago(nuevoPago);
+      const rec = await programarRecordatorio(partido);
+      setRecordatorio(rec.ok);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setPaso('listo');
+    } catch (e) {
+      setPaso('metodo');
+      Alert.alert(
+        'No se pudo procesar el pago',
+        e instanceof Error ? e.message : 'Intentá de nuevo en un momento, parce.',
+      );
+    }
   };
 
   return (
@@ -153,7 +181,9 @@ function Procesando({ medio }: { medio: MedioPago }) {
       </Animated.View>
       <Text className="mt-6 font-display text-2xl uppercase text-cream">Procesando…</Text>
       <Text className="mt-2 text-center font-body text-sm text-muted">
-        Confirmando tu pago con {medio.nombre}. No cierres la app, parce.
+        {medio.id === 'online'
+          ? 'Te llevamos al pago seguro de Lemon Squeezy en tu navegador.'
+          : `Confirmando tu pago con ${medio.nombre}. No cierres la app, parce.`}
       </Text>
     </View>
   );
@@ -191,7 +221,11 @@ function Comprobante({
           {aprobado ? '¡Listo, parce!' : 'Cupo reservado'}
         </Text>
         <Text className="mt-2 text-center font-body text-sm text-muted">
-          {aprobado ? `Quedaste cuadrado en ${cancha}.` : `Te guardamos el cupo. Pagás en efectivo en la cancha.`}
+          {aprobado
+            ? `Quedaste cuadrado en ${cancha}.`
+            : medio.id === 'online'
+              ? 'Tu cupo queda confirmado apenas verifiquemos el pago con la pasarela. Lo ves actualizado en "Mis pagos".'
+              : `Te guardamos el cupo. Pagás en efectivo en la cancha.`}
         </Text>
       </FadeIn>
 

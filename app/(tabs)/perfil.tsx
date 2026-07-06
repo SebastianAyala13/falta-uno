@@ -29,8 +29,12 @@ export default function Perfil() {
           text: 'Eliminar',
           style: 'destructive',
           onPress: async () => {
-            await eliminarCuenta();
-            router.replace('/(auth)/welcome');
+            try {
+              await eliminarCuenta();
+              router.replace('/(auth)/welcome');
+            } catch (e) {
+              Alert.alert('No se pudo eliminar', e instanceof Error ? e.message : 'Intentá de nuevo, parce.');
+            }
           },
         },
       ],

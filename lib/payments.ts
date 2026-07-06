@@ -1,4 +1,5 @@
 import type { MedioPagoId } from '@/constants/config';
+import { supabase } from '@/lib/supabase';
 import type { EstadoPago } from '@/types/database';
 
 export interface ResultadoPago {
@@ -7,27 +8,47 @@ export interface ResultadoPago {
 }
 
 /**
- * Procesa un pago. **Simulado** por ahora.
+ * Procesa un pago en EFECTIVO: queda 'pendiente' porque el acuerdo real es
+ * con el organizador en la cancha (Falta Uno no custodia dinero).
  *
- * Para enchufar Wompi real (Nequi/PSE/Tarjeta), reemplazá el cuerpo por una
- * llamada a tu backend que cree la transacción con la pasarela:
- *
- *   const res = await fetch(`${API}/pagos`, {
- *     method: 'POST',
- *     body: JSON.stringify({ medio, monto, referencia }),
- *   });
- *
- * Nunca pongas la llave privada de Wompi en el cliente: va en el backend.
+ * Los pagos online NO pasan por acá: van por `crearCheckoutOnline` (Lemon
+ * Squeezy) y el estado 'aprobado' lo escribe SOLO el servidor cuando la
+ * pasarela confirma vía webhook (`supabase/functions/lemonsqueezy-webhook`).
+ * Nunca marcamos un pago como aprobado desde el cliente.
  */
 export async function procesarPago(
   medio: MedioPagoId,
   _monto: number,
 ): Promise<ResultadoPago> {
-  // Latencia simulada de la pasarela
-  await new Promise((r) => setTimeout(r, 1900));
-
-  if (medio === 'efectivo') {
-    return { estado: 'pendiente', mensaje: 'Le pagás al organizador en la cancha.' };
+  if (medio !== 'efectivo') {
+    throw new Error('Este medio se paga online con Lemon Squeezy, no desde la app.');
   }
-  return { estado: 'aprobado', mensaje: 'Pago aprobado. ¡Nos vemos en la cancha!' };
+  // Pequeña pausa para que el usuario vea la confirmación del registro
+  await new Promise((r) => setTimeout(r, 1200));
+  return { estado: 'pendiente', mensaje: 'Le pagás al organizador en la cancha.' };
+}
+
+/**
+ * Crea un checkout REAL de Lemon Squeezy llamando a la Edge Function
+ * `create-checkout` (ahí vive la llave secreta de la API, nunca en la app).
+ * Devuelve la URL segura del checkout para abrirla en el navegador.
+ */
+export async function crearCheckoutOnline(params: {
+  partidoId: string;
+  jugadorId: string;
+  monto: number;
+  referencia: string;
+  email?: string;
+}): Promise<{ url: string }> {
+  const { data, error } = await supabase.functions.invoke<{ url?: string }>(
+    'create-checkout',
+    { body: params },
+  );
+
+  if (error || !data?.url) {
+    throw new Error(
+      'No pudimos iniciar el pago online, parce. Revisá tu conexión e intentá de nuevo.',
+    );
+  }
+  return { url: data.url };
 }

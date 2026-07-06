@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { APP, type Nivel, type Posicion } from '@/constants/config';
+import { APP, POLITICA_VERSION, type Nivel, type Posicion } from '@/constants/config';
 import { supabase, supabaseConfigurado } from '@/lib/supabase';
 import type { Profile } from '@/types/database';
 
@@ -174,6 +174,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           nivel: datos.nivel,
           celular: datos.celular,
           avatar_url: null,
+          // Prueba de autorización de tratamiento de datos (Ley 1581/2012)
+          politica_version: POLITICA_VERSION,
+          politica_aceptada_at: new Date().toISOString(),
         };
 
         if (data.session) {

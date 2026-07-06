@@ -17,6 +17,13 @@ export const LEGAL_URL = 'https://sebastianayala13.github.io/falta-uno-legal';
 export const URL_PRIVACIDAD = `${LEGAL_URL}/privacidad.html`;
 export const URL_TERMINOS = `${LEGAL_URL}/terminos.html`;
 
+/**
+ * Versión vigente de la Política de Privacidad / autorización de tratamiento de
+ * datos (Ley 1581 de 2012). Se guarda junto a la aceptación del usuario como
+ * prueba del consentimiento (habeas data). Subila cuando cambie la política.
+ */
+export const POLITICA_VERSION = '2026-06-25';
+
 /** Posiciones de juego disponibles en el registro y perfil. */
 export const POSICIONES = ['Portero', 'Defensa', 'Mediocampista', 'Delantero'] as const;
 export type Posicion = (typeof POSICIONES)[number];

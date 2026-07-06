@@ -24,6 +24,9 @@ export interface Profile {
   partidos_jugados: number;
   no_shows: number;
   rating: number; // 0 - 5
+  // Prueba de consentimiento (Ley 1581 de 2012 · habeas data)
+  politica_version?: string | null; // versión de política aceptada
+  politica_aceptada_at?: string | null; // fecha/hora de aceptación
   created_at: string; // timestamptz
 }
 

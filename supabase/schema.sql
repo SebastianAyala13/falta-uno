@@ -25,8 +25,14 @@ create table if not exists public.profiles (
   partidos_jugados int not null default 0,
   no_shows int not null default 0,
   rating numeric(2,1) not null default 0,
+  politica_version text,
+  politica_aceptada_at timestamptz,
   created_at timestamptz not null default now()
 );
+
+-- Columnas de consentimiento (para bases ya creadas antes de esta versión)
+alter table public.profiles add column if not exists politica_version text;
+alter table public.profiles add column if not exists politica_aceptada_at timestamptz;
 
 -- Partidos publicados
 create table if not exists public.partidos (

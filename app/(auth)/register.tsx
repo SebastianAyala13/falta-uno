@@ -143,11 +143,11 @@ export default function Register() {
                 <Text className="text-primary" onPress={() => Linking.openURL(URL_TERMINOS).catch(() => {})}>
                   Términos
                 </Text>{' '}
-                y la{' '}
+                y <Text className="font-body-semibold">autorizo el tratamiento de mis datos personales</Text> conforme a la{' '}
                 <Text className="text-primary" onPress={() => Linking.openURL(URL_PRIVACIDAD).catch(() => {})}>
                   Política de Privacidad
-                </Text>
-                . Entiendo que Falta Uno tiene tolerancia cero con el contenido objetable y el acoso.
+                </Text>{' '}
+                (Ley 1581 de 2012). Entiendo que Falta Uno tiene tolerancia cero con el contenido objetable y el acoso.
               </Text>
             </Pressable>
 

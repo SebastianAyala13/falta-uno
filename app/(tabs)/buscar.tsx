@@ -10,16 +10,25 @@ import Screen from '@/components/Screen';
 import { GameCardSkeleton } from '@/components/Skeleton';
 import { Colors } from '@/constants/colors';
 import { FORMATOS, NIVELES, ZONAS } from '@/constants/config';
+import { useAuth } from '@/lib/auth';
 import { useStore } from '@/lib/store';
 
 export default function Buscar() {
+  const { profile } = useAuth();
   const partidos = useStore((s) => s.partidos);
+  const hidratado = useStore((s) => s.hidratado);
+  const hidratar = useStore((s) => s.hidratar);
 
-  const [cargando, setCargando] = useState(true);
+  // Mostramos skeletons hasta que la primera hidratación desde Supabase termine
+  const [cargando, setCargando] = useState(!hidratado);
   useEffect(() => {
+    if (hidratado) {
+      setCargando(false);
+      return;
+    }
     const t = setTimeout(() => setCargando(false), 650);
     return () => clearTimeout(t);
-  }, []);
+  }, [hidratado]);
 
   const [query, setQuery] = useState('');
   const [zona, setZona] = useState<string | null>(null);
@@ -44,9 +53,10 @@ export default function Buscar() {
   const hayFiltros = zona || nivel || formato || query;
 
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 700);
+    if (profile?.id) await hidratar(profile.id);
+    setRefreshing(false);
   };
 
   return (

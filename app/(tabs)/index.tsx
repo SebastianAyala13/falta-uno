@@ -22,12 +22,14 @@ export default function Home() {
   const { profile } = useAuth();
   const c = useTheme();
   const partidos = useStore((s) => s.partidos);
+  const hidratar = useStore((s) => s.hidratar);
 
   const nombre = profile?.nombre ?? 'crack';
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 700);
+    if (profile?.id) await hidratar(profile.id);
+    setRefreshing(false);
   };
 
   // Priorizamos por urgencia: los que están por llenarse primero; los llenos al final

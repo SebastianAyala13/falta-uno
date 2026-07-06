@@ -38,28 +38,37 @@ export default function Crear() {
     if (uri) setFoto(uri);
   };
 
-  const onSubmit = () => {
+  const [publicando, setPublicando] = useState(false);
+
+  const onSubmit = async () => {
     setError(null);
     if (!cancha || !zona || !fecha || !hora || !nivel || !precio) {
       setError('Completá cancha, zona, fecha, hora, nivel y precio.');
       return;
     }
-    const id = crearPartido(
-      {
-        cancha: cancha.trim(),
-        zona: zona!,
-        fecha: fecha.trim(),
-        hora: hora.trim(),
-        formato,
-        nivel: nivel!,
-        precio: parseInt(precio, 10) || 0,
-        descripcion: descripcion.trim(),
-        foto_url: foto,
-      },
-      { id: profile?.id ?? 'demo', nombre: profile?.nombre ?? 'Vos' },
-    );
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.push({ pathname: '/partido/[id]', params: { id } });
+    setPublicando(true);
+    try {
+      const id = await crearPartido(
+        {
+          cancha: cancha.trim(),
+          zona: zona!,
+          fecha: fecha.trim(),
+          hora: hora.trim(),
+          formato,
+          nivel: nivel!,
+          precio: parseInt(precio, 10) || 0,
+          descripcion: descripcion.trim(),
+          foto_url: foto,
+        },
+        { id: profile?.id ?? 'demo', nombre: profile?.nombre ?? 'Vos' },
+      );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.push({ pathname: '/partido/[id]', params: { id } });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No pudimos publicar el partido. Probá de nuevo.');
+    } finally {
+      setPublicando(false);
+    }
   };
 
   return (
@@ -145,7 +154,7 @@ export default function Crear() {
               </View>
             ) : null}
 
-            <GlowButton label="Publicar partido" variant="accent" icon="megaphone" onPress={onSubmit} />
+            <GlowButton label="Publicar partido" variant="accent" icon="megaphone" onPress={onSubmit} loading={publicando} />
           </FadeIn>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -208,6 +208,12 @@ export interface Database {
         Update: Partial<Comentario>;
         Relationships: [];
       };
+      post_likes: {
+        Row: { post_id: string; user_id: string; created_at: string };
+        Insert: { post_id: string; user_id: string };
+        Update: Partial<{ post_id: string; user_id: string }>;
+        Relationships: [];
+      };
       reportes: {
         Row: Reporte;
         Insert: Omit<Reporte, 'id' | 'created_at'>;
@@ -221,7 +227,14 @@ export interface Database {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      // Vista pública con solo columnas seguras de otros jugadores (sin PII).
+      // La lectura directa de `profiles` está restringida al dueño por RLS.
+      perfiles_publicos: {
+        Row: Pick<Profile, 'id' | 'nombre' | 'avatar_url' | 'posicion' | 'nivel' | 'rating'>;
+        Relationships: [];
+      };
+    };
     Functions: Record<string, never>;
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

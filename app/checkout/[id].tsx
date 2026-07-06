@@ -65,10 +65,10 @@ export default function Checkout() {
           email: profile?.email,
         });
         await WebBrowser.openBrowserAsync(url);
-        nuevoPago = inscribirse(id, profile?.id ?? 'demo', medio.id, 'pendiente', referencia);
+        nuevoPago = await inscribirse(id, profile?.id ?? 'demo', medio.id, 'pendiente', referencia);
       } else {
         const res = await procesarPago(medio.id, total);
-        nuevoPago = inscribirse(id, profile?.id ?? 'demo', medio.id, res.estado);
+        nuevoPago = await inscribirse(id, profile?.id ?? 'demo', medio.id, res.estado);
       }
       setPago(nuevoPago);
       const rec = await programarRecordatorio(partido);

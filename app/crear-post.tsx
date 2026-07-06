@@ -33,18 +33,27 @@ export default function CrearPost() {
     if (uri) setFoto(uri);
   };
 
-  const publicar = () => {
+  const [publicando, setPublicando] = useState(false);
+
+  const publicar = async () => {
     if (!texto.trim()) return;
     if (contieneContenidoObjetable(texto)) {
       Alert.alert('Revisá tu publicación', MENSAJE_BLOQUEO_FILTRO);
       return;
     }
-    crearPost(
-      { tipo, texto, foto_url: foto },
-      { id: profile?.id ?? 'demo', nombre: profile?.nombre ?? 'Vos', avatar_url: profile?.avatar_url },
-    );
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.back();
+    setPublicando(true);
+    try {
+      await crearPost(
+        { tipo, texto, foto_url: foto },
+        { id: profile?.id ?? 'demo', nombre: profile?.nombre ?? 'Vos', avatar_url: profile?.avatar_url },
+      );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+    } catch (e) {
+      Alert.alert('No se pudo publicar', e instanceof Error ? e.message : 'Probá de nuevo, parce.');
+    } finally {
+      setPublicando(false);
+    }
   };
 
   return (
@@ -118,7 +127,7 @@ export default function CrearPost() {
           )}
 
           <View className="mt-5">
-            <GlowButton label="Publicar" variant="accent" icon="send" onPress={publicar} disabled={!texto.trim()} />
+            <GlowButton label="Publicar" variant="accent" icon="send" onPress={publicar} loading={publicando} disabled={!texto.trim()} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

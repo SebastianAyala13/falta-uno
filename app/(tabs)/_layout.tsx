@@ -1,13 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
+import { useEffect } from 'react';
 import { Platform, Text, View } from 'react-native';
 
+import { useAuth } from '@/lib/auth';
+import { useStore } from '@/lib/store';
 import { useTheme, useThemeMeta } from '@/lib/theme';
 
 export default function TabsLayout() {
   const c = useTheme();
   const meta = useThemeMeta();
+  const { profile } = useAuth();
+  const hidratar = useStore((s) => s.hidratar);
+
+  // Al entrar a la app autenticado, traemos los datos reales desde Supabase.
+  useEffect(() => {
+    if (profile?.id) hidratar(profile.id);
+  }, [profile?.id, hidratar]);
   return (
     <Tabs
       screenOptions={{

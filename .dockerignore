@@ -1,0 +1,15 @@
+node_modules
+.git
+.gitignore
+.expo
+dist
+web-build
+.env
+.env.*
+!.env.example
+*.log
+.vscode
+.idea
+android
+ios
+docs

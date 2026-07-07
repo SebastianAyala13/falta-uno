@@ -9,11 +9,14 @@ export const APP = {
 } as const;
 
 /**
- * Base pública donde se hostean las páginas legales (repo público falta-uno-legal en GitHub Pages).
- * Si más adelante usás un dominio propio, cambiá solo esta constante.
+ * URL pública del sitio (app web + páginas legales). Configurable por entorno:
+ * poné EXPO_PUBLIC_SITE_URL en `.env` (o en los build args de Dokploy).
+ * De ahí se deriva LEGAL_URL = <SITE_URL>/legal (privacidad y términos viven ahí).
+ * Fallback sin la var: el hosting actual en GitHub Pages, para no romper builds.
  * Lo usan el registro (aceptación de términos) y el Perfil.
  */
-export const LEGAL_URL = 'https://sebastianayala13.github.io/falta-uno-legal';
+const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL ?? 'https://sebastianayala13.github.io/falta-uno-legal';
+export const LEGAL_URL = process.env.EXPO_PUBLIC_SITE_URL ? `${SITE_URL}/legal` : SITE_URL;
 export const URL_PRIVACIDAD = `${LEGAL_URL}/privacidad.html`;
 export const URL_TERMINOS = `${LEGAL_URL}/terminos.html`;
 

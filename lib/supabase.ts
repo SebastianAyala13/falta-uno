@@ -18,11 +18,16 @@ import type { Database } from '@/types/database';
  * ⚠️ La `anon key` es pública (segura para el cliente). NUNCA pongas la
  *    `service_role` key en la app.
  */
+// Nota: usamos `?.trim() ||` en vez de `??` a propósito. En un build de Docker,
+// `ARG` + `ENV FOO=$ARG` sin pasar el build-arg deja la variable en STRING VACÍO
+// (definido, no undefined), y `"" ?? fallback` daría "" -> createClient("") lanza
+// "supabaseUrl is required" (pantalla blanca). Con `|| fallback`, el vacío cae al
+// placeholder y la app corre en modo demo en vez de crashear.
 const SUPABASE_URL =
-  process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://TU-PROYECTO.supabase.co';
+  process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() || 'https://TU-PROYECTO.supabase.co';
 
 const SUPABASE_ANON_KEY =
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? 'TU_ANON_KEY_AQUI';
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() || 'TU_ANON_KEY_AQUI';
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {

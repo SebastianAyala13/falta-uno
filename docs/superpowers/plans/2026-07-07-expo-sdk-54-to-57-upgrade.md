@@ -44,9 +44,12 @@ tarea aparte post-upgrade).
 
 ## Riesgos y bloqueantes a resolver ANTES de arrancar
 
-- 🔴 **NativeWind vs RN 0.85/0.86:** confirmar que la versión de `nativewind` soporta el RN objetivo
-  (styling es transversal; si nativewind aún no soporta el RN de SDK 56/57, el salto se bloquea hasta
-  que salga una versión compatible). Revisar releases de nativewind antes de comprometer fechas.
+- 🟡 **NativeWind vs RN 0.85/0.86:** styling es transversal, así que es el riesgo a vigilar. Dato
+  concreto: `nativewind@4.2.6` (la instalada, y la última estable) declara **solo**
+  `tailwindcss: '>3.3.0'` como peer — **no** fija versión de RN, así que **no bloquea el install**.
+  El incógnito es el runtime con RN 0.85/0.86 (nativewind/react-native-css-interop tocan internals de
+  RN/reanimated). Validar el estilado en el smoke de cada salto; si algo se rompe, el fallback es
+  `nativewind@5.0.0-preview` (v5 en preview, apunta a RN nuevo). Confirmar en el smoke, no antes.
 - 🟡 **react-native-maps en New Arch** (SDK 55): validar temprano en device; es el módulo nativo más
   histórico-problemático.
 - 🟡 **Betas `@expo/ui` (~0.2-beta) y `expo-glass-effect` (~0.1):** APIs inestables entre SDKs;

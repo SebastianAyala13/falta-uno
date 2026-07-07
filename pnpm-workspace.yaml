@@ -1,0 +1,6 @@
+# React Native / Metro no soportan bien el node_modules con symlinks de pnpm
+# (autolinking de módulos nativos + imports inyectados como
+# "react-native-css-interop/jsx-runtime" por el babel de NativeWind).
+# hoisted deja un node_modules plano tipo npm, resoluble por Metro.
+# En pnpm 11 este ajuste va aquí, NO en .npmrc (que pnpm ya no lee para esto).
+nodeLinker: hoisted

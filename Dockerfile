@@ -1,5 +1,6 @@
 # ---- Stage 1: exportar la web ----
-FROM node:20-alpine AS builder
+# Node 22: pnpm 11 usa node:sqlite (built-in desde Node 22), no disponible en Node 20.
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Vars públicas que se hornean en el bundle al exportar
@@ -12,11 +13,18 @@ ENV EXPO_PUBLIC_SUPABASE_URL=$EXPO_PUBLIC_SUPABASE_URL \
     EXPO_PUBLIC_SITE_URL=$EXPO_PUBLIC_SITE_URL \
     EXPO_PUBLIC_LEMONSQUEEZY_ENABLED=$EXPO_PUBLIC_LEMONSQUEEZY_ENABLED
 
-COPY package.json package-lock.json ./
-RUN npm ci
+# Este proyecto usa pnpm (no npm). corepack activa la versión fijada en el campo
+# "packageManager" de package.json. pnpm-workspace.yaml trae `nodeLinker: hoisted`,
+# imprescindible para que Metro/NativeWind resuelvan un node_modules plano.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable
+
+# Instalar deps con el lockfile del repo (cacheable si no cambian estos archivos)
+COPY package.json pnpm-lock.yaml .npmrc pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 
 COPY . .
-RUN npx expo export --platform web
+RUN pnpm exec expo export --platform web
 # Guardarraíl: el bundle web se carga con <script> clásico (no type=module), así que
 # NO puede contener import.meta u otros tokens solo-módulo. Si alguno no parsea como
 # script clásico, fallamos el build acá en vez de servir una página en blanco.

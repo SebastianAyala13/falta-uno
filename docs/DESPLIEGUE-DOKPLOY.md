@@ -18,10 +18,14 @@ páginas legales en `/legal/`, construida por Dockerfile desde GitHub.
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY` = tu anon key
    - `EXPO_PUBLIC_SITE_URL` = `https://<tu-dominio>`
    - `EXPO_PUBLIC_LEMONSQUEEZY_ENABLED` = `1` (opcional)
-4. **Dominio:** pestaña Domains → agregá `<tu-dominio>`, puerto interno **80**,
-   activá **HTTPS** (Let's Encrypt). Traefik emite el certificado.
-5. **Deploy.** Activá **Auto Deploy** para que cada push a `main` redepliegue.
-6. **DNS:** registro A del dominio → IP del servidor Dokploy.
+4. **DNS primero:** creá el registro **A** de `<tu-dominio>` → IP del servidor
+   Dokploy y esperá a que resuelva. Hacelo **antes** de activar HTTPS: Let's
+   Encrypt valida el dominio contra esa IP y, si todavía no resuelve, la
+   emisión del certificado falla.
+5. **Dominio + HTTPS:** pestaña Domains → agregá `<tu-dominio>`, puerto interno
+   **80**, activá **HTTPS** (Let's Encrypt). Con el DNS ya resolviendo (paso 4),
+   Traefik emite el certificado.
+6. **Deploy.** Activá **Auto Deploy** para que cada push a `main` redepliegue.
 
 ## Verificación post-deploy
 - `https://<tu-dominio>/` carga la app.

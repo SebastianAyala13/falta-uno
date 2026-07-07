@@ -27,7 +27,123 @@ export interface Profile {
   // Prueba de consentimiento (Ley 1581 de 2012 · habeas data)
   politica_version?: string | null; // versión de política aceptada
   politica_aceptada_at?: string | null; // fecha/hora de aceptación
+  roles?: string[]; // 'jugador' y/o 'cancha'
   created_at: string; // timestamptz
+}
+
+// ----------------------------------------------------------------------------
+// MARKETPLACE DE CANCHAS
+// ----------------------------------------------------------------------------
+
+/** Amenidades de una cancha (checklist de servicios para el jugador). */
+export interface Amenidades {
+  duchas?: boolean;
+  banos?: boolean;
+  tienda?: boolean;
+  cafeteria?: boolean;
+  gradas?: boolean;
+  parqueadero?: boolean;
+  cubierta_lluvia?: boolean; // preparada para lluvia (techada)
+  iluminacion?: boolean; // luz para jugar de noche
+  alquiler_implementos?: boolean; // balón, petos
+  wifi?: boolean;
+  arbitro?: boolean;
+}
+
+/** Una cancha (venue) administrada por un dueño (profiles.roles incluye 'cancha'). */
+export interface Cancha {
+  id: string;
+  owner_id: string;
+  nombre: string;
+  direccion: string;
+  zona: string;
+  ciudad: string;
+  lat: number | null;
+  lng: number | null;
+  descripcion: string | null;
+  telefono: string | null;
+  formatos: Formato[];
+  amenidades: Amenidades;
+  fotos: string[];
+  foto_portada: string | null;
+  estado: 'activa' | 'pausada';
+  comision_pct: number;
+  mp_account_ref: string | null;
+  legal_version: string | null;
+  legal_aceptado_at: string | null;
+  created_at: string;
+}
+
+/** Plantilla de horario recurrente de una cancha (genera los slots reservables). */
+export interface CanchaDisponibilidad {
+  id: string;
+  cancha_id: string;
+  dia_semana: number; // 0=domingo … 6=sábado
+  hora_apertura: string; // 'HH:mm'
+  hora_cierre: string; // 'HH:mm'
+  duracion_min: number;
+  precio: number;
+  activo: boolean;
+  created_at: string;
+}
+
+export type EstadoReserva = 'pendiente' | 'confirmada' | 'cancelada' | 'completada';
+
+/** Reserva de un slot de cancha por un jugador. */
+export interface Reserva {
+  id: string;
+  cancha_id: string;
+  jugador_id: string;
+  fecha: string; // 'YYYY-MM-DD'
+  hora_inicio: string; // 'HH:mm'
+  hora_fin: string; // 'HH:mm'
+  precio: number;
+  comision: number;
+  estado: EstadoReserva;
+  medio: string; // 'efectivo' | 'online'
+  pago_id: string | null;
+  partido_id: string | null; // si se abrió como partido para que otros se sumen
+  referencia: string;
+  created_at: string;
+}
+
+export type TipoMovimiento = 'ingreso_reserva' | 'comision' | 'retiro' | 'ajuste';
+
+/** Movimiento del ledger de una cancha (fuente de verdad del saldo). */
+export interface MovimientoCancha {
+  id: string;
+  cancha_id: string;
+  tipo: TipoMovimiento;
+  monto: number; // con signo
+  reserva_id: string | null;
+  retiro_id: string | null;
+  descripcion: string | null;
+  created_at: string;
+}
+
+export type EstadoRetiro = 'solicitado' | 'procesando' | 'pagado' | 'rechazado';
+
+/** Solicitud de desembolso del saldo de una cancha. */
+export interface Retiro {
+  id: string;
+  cancha_id: string;
+  monto: number;
+  estado: EstadoRetiro;
+  mp_payout_ref: string | null;
+  motivo_rechazo: string | null;
+  solicitado_at: string;
+  procesado_at: string | null;
+}
+
+/** Membresía de una cancha (activa ⇒ 0% de comisión). */
+export interface MembresiaCancha {
+  id: string;
+  cancha_id: string;
+  plan: string;
+  estado: 'activa' | 'vencida' | 'cancelada';
+  vigente_hasta: string | null;
+  mp_preapproval_ref: string | null;
+  created_at: string;
 }
 
 /** Un partido publicado por un usuario. */
@@ -214,6 +330,42 @@ export interface Database {
         Update: Partial<{ post_id: string; user_id: string }>;
         Relationships: [];
       };
+      canchas: {
+        Row: Cancha;
+        Insert: Omit<Cancha, 'id' | 'created_at'> & Partial<Pick<Cancha, 'comision_pct'>>;
+        Update: Partial<Cancha>;
+        Relationships: [];
+      };
+      cancha_disponibilidad: {
+        Row: CanchaDisponibilidad;
+        Insert: Omit<CanchaDisponibilidad, 'id' | 'created_at'>;
+        Update: Partial<CanchaDisponibilidad>;
+        Relationships: [];
+      };
+      reservas: {
+        Row: Reserva;
+        Insert: Omit<Reserva, 'id' | 'created_at'>;
+        Update: Partial<Reserva>;
+        Relationships: [];
+      };
+      movimientos_cancha: {
+        Row: MovimientoCancha;
+        Insert: Omit<MovimientoCancha, 'id' | 'created_at'>;
+        Update: Partial<MovimientoCancha>;
+        Relationships: [];
+      };
+      retiros: {
+        Row: Retiro;
+        Insert: Omit<Retiro, 'id' | 'solicitado_at' | 'procesado_at'>;
+        Update: Partial<Retiro>;
+        Relationships: [];
+      };
+      membresias_cancha: {
+        Row: MembresiaCancha;
+        Insert: Omit<MembresiaCancha, 'id' | 'created_at'>;
+        Update: Partial<MembresiaCancha>;
+        Relationships: [];
+      };
       reportes: {
         Row: Reporte;
         Insert: Omit<Reporte, 'id' | 'created_at'>;
@@ -235,7 +387,12 @@ export interface Database {
         Relationships: [];
       };
     };
-    Functions: Record<string, never>;
+    Functions: {
+      saldo_cancha: {
+        Args: { p_cancha: string };
+        Returns: number;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

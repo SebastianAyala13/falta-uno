@@ -141,3 +141,65 @@ export const MEDIOS_PAGO_ACTIVOS: MedioPago[] = MEDIOS_PAGO.filter(
 
 /** Comisión de servicio de Falta Uno (sobre el precio del cupo). */
 export const COMISION_SERVICIO = 0.08; // 8%
+
+// ----------------------------------------------------------------------------
+// MARKETPLACE DE CANCHAS
+// ----------------------------------------------------------------------------
+
+/** Roles que puede tener un perfil. Un usuario puede ser ambos. */
+export const ROLES = ['jugador', 'cancha'] as const;
+export type Rol = (typeof ROLES)[number];
+
+/**
+ * Comisión que Falta Uno cobra a la cancha por cada reserva pagada online.
+ * Se vuelve 0 si la cancha tiene una membresía activa.
+ */
+export const COMISION_CANCHA_DEFAULT = 0.1; // 10%
+
+/**
+ * Membresía de cancha: mientras esté activa, la cancha no paga comisión.
+ * El precio es un default a confirmar con negocio; el cobro real se activa en
+ * Fase 2 (Mercado Pago). Ajustá acá cuando definas el valor definitivo.
+ */
+export const MEMBRESIA = {
+  nombre: 'Cancha Pro',
+  precioMensual: 49900, // COP/mes (default a confirmar)
+  beneficio: '0% de comisión en todas tus reservas',
+} as const;
+
+/**
+ * `true` cuando Mercado Pago está habilitado para esta build (Fase 2).
+ * Igual que Lemon Squeezy: la llave privada NUNCA va en el cliente, vive en las
+ * Edge Functions. Con el flag apagado, las reservas solo aceptan efectivo y los
+ * retiros/membresías quedan como "Próximamente".
+ */
+export const MERCADOPAGO_CONFIGURADO = !!process.env.EXPO_PUBLIC_MERCADOPAGO_ENABLED;
+
+/** Amenidades de una cancha (para el editor del dueño y el perfil del jugador). */
+export interface AmenidadDef {
+  id: string;
+  label: string;
+  icon: string; // Ionicons
+}
+
+export const AMENIDADES: AmenidadDef[] = [
+  { id: 'duchas', label: 'Duchas', icon: 'water' },
+  { id: 'banos', label: 'Baños', icon: 'man' },
+  { id: 'tienda', label: 'Tienda', icon: 'storefront' },
+  { id: 'cafeteria', label: 'Cafetería', icon: 'cafe' },
+  { id: 'gradas', label: 'Gradas', icon: 'people' },
+  { id: 'parqueadero', label: 'Parqueadero', icon: 'car' },
+  { id: 'cubierta_lluvia', label: 'Techada (lluvia)', icon: 'umbrella' },
+  { id: 'iluminacion', label: 'Iluminación', icon: 'flashlight' },
+  { id: 'alquiler_implementos', label: 'Alquiler de balón/petos', icon: 'football' },
+  { id: 'wifi', label: 'WiFi', icon: 'wifi' },
+  { id: 'arbitro', label: 'Árbitro', icon: 'flag' },
+];
+
+/** URLs legales específicas del marketplace de canchas. */
+export const URL_MANDATO_RECAUDO = `${LEGAL_URL}/mandato-recaudo.html`;
+export const URL_TERMINOS_MARKETPLACE = `${LEGAL_URL}/terminos-marketplace.html`;
+export const URL_CANCELACIONES = `${LEGAL_URL}/cancelaciones.html`;
+
+/** Versión vigente del mandato de recaudo + T&C de canchas (prueba de aceptación). */
+export const LEGAL_CANCHA_VERSION = '2026-07-07';

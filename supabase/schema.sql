@@ -377,3 +377,203 @@ begin
     end if;
   end loop;
 end $$;
+
+-- ============================================================================
+-- MARKETPLACE DE CANCHAS (rol cancha, reservas, saldo, retiros, membresías)
+-- Fase 1: perfil de cancha, agenda, reservas (efectivo), ledger de saldo.
+-- El dinero online (Mercado Pago) se enciende en Fase 2 desde Edge Functions.
+-- ============================================================================
+
+-- Un mismo perfil puede ser jugador y/o dueño de cancha
+alter table public.profiles add column if not exists roles text[] not null default '{jugador}';
+
+-- Canchas (venues) publicadas por un dueño
+create table if not exists public.canchas (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references public.profiles (id) on delete cascade,
+  nombre text not null,
+  direccion text not null,
+  zona text not null,
+  ciudad text not null default 'Pereira',
+  lat double precision,
+  lng double precision,
+  descripcion text,
+  telefono text,
+  formatos text[] not null default '{}',            -- ['5v5','7v7','11v11']
+  amenidades jsonb not null default '{}'::jsonb,     -- { duchas, banos, tienda, ... }
+  fotos text[] not null default '{}',
+  foto_portada text,
+  estado text not null default 'activa' check (estado in ('activa','pausada')),
+  comision_pct numeric not null default 0.10,
+  mp_account_ref text,                              -- cuenta MP para payout (Fase 2)
+  legal_version text,                               -- prueba de aceptación mandato/T&C
+  legal_aceptado_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+-- Plantilla de horarios recurrentes → de acá se derivan los slots reservables
+create table if not exists public.cancha_disponibilidad (
+  id uuid primary key default gen_random_uuid(),
+  cancha_id uuid not null references public.canchas (id) on delete cascade,
+  dia_semana int not null check (dia_semana between 0 and 6),  -- 0=domingo
+  hora_apertura time not null,
+  hora_cierre time not null,
+  duracion_min int not null default 60,
+  precio int not null default 0,
+  activo boolean not null default true,
+  created_at timestamptz not null default now()
+);
+create index if not exists disp_cancha_idx on public.cancha_disponibilidad (cancha_id, dia_semana);
+
+-- Reservas de un slot por un jugador
+create table if not exists public.reservas (
+  id uuid primary key default gen_random_uuid(),
+  cancha_id uuid not null references public.canchas (id) on delete cascade,
+  jugador_id uuid not null references public.profiles (id) on delete cascade,
+  fecha date not null,
+  hora_inicio time not null,
+  hora_fin time not null,
+  precio int not null,
+  comision int not null default 0,
+  estado text not null default 'pendiente'
+    check (estado in ('pendiente','confirmada','cancelada','completada')),
+  medio text not null default 'efectivo',           -- 'efectivo' | 'online'
+  pago_id uuid,
+  partido_id uuid references public.partidos (id) on delete set null,  -- partido abierto
+  referencia text not null,
+  created_at timestamptz not null default now(),
+  unique (cancha_id, fecha, hora_inicio)             -- ANTI-DOBLE-RESERVA
+);
+create index if not exists reservas_cancha_fecha_idx on public.reservas (cancha_id, fecha);
+create index if not exists reservas_jugador_idx on public.reservas (jugador_id, created_at desc);
+
+-- Ledger: fuente de verdad del saldo de cada cancha (solo lo escribe el servidor)
+create table if not exists public.movimientos_cancha (
+  id uuid primary key default gen_random_uuid(),
+  cancha_id uuid not null references public.canchas (id) on delete cascade,
+  tipo text not null check (tipo in ('ingreso_reserva','comision','retiro','ajuste')),
+  monto int not null,                                -- con signo (+ ingreso, - comision/retiro)
+  reserva_id uuid references public.reservas (id) on delete set null,
+  retiro_id uuid,
+  descripcion text,
+  created_at timestamptz not null default now()
+);
+create index if not exists mov_cancha_idx on public.movimientos_cancha (cancha_id, created_at desc);
+
+-- Solicitudes de desembolso
+create table if not exists public.retiros (
+  id uuid primary key default gen_random_uuid(),
+  cancha_id uuid not null references public.canchas (id) on delete cascade,
+  monto int not null check (monto > 0),
+  estado text not null default 'solicitado'
+    check (estado in ('solicitado','procesando','pagado','rechazado')),
+  mp_payout_ref text,
+  motivo_rechazo text,
+  solicitado_at timestamptz not null default now(),
+  procesado_at timestamptz
+);
+create index if not exists retiros_cancha_idx on public.retiros (cancha_id, solicitado_at desc);
+
+-- Membresías (activa ⇒ comisión 0). El cobro real se activa en Fase 2.
+create table if not exists public.membresias_cancha (
+  id uuid primary key default gen_random_uuid(),
+  cancha_id uuid not null references public.canchas (id) on delete cascade,
+  plan text not null default 'mensual',
+  estado text not null default 'activa' check (estado in ('activa','vencida','cancelada')),
+  vigente_hasta date,
+  mp_preapproval_ref text,
+  created_at timestamptz not null default now()
+);
+create index if not exists memb_cancha_idx on public.membresias_cancha (cancha_id);
+
+-- ----------------------------------------------------------------------------
+-- RLS del marketplace
+-- ----------------------------------------------------------------------------
+alter table public.canchas enable row level security;
+alter table public.cancha_disponibilidad enable row level security;
+alter table public.reservas enable row level security;
+alter table public.movimientos_cancha enable row level security;
+alter table public.retiros enable row level security;
+alter table public.membresias_cancha enable row level security;
+
+-- Canchas: lectura pública (para que los jugadores las vean); el dueño gestiona la suya
+drop policy if exists "canchas_lectura" on public.canchas;
+drop policy if exists "canchas_insert" on public.canchas;
+drop policy if exists "canchas_update" on public.canchas;
+drop policy if exists "canchas_delete" on public.canchas;
+create policy "canchas_lectura" on public.canchas for select using (true);
+create policy "canchas_insert" on public.canchas for insert with check (auth.uid() = owner_id);
+create policy "canchas_update" on public.canchas for update using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
+create policy "canchas_delete" on public.canchas for delete using (auth.uid() = owner_id);
+
+-- Disponibilidad: lectura pública; escritura solo del dueño de la cancha
+drop policy if exists "disp_lectura" on public.cancha_disponibilidad;
+drop policy if exists "disp_escritura" on public.cancha_disponibilidad;
+create policy "disp_lectura" on public.cancha_disponibilidad for select using (true);
+create policy "disp_escritura" on public.cancha_disponibilidad for all
+  using (exists (select 1 from public.canchas c where c.id = cancha_disponibilidad.cancha_id and c.owner_id = auth.uid()))
+  with check (exists (select 1 from public.canchas c where c.id = cancha_disponibilidad.cancha_id and c.owner_id = auth.uid()));
+
+-- Reservas: las lee el jugador dueño de la reserva o el dueño de la cancha;
+-- el jugador solo puede crearlas a su nombre. El paso a 'confirmada' con pago
+-- online lo hace el webhook (service_role, que salta RLS).
+drop policy if exists "reservas_lectura" on public.reservas;
+drop policy if exists "reservas_insert" on public.reservas;
+drop policy if exists "reservas_update_dueno" on public.reservas;
+create policy "reservas_lectura" on public.reservas for select using (
+  auth.uid() = jugador_id
+  or exists (select 1 from public.canchas c where c.id = reservas.cancha_id and c.owner_id = auth.uid())
+);
+create policy "reservas_insert" on public.reservas for insert with check (
+  auth.uid() = jugador_id and estado in ('pendiente','confirmada')
+);
+-- El dueño de la cancha puede cancelar/completar reservas de su cancha
+create policy "reservas_update_dueno" on public.reservas for update using (
+  auth.uid() = jugador_id
+  or exists (select 1 from public.canchas c where c.id = reservas.cancha_id and c.owner_id = auth.uid())
+);
+
+-- Ledger: solo el dueño LEE sus movimientos. Nadie los inserta/edita desde el
+-- cliente (sin policy de insert ⇒ RLS lo niega): los escribe solo el servidor.
+drop policy if exists "movimientos_lectura" on public.movimientos_cancha;
+create policy "movimientos_lectura" on public.movimientos_cancha for select using (
+  exists (select 1 from public.canchas c where c.id = movimientos_cancha.cancha_id and c.owner_id = auth.uid())
+);
+
+-- Retiros: el dueño ve y solicita los suyos (estado inicial 'solicitado'); el
+-- paso a 'pagado'/'rechazado' lo hace el servidor (Edge Function).
+drop policy if exists "retiros_lectura" on public.retiros;
+drop policy if exists "retiros_insert" on public.retiros;
+create policy "retiros_lectura" on public.retiros for select using (
+  exists (select 1 from public.canchas c where c.id = retiros.cancha_id and c.owner_id = auth.uid())
+);
+create policy "retiros_insert" on public.retiros for insert with check (
+  estado = 'solicitado'
+  and exists (select 1 from public.canchas c where c.id = retiros.cancha_id and c.owner_id = auth.uid())
+);
+
+-- Membresías: solo el dueño las lee; las escribe el servidor (webhook de MP).
+drop policy if exists "membresias_lectura" on public.membresias_cancha;
+create policy "membresias_lectura" on public.membresias_cancha for select using (
+  exists (select 1 from public.canchas c where c.id = membresias_cancha.cancha_id and c.owner_id = auth.uid())
+);
+
+-- Saldo de una cancha (suma del ledger). Devuelve 0 si no sos el dueño.
+create or replace function public.saldo_cancha(p_cancha uuid)
+returns int language sql stable security definer set search_path = public as $$
+  select coalesce(sum(m.monto), 0)::int
+  from public.movimientos_cancha m
+  where m.cancha_id = p_cancha
+    and exists (select 1 from public.canchas c where c.id = p_cancha and c.owner_id = auth.uid());
+$$;
+grant execute on function public.saldo_cancha(uuid) to authenticated;
+
+-- ----------------------------------------------------------------------------
+-- STORAGE: bucket público para fotos de canchas (subida solo autenticado)
+-- ----------------------------------------------------------------------------
+insert into storage.buckets (id, name, public) values ('canchas', 'canchas', true)
+  on conflict (id) do nothing;
+drop policy if exists "canchas_fotos_lectura" on storage.objects;
+drop policy if exists "canchas_fotos_subida" on storage.objects;
+create policy "canchas_fotos_lectura" on storage.objects for select using (bucket_id = 'canchas');
+create policy "canchas_fotos_subida" on storage.objects for insert to authenticated with check (bucket_id = 'canchas');

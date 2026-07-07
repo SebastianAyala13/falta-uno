@@ -17,6 +17,10 @@ RUN npm ci
 
 COPY . .
 RUN npx expo export --platform web
+# Guardarraíl: el bundle web se carga con <script> clásico (no type=module), así que
+# NO puede contener import.meta u otros tokens solo-módulo. Si alguno no parsea como
+# script clásico, fallamos el build acá en vez de servir una página en blanco.
+RUN node -e "const vm=require('vm'),fs=require('fs'),p=require('path');const d='dist/_expo/static/js/web';let n=0;for(const f of fs.readdirSync(d)){if(!f.endsWith('.js'))continue;new vm.Script(fs.readFileSync(p.join(d,f),'utf8'),{filename:f});n++;}console.log('OK: '+n+' bundle(s) web parsean como classic script');"
 # Empaquetar las páginas legales bajo /legal
 RUN mkdir -p dist/legal && cp legal/*.html dist/legal/
 

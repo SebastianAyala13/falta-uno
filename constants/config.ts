@@ -15,8 +15,9 @@ export const APP = {
  * Fallback sin la var: el hosting actual en GitHub Pages, para no romper builds.
  * Lo usan el registro (aceptación de términos) y el Perfil.
  */
-const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL ?? 'https://sebastianayala13.github.io/falta-uno-legal';
-export const LEGAL_URL = process.env.EXPO_PUBLIC_SITE_URL ? `${SITE_URL}/legal` : SITE_URL;
+const SITE_URL_ENV = process.env.EXPO_PUBLIC_SITE_URL?.trim();
+const SITE_URL = SITE_URL_ENV || 'https://sebastianayala13.github.io/falta-uno-legal';
+export const LEGAL_URL = SITE_URL_ENV ? `${SITE_URL}/legal` : SITE_URL;
 export const URL_PRIVACIDAD = `${LEGAL_URL}/privacidad.html`;
 export const URL_TERMINOS = `${LEGAL_URL}/terminos.html`;
 

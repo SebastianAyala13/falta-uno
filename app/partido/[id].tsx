@@ -3,11 +3,11 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, Linking, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Avatar from '@/components/Avatar';
 import Badge from '@/components/Badge';
+import CanchaMap from '@/components/CanchaMap';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import ProgressBar from '@/components/ProgressBar';
@@ -211,27 +211,12 @@ export default function PartidoDetalle() {
 
           {/* Ubicación / mapa */}
           <FadeIn delay={230}>
-            <View className="mb-4 overflow-hidden rounded-3xl border border-border bg-card">
-              <MapView
-                style={{ height: 160 }}
-                pointerEvents="none"
-                initialRegion={{
-                  latitude: coords.latitude,
-                  longitude: coords.longitude,
-                  latitudeDelta: 0.012,
-                  longitudeDelta: 0.012,
-                }}>
-                <Marker coordinate={coords} title={partido.cancha} description={partido.zona} />
-              </MapView>
-              <Pressable
-                onPress={abrirMapa}
-                className="flex-row items-center justify-center gap-2 border-t border-border py-3.5 active:bg-border/40">
-                <Ionicons name="navigate" size={18} color={Colors.primary} />
-                <Text className="font-body-bold text-sm uppercase tracking-wide text-primary">
-                  Cómo llegar
-                </Text>
-              </Pressable>
-            </View>
+            <CanchaMap
+              coords={coords}
+              cancha={partido.cancha}
+              zona={partido.zona}
+              onComoLlegar={abrirMapa}
+            />
           </FadeIn>
 
           {/* Descripción */}

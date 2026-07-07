@@ -1,1 +1,110 @@
-@AGENTS.md
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+**Falta Uno** — Expo (React Native) app to organize pickup football games and a fields
+("canchas") marketplace, starting in Pereira, Colombia. Ships to iOS/Android (EAS) and as
+a web build (React Native Web) hosted on Dokploy.
+
+## Package manager: pnpm (NOT npm)
+
+This is the single most common trip-up. The repo standardized on **pnpm via corepack**:
+
+- `package.json` pins `packageManager: pnpm@11.10.0`. Run `corepack enable` once; then `pnpm …`.
+- `pnpm-workspace.yaml` sets **`nodeLinker: hoisted`** — required so Metro/NativeWind can
+  resolve a flat `node_modules` (pnpm's default symlinked layout breaks React Native autolinking
+  and NativeWind's injected `react-native-css-interop/jsx-runtime` import). Do not change this or
+  switch to npm/yarn. There is no committed `package-lock.json` on purpose.
+- pnpm 11 requires **Node ≥ 22** (it uses the `node:sqlite` builtin). The Docker build pins `node:22-alpine`.
+
+## Commands
+
+```bash
+pnpm install                          # install deps (uses pnpm-lock.yaml)
+pnpm start                            # expo start — dev server (Expo Go QR, or press a/i/w)
+pnpm android | pnpm ios | pnpm web    # expo start on a specific platform
+pnpm lint                             # expo lint — the only automated check in the repo
+pnpm exec expo export --platform web  # produce the static web build in dist/
+```
+
+There is **no test suite** (no jest, no `test` script). "Verification" means: `pnpm lint`, a
+successful `expo export`, and — for the web deploy — a `docker build` (see Deploy).
+
+Mobile release builds go through EAS (`eas.json`):
+
+```bash
+eas build --platform android --profile preview        # installable APK for testing
+eas build --platform android|ios --profile production # store artifacts (.aab / .ipa)
+eas submit --platform android|ios
+```
+
+## Architecture
+
+**Routing** — Expo Router, file-based in `app/`. `app/_layout.tsx` loads fonts and wraps everything
+in the auth provider. Groups: `(auth)` (welcome/login/register/recuperar), `(tabs)` (home, buscar,
+crear, muro, perfil). The rest are stack routes: `partido/[id]`, `chat/[id]`, `checkout/[id]`,
+`calificar/[id]`, the muro (`post/[id]`, `crear-post`), and the canchas marketplace
+(`canchas`, `cancha/panel`, `cancha/agenda`, `cancha/finanzas`, `cancha/[id]/…`, `mis-reservas`).
+
+**Two roles** — a profile has `roles` including `jugador` (default: create/join partidos) and/or
+`cancha` (field owner: panel, agenda, finanzas, reservations). Screens branch on the active role.
+
+**Backend/demo duality (core pattern)** — the app runs fully **without a backend**. `lib/supabase.ts`
+exposes `supabaseConfigurado`; when Supabase credentials are absent it falls back to local
+`AsyncStorage` + `lib/mockData.ts`. Both `lib/auth.tsx` (AuthContext: session, profile, `demo` flag,
+sign-in/up/guest, delete-account) and `lib/store.ts` branch on this. When configured,
+`store.hidratar(userId)` pulls real data from Supabase and `lib/chat.ts` uses Realtime. Keep both
+paths working when touching data flow.
+
+**State** — a single persisted **zustand** store in `lib/store.ts` (partidos, inscripciones, pagos,
+chat fallback, calificaciones/reputación, muro social posts+comentarios, moderación bloqueos+reportes).
+Auth lives separately in `lib/auth.tsx`. Data layers: `lib/canchas.ts` (canchas: reservas, agenda,
+saldo, Mercado Pago), `lib/payments.ts`, `types/database.ts` (Supabase row types).
+
+**Supabase** — `supabase/schema.sql` defines tables + per-user RLS on everything. Server logic runs in
+`supabase/functions/` (`create-checkout`, `lemonsqueezy-webhook`, `delete-user`); deploy with
+`supabase functions deploy <name>` (the webhook with `--no-verify-jwt`).
+
+**Payments (hard invariant)** — the client **never** marks a payment `aprobado`. Cash stays
+`pendiente` (Falta Uno holds no money). Online payments (Lemon Squeezy for partidos, Mercado Pago for
+canchas) open an external checkout via an edge function; `aprobado` is written **only** by the server
+webhook. Secret keys live only in edge functions, never with the `EXPO_PUBLIC_` prefix.
+
+**Styling** — NativeWind (Tailwind for RN). Brand tokens in `constants/colors.ts` + a runtime theme
+switcher in `constants/themes.ts`/`lib/theme.ts`. Wired via `babel.config.js` (`jsxImportSource: nativewind`)
+and `metro.config.js` (`withNativeWind`, `input: ./global.css`).
+
+## Web-export gotchas (non-obvious, will silently blank the page if ignored)
+
+- **`EXPO_PUBLIC_*` vars are inlined at BUILD time** (`expo export`), not runtime. In a Docker build,
+  an unset `ARG` becomes an **empty string** (defined, not undefined). Read such vars with
+  `process.env.X?.trim() || fallback`, **never `?? fallback`** (empty string isn't null and would win).
+  See `lib/supabase.ts` and `constants/config.ts`.
+- **Never `import 'react-native-maps'` directly in `app/`** — it is native-only and breaks the web
+  bundle. Always use `@/components/CanchaMap` (platform-split `CanchaMap.tsx` / `CanchaMap.web.tsx`,
+  where web renders a Google Maps iframe). The Dockerfile fails the build if a direct import reappears in `app/`.
+- **`babel.config.js` sets `unstable_transformImportMeta: true`** — dependencies (e.g. zustand
+  middleware) emit `import.meta`, which is a SyntaxError in Expo's classic-`<script>` web bundle
+  (becomes the default in SDK 56). The Dockerfile also parse-checks the emitted bundle so this class of
+  error fails the build instead of shipping a blank page.
+
+## Deploy
+
+- **Web + legal pages → Dokploy.** Multi-stage `Dockerfile` (pnpm build → nginx) + `nginx.conf`
+  (SPA fallback to `index.html`, `/legal/*` served as static files). Runbook: `docs/DESPLIEGUE-DOKPLOY.md`.
+  In Dokploy the `EXPO_PUBLIC_*` values go in **Build-time Arguments** (they bake in at build), not
+  runtime Environment; they are public (baked into the browser bundle) so they are not secrets.
+  The `legal/*.html` files are static pages the stores require (privacy, terms, account deletion).
+- **Mobile → EAS.** See `eas.json`. Store-compliance notes: `docs/CUMPLIMIENTO-TIENDAS.md`,
+  `docs/GUIA-PUBLICACION-GOOGLE-PLAY.md`.
+
+## Expo SDK version
+
+The repo pins **Expo SDK 54** (`expo` in `package.json`). Before writing Expo/RN code, consult the
+versioned docs for the **installed** SDK: https://docs.expo.dev/versions/v54.0.0/ — verify the version
+in `package.json` first, since `AGENTS.md` references v56.
+
+## Design docs
+
+Feature work is specced before coding: specs in `docs/superpowers/specs/`, implementation plans in
+`docs/superpowers/plans/` (dated `YYYY-MM-DD-<topic>`).

@@ -3,8 +3,8 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
 
+import CanchaMap from '@/components/CanchaMap';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
@@ -123,17 +123,12 @@ export default function PerfilCancha() {
                 ) : null}
 
                 {cancha.lat != null && cancha.lng != null ? (
-                  <View className="mt-4 overflow-hidden rounded-2xl border border-border">
-                    <MapView
-                      style={{ width: '100%', height: 160 }}
-                      initialRegion={{
-                        latitude: cancha.lat,
-                        longitude: cancha.lng,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                      }}>
-                      <Marker coordinate={{ latitude: cancha.lat, longitude: cancha.lng }} title={cancha.nombre} />
-                    </MapView>
+                  <View className="mt-4">
+                    <CanchaMap
+                      coords={{ latitude: cancha.lat, longitude: cancha.lng }}
+                      cancha={cancha.nombre}
+                      zona={cancha.direccion}
+                    />
                   </View>
                 ) : null}
 

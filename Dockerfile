@@ -24,6 +24,10 @@ COPY package.json pnpm-lock.yaml .npmrc pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
+# Guardarraíl (pre-export): en app/ el mapa va SIEMPRE por @/components/CanchaMap
+# (tiene variante .web). Un import directo de react-native-maps es native-only y
+# rompe el export web con un error críptico de Metro; fallamos temprano y claro.
+RUN if grep -rl "react-native-maps" app/ >/dev/null 2>&1; then echo "ERROR: import directo de react-native-maps en app/ -> usá el componente @/components/CanchaMap"; exit 1; fi
 RUN pnpm exec expo export --platform web
 # Guardarraíl: el bundle web se carga con <script> clásico (no type=module), así que
 # NO puede contener import.meta u otros tokens solo-módulo. Si alguno no parsea como

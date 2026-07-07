@@ -7,7 +7,8 @@ type Props = {
   coords: { latitude: number; longitude: number };
   cancha: string;
   zona: string;
-  onComoLlegar: () => void;
+  /** Si se pasa, muestra el botón "Cómo llegar" debajo del mapa. */
+  onComoLlegar?: () => void;
 };
 
 export default function CanchaMap({ coords, cancha, onComoLlegar }: Props) {
@@ -20,14 +21,16 @@ export default function CanchaMap({ coords, cancha, onComoLlegar }: Props) {
         loading="lazy"
         style={{ width: '100%', height: 160, border: 0, display: 'block' }}
       />
-      <Pressable
-        onPress={onComoLlegar}
-        className="flex-row items-center justify-center gap-2 border-t border-border py-3.5 active:bg-border/40">
-        <Ionicons name="navigate" size={18} color={Colors.primary} />
-        <Text className="font-body-bold text-sm uppercase tracking-wide text-primary">
-          Cómo llegar
-        </Text>
-      </Pressable>
+      {onComoLlegar ? (
+        <Pressable
+          onPress={onComoLlegar}
+          className="flex-row items-center justify-center gap-2 border-t border-border py-3.5 active:bg-border/40">
+          <Ionicons name="navigate" size={18} color={Colors.primary} />
+          <Text className="font-body-bold text-sm uppercase tracking-wide text-primary">
+            Cómo llegar
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

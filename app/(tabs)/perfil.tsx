@@ -42,6 +42,7 @@ export default function Perfil() {
   };
 
   const u = profile;
+  const esDueno = !!u?.roles?.includes('cancha');
   const jugados = u?.partidos_jugados ?? 0;
   const puntualidad = Math.max(0, Math.round(100 - ((u?.no_shows ?? 0) / Math.max(1, jugados)) * 100));
   const racha = Math.min(jugados, 5); // racha simple basada en partidos jugados
@@ -117,10 +118,32 @@ export default function Perfil() {
           </View>
         </FadeIn>
 
+        {/* Modo cancha: panel del dueño o CTA para registrar la cancha */}
+        <FadeIn delay={160}>
+          <Pressable
+            onPress={() => router.push(esDueno ? '/cancha/panel' : '/cancha/editar')}
+            className="mx-6 mt-6 flex-row items-center overflow-hidden rounded-3xl border border-accent/40 bg-accent/10 p-4 active:opacity-80">
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-accent/20">
+              <Ionicons name="business" size={24} color={Colors.accent} />
+            </View>
+            <View className="ml-3 flex-1">
+              <Text className="font-body-bold text-base text-cream">
+                {esDueno ? 'Panel de mi cancha' : 'Registrá tu cancha'}
+              </Text>
+              <Text className="font-body text-xs text-muted">
+                {esDueno ? 'Reservas, agenda, saldo y retiros' : 'Recibí reservas y cobrá por la app'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={Colors.accent} />
+          </Pressable>
+        </FadeIn>
+
         {/* Acciones */}
         <FadeIn delay={180}>
-          <View className="mx-6 mt-6 overflow-hidden rounded-3xl border border-border bg-card">
+          <View className="mx-6 mt-4 overflow-hidden rounded-3xl border border-border bg-card">
             <Accion icon="ticket-outline" label="Mis partidos" valor={`${misPartidos.length}`} onPress={() => router.push('/mis-partidos')} />
+            <Accion icon="football-outline" label="Reservar una cancha" onPress={() => router.push('/canchas')} />
+            <Accion icon="calendar-outline" label="Mis reservas" onPress={() => router.push('/mis-reservas')} />
             <Accion icon="receipt-outline" label="Mis pagos" onPress={() => router.push('/mis-pagos')} />
             <Accion icon="color-palette-outline" label="Apariencia" onPress={() => router.push('/apariencia')} />
             <Accion icon="create-outline" label="Editar perfil" onPress={() => router.push('/editar-perfil')} ultimo />

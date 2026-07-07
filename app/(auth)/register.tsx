@@ -16,6 +16,7 @@ export default function Register() {
   const router = useRouter();
   const { signUp, demo } = useAuth();
 
+  const [tipoCuenta, setTipoCuenta] = useState<'jugador' | 'cancha'>('jugador');
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [ciudad, setCiudad] = useState<string>(APP.defaultCity);
@@ -27,12 +28,18 @@ export default function Register() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const valido = nombre && email && posicion && nivel && password.length >= 6 && acepta;
+  const esCancha = tipoCuenta === 'cancha';
+  // Para dueños de cancha, posición/nivel de juego son opcionales.
+  const valido = nombre && email && password.length >= 6 && acepta && (esCancha || (posicion && nivel));
 
   const onSubmit = async () => {
     setError(null);
-    if (!nombre || !email || !posicion || !nivel || password.length < 6) {
-      setError('Completá nombre, correo, posición, nivel y una contraseña de 6+ caracteres.');
+    if (!nombre || !email || password.length < 6) {
+      setError('Completá nombre, correo y una contraseña de 6+ caracteres.');
+      return;
+    }
+    if (!esCancha && (!posicion || !nivel)) {
+      setError('Elegí tu posición y nivel de juego.');
       return;
     }
     if (!acepta) {
@@ -46,9 +53,10 @@ export default function Register() {
         email: email.trim(),
         password,
         ciudad,
-        posicion: posicion!,
-        nivel: nivel!,
+        posicion: posicion ?? 'Mediocampista',
+        nivel: nivel ?? 'Casual',
         celular: celular.trim(),
+        roles: esCancha ? ['jugador', 'cancha'] : ['jugador'],
       });
       if (res.needsConfirmation) {
         Alert.alert(
@@ -57,7 +65,7 @@ export default function Register() {
           [{ text: 'Ir a entrar', onPress: () => router.replace('/(auth)/login') }],
         );
       } else {
-        router.replace('/(tabs)');
+        router.replace(esCancha ? '/cancha/editar' : '/(tabs)');
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos crear la cuenta.');
@@ -84,30 +92,61 @@ export default function Register() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <FadeIn delay={60}>
+            {/* Tipo de cuenta: jugador o dueño de cancha */}
+            <Text className="mb-2 font-body-semibold text-sm text-cream">¿Cómo te registrás?</Text>
+            <View className="mb-5 flex-row gap-3">
+              {[
+                { key: 'jugador' as const, label: 'Soy jugador', icon: 'football' as const, hint: 'Buscá y armá partidos' },
+                { key: 'cancha' as const, label: 'Tengo una cancha', icon: 'business' as const, hint: 'Recibí reservas y cobrá' },
+              ].map((t) => {
+                const activo = tipoCuenta === t.key;
+                return (
+                  <Pressable
+                    key={t.key}
+                    onPress={() => setTipoCuenta(t.key)}
+                    className="flex-1 rounded-2xl border p-3"
+                    style={{
+                      backgroundColor: activo ? Colors.primary + '1A' : Colors.card,
+                      borderColor: activo ? Colors.primary : Colors.border,
+                    }}>
+                    <Ionicons name={t.icon} size={22} color={activo ? Colors.primary : Colors.muted} />
+                    <Text className="mt-1.5 font-body-bold text-sm" style={{ color: activo ? Colors.primary : Colors.cream }}>
+                      {t.label}
+                    </Text>
+                    <Text className="font-body text-xs text-muted">{t.hint}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
             <Text className="mb-6 font-body text-sm text-muted">
-              Contanos cómo jugás. Así te cuadramos con los partidos que van con vos.
+              {esCancha
+                ? 'Creá tu cuenta y en el siguiente paso registrás tu cancha (fotos, horarios y precios).'
+                : 'Contanos cómo jugás. Así te cuadramos con los partidos que van con vos.'}
             </Text>
 
-            <Field label="Nombre" icon="person-outline" placeholder="Tu nombre" value={nombre} onChangeText={setNombre} autoCapitalize="words" />
+            <Field label="Nombre" icon="person-outline" placeholder={esCancha ? 'Tu nombre o el de la cancha' : 'Tu nombre'} value={nombre} onChangeText={setNombre} autoCapitalize="words" />
             <Field label="Correo" icon="mail-outline" placeholder="tucorreo@ejemplo.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
             <Field label="Ciudad" icon="location-outline" placeholder="Pereira" value={ciudad} onChangeText={setCiudad} autoCapitalize="words" />
           </FadeIn>
 
-          <FadeIn delay={140}>
-            <Text className="mb-2 font-body-semibold text-sm text-cream">Posición</Text>
-            <View className="mb-4 flex-row flex-wrap">
-              {POSICIONES.map((p) => (
-                <Chip key={p} label={p} selected={posicion === p} onPress={() => setPosicion(p)} />
-              ))}
-            </View>
+          {!esCancha ? (
+            <FadeIn delay={140}>
+              <Text className="mb-2 font-body-semibold text-sm text-cream">Posición</Text>
+              <View className="mb-4 flex-row flex-wrap">
+                {POSICIONES.map((p) => (
+                  <Chip key={p} label={p} selected={posicion === p} onPress={() => setPosicion(p)} />
+                ))}
+              </View>
 
-            <Text className="mb-2 font-body-semibold text-sm text-cream">Nivel</Text>
-            <View className="mb-4 flex-row flex-wrap">
-              {NIVELES.map((n) => (
-                <Chip key={n} label={n} selected={nivel === n} onPress={() => setNivel(n)} />
-              ))}
-            </View>
-          </FadeIn>
+              <Text className="mb-2 font-body-semibold text-sm text-cream">Nivel</Text>
+              <View className="mb-4 flex-row flex-wrap">
+                {NIVELES.map((n) => (
+                  <Chip key={n} label={n} selected={nivel === n} onPress={() => setNivel(n)} />
+                ))}
+              </View>
+            </FadeIn>
+          ) : null}
 
           <FadeIn delay={220}>
             <Field label="Número de celular" icon="call-outline" placeholder="+57 3xx xxx xxxx" value={celular} onChangeText={setCelular} keyboardType="phone-pad" />

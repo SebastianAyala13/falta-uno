@@ -17,6 +17,7 @@ export interface DatosRegistro {
   posicion: Posicion;
   nivel: Nivel;
   celular: string;
+  roles?: string[]; // 'jugador' y/o 'cancha'
 }
 
 interface AuthState {
@@ -174,6 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           nivel: datos.nivel,
           celular: datos.celular,
           avatar_url: null,
+          roles: datos.roles ?? ['jugador'],
           // Prueba de autorización de tratamiento de datos (Ley 1581/2012)
           politica_version: POLITICA_VERSION,
           politica_aceptada_at: new Date().toISOString(),

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import Chip from '@/components/Chip';
@@ -14,13 +14,19 @@ import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
 import { CUPOS_POR_FORMATO, FORMATOS, NIVELES, ZONAS, type Formato, type Nivel, type Zona } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
+import { listarCanchas } from '@/lib/canchas';
 import { elegirImagen } from '@/lib/images';
 import { useStore } from '@/lib/store';
+import type { Cancha } from '@/types/database';
 
 export default function Crear() {
   const router = useRouter();
   const { profile } = useAuth();
   const crearPartido = useStore((s) => s.crearPartido);
+
+  const [canchasDisponibles, setCanchasDisponibles] = useState<Cancha[]>([]);
+  const [canchaSelId, setCanchaSelId] = useState<string | null>(null);
+  const [otraCancha, setOtraCancha] = useState(false);
 
   const [cancha, setCancha] = useState('');
   const [zona, setZona] = useState<Zona | null>(null);
@@ -32,6 +38,19 @@ export default function Crear() {
   const [descripcion, setDescripcion] = useState('');
   const [foto, setFoto] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Canchas registradas: al crear un partido se elige una de las disponibles.
+  useEffect(() => {
+    listarCanchas().then(setCanchasDisponibles).catch(() => {});
+  }, []);
+
+  const elegirCancha = (c: Cancha) => {
+    setCanchaSelId(c.id);
+    setOtraCancha(false);
+    setCancha(c.nombre);
+    if ((ZONAS as readonly string[]).includes(c.zona)) setZona(c.zona as Zona);
+    if (c.formatos?.[0]) setFormato(c.formatos[0]);
+  };
 
   const agregarFoto = async () => {
     const uri = await elegirImagen([16, 9]);
@@ -110,7 +129,53 @@ export default function Crear() {
               )}
             </Pressable>
 
-            <Field label="Nombre de la cancha" icon="football-outline" placeholder="Ej. Cancha La Bombonera" value={cancha} onChangeText={setCancha} autoCapitalize="words" />
+            {/* Elegí una cancha registrada (o escribí otra) */}
+            <Text className="mb-2 font-body-semibold text-sm text-cream">Cancha</Text>
+            {canchasDisponibles.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 8 }} className="mb-3">
+                {canchasDisponibles.map((c) => {
+                  const sel = canchaSelId === c.id && !otraCancha;
+                  return (
+                    <Pressable
+                      key={c.id}
+                      onPress={() => elegirCancha(c)}
+                      style={{ width: 170, borderColor: sel ? Colors.primary : Colors.border }}
+                      className="overflow-hidden rounded-2xl border bg-card p-3">
+                      {c.foto_portada ? (
+                        <Image source={{ uri: c.foto_portada }} style={{ width: '100%', height: 64, borderRadius: 10 }} contentFit="cover" />
+                      ) : (
+                        <View className="h-16 items-center justify-center rounded-xl bg-background">
+                          <Ionicons name="business" size={24} color={Colors.muted} />
+                        </View>
+                      )}
+                      <Text className="mt-2 font-body-bold text-sm text-cream" numberOfLines={1}>{c.nombre}</Text>
+                      <Text className="font-body text-xs text-muted" numberOfLines={1}>{c.zona}</Text>
+                      {sel ? (
+                        <View className="mt-1 flex-row items-center gap-1">
+                          <Ionicons name="checkmark-circle" size={14} color={Colors.primary} />
+                          <Text className="font-body-semibold text-xs text-primary">Elegida</Text>
+                        </View>
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+                <Pressable
+                  onPress={() => { setOtraCancha(true); setCanchaSelId(null); setCancha(''); }}
+                  style={{ width: 120, borderColor: otraCancha ? Colors.primary : Colors.border, borderStyle: 'dashed' }}
+                  className="items-center justify-center rounded-2xl border bg-card p-3">
+                  <Ionicons name="add-circle-outline" size={22} color={otraCancha ? Colors.primary : Colors.muted} />
+                  <Text className="mt-1 font-body-semibold text-xs" style={{ color: otraCancha ? Colors.primary : Colors.muted }}>Otra cancha</Text>
+                </Pressable>
+              </ScrollView>
+            ) : (
+              <Text className="mb-2 font-body text-xs text-muted">
+                Todavía no hay canchas registradas. Escribí el nombre de la cancha.
+              </Text>
+            )}
+
+            {(otraCancha || canchasDisponibles.length === 0) ? (
+              <Field label="Nombre de la cancha" icon="football-outline" placeholder="Ej. Cancha La Bombonera" value={cancha} onChangeText={setCancha} autoCapitalize="words" />
+            ) : null}
 
             <Text className="mb-2 font-body-semibold text-sm text-cream">Zona</Text>
             <View className="mb-4 flex-row flex-wrap">

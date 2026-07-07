@@ -85,6 +85,22 @@ export default function Home() {
           </Pressable>
         </FadeIn>
 
+        {/* Acceso rápido a canchas */}
+        <FadeIn delay={140}>
+          <Pressable
+            onPress={() => router.push('/canchas')}
+            className="mx-[22px] mb-5 flex-row items-center rounded-lg border border-border bg-card p-4 active:opacity-80">
+            <View className="h-11 w-11 items-center justify-center rounded-xl bg-primary/15">
+              <Ionicons name="business" size={22} color={c.primary} />
+            </View>
+            <View className="ml-3 flex-1">
+              <Text className="font-body-bold text-base text-cream">Reservá una cancha</Text>
+              <Text className="font-body text-xs text-muted">Mirá horarios, fotos y servicios cerca tuyo</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={c.muted} />
+          </Pressable>
+        </FadeIn>
+
         {/* Strip "Cierran ya" */}
         {urgentes.length > 0 ? (
           <FadeIn delay={170}>

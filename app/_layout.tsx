@@ -76,6 +76,15 @@ export default function RootLayout() {
             <Stack.Screen name="editar-perfil" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="apariencia" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="reset" options={{ animation: 'slide_from_bottom' }} />
+            {/* Marketplace de canchas */}
+            <Stack.Screen name="canchas" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="mis-reservas" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="cancha/panel" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="cancha/agenda" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="cancha/finanzas" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="cancha/editar" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="cancha/[id]/index" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="cancha/[id]/reservar" options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
           </Stack>
         </AuthProvider>
       </SafeAreaProvider>

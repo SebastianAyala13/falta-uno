@@ -1,0 +1,344 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
+
+import EmptyState from '@/components/EmptyState';
+import FadeIn from '@/components/FadeIn';
+import Field from '@/components/Field';
+import GlowButton from '@/components/GlowButton';
+import Screen from '@/components/Screen';
+import { Colors } from '@/constants/colors';
+import { COMISION_CANCHA_DEFAULT, MEMBRESIA, MERCADOPAGO_CONFIGURADO } from '@/constants/config';
+import { useAuth } from '@/lib/auth';
+import {
+  membresiaActiva,
+  misCanchas,
+  movimientos,
+  retirosDeCancha,
+  saldoCancha,
+  solicitarRetiro,
+} from '@/lib/canchas';
+import { precioCOP, tiempoRelativo } from '@/lib/format';
+import type { Cancha, MovimientoCancha, Retiro } from '@/types/database';
+
+const TIPO_MOVIMIENTO: Record<MovimientoCancha['tipo'], string> = {
+  ingreso_reserva: 'Ingreso por reserva',
+  comision: 'Comisión',
+  retiro: 'Retiro',
+  ajuste: 'Ajuste',
+};
+
+const ESTADO_RETIRO: Record<Retiro['estado'], { label: string; color: string }> = {
+  solicitado: { label: 'Solicitado', color: Colors.warning },
+  procesando: { label: 'Procesando', color: Colors.warning },
+  pagado: { label: 'Pagado', color: Colors.primary },
+  rechazado: { label: 'Rechazado', color: Colors.danger },
+};
+
+export default function Finanzas() {
+  const router = useRouter();
+  const { profile } = useAuth();
+
+  const [cancha, setCancha] = useState<Cancha | null>(null);
+  const [saldo, setSaldo] = useState(0);
+  const [movs, setMovs] = useState<MovimientoCancha[]>([]);
+  const [retiros, setRetiros] = useState<Retiro[]>([]);
+  const [esPro, setEsPro] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [modalRetiro, setModalRetiro] = useState(false);
+  const [monto, setMonto] = useState('');
+  const [enviando, setEnviando] = useState(false);
+
+  const cargarDatos = useCallback(async (c: Cancha) => {
+    const [s, m, r, pro] = await Promise.all([
+      saldoCancha(c.id),
+      movimientos(c.id),
+      retirosDeCancha(c.id),
+      membresiaActiva(c.id),
+    ]);
+    setSaldo(s);
+    setMovs(m);
+    setRetiros(r);
+    setEsPro(pro);
+  }, []);
+
+  useEffect(() => {
+    let activo = true;
+    (async () => {
+      try {
+        if (!profile) return;
+        const canchas = await misCanchas(profile.id);
+        if (!activo) return;
+        const c = canchas[0] ?? null;
+        setCancha(c);
+        if (c) await cargarDatos(c);
+      } finally {
+        if (activo) setLoading(false);
+      }
+    })();
+    return () => {
+      activo = false;
+    };
+  }, [profile, cargarDatos]);
+
+  const onRefresh = useCallback(async () => {
+    if (!cancha) return;
+    setRefreshing(true);
+    try {
+      await cargarDatos(cancha);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [cancha, cargarDatos]);
+
+  const confirmarRetiro = async () => {
+    if (!cancha) return;
+    const valor = Number(monto);
+    if (!monto.trim() || Number.isNaN(valor) || valor <= 0) {
+      Alert.alert('Monto inválido', 'Ingresá un monto mayor a cero, parce.');
+      return;
+    }
+    setEnviando(true);
+    try {
+      await solicitarRetiro(cancha.id, valor);
+      setModalRetiro(false);
+      setMonto('');
+      await cargarDatos(cancha);
+      Alert.alert('¡Retiro solicitado!', 'Te lo desembolsamos pronto.');
+    } catch (e) {
+      Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo en un rato.');
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <Screen edges={['top']}>
+      <View className="flex-row items-center px-6 pb-2 pt-2">
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={12}
+          className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
+          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
+        </Pressable>
+        <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
+          Finanzas
+        </Text>
+      </View>
+
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={Colors.primary} />
+        </View>
+      ) : !cancha ? (
+        <EmptyState
+          icon="business-outline"
+          titulo="Sin cancha registrada"
+          texto="Registrá tu cancha para empezar a recibir reservas y ver tus finanzas acá."
+          cta={{ label: 'Registrar mi cancha', onPress: () => router.push('/cancha/editar') }}
+        />
+      ) : (
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+          }>
+          {/* Saldo disponible */}
+          <FadeIn delay={40}>
+            <View className="rounded-3xl border border-borderStrong bg-card p-6">
+              <Text className="font-body text-xs uppercase tracking-wider text-muted">Saldo disponible</Text>
+              <Text className="mt-2 font-display text-4xl text-cream" style={{ lineHeight: 46, paddingTop: 2 }}>
+                {precioCOP(saldo)}
+              </Text>
+              <View className="mt-4">
+                <GlowButton
+                  label="Solicitar retiro"
+                  variant="primary"
+                  icon="cash-outline"
+                  disabled={saldo <= 0}
+                  onPress={() => setModalRetiro(true)}
+                />
+              </View>
+              <View className="mt-4 flex-row items-center justify-between border-t border-border pt-3">
+                <Text className="font-body text-sm text-muted">Comisión actual</Text>
+                <Text className="font-body-bold text-sm" style={{ color: esPro ? Colors.primary : Colors.cream }}>
+                  {esPro ? '0% (Cancha Pro)' : `${Math.round(COMISION_CANCHA_DEFAULT * 100)}%`}
+                </Text>
+              </View>
+            </View>
+          </FadeIn>
+
+          {/* Membresía */}
+          <FadeIn delay={100}>
+            <View className="mt-4 rounded-3xl border border-border bg-card p-5">
+              <View className="flex-row items-center">
+                <View
+                  className="h-11 w-11 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: Colors.accent + '22' }}>
+                  <Ionicons name="star" size={22} color={Colors.accent} />
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text className="font-body-bold text-base text-cream">{MEMBRESIA.nombre}</Text>
+                  <Text className="font-body text-xs text-muted">
+                    {precioCOP(MEMBRESIA.precioMensual)}/mes
+                  </Text>
+                </View>
+              </View>
+              <Text className="mt-3 font-body text-sm text-muted">{MEMBRESIA.beneficio}</Text>
+              <View className="mt-4">
+                {MERCADOPAGO_CONFIGURADO ? (
+                  <GlowButton
+                    label="Activar membresía"
+                    variant="accent"
+                    icon="star-outline"
+                    onPress={() =>
+                      Alert.alert('Disponible pronto', 'La activación de membresía se habilita en breve.')
+                    }
+                  />
+                ) : (
+                  <GlowButton label="Próximamente" variant="dark" icon="time-outline" disabled />
+                )}
+              </View>
+            </View>
+          </FadeIn>
+
+          {/* Nota informativa */}
+          <FadeIn delay={160}>
+            <View className="mt-4 flex-row items-start rounded-2xl border border-border bg-card p-4">
+              <Ionicons name="information-circle-outline" size={20} color={Colors.muted} style={{ marginTop: 1 }} />
+              <Text className="ml-2 flex-1 font-body text-xs text-muted">
+                Los ingresos por reservas pagadas en efectivo los cobrás directo en la cancha. El saldo acá
+                refleja los pagos online (próximamente con Mercado Pago).
+              </Text>
+            </View>
+          </FadeIn>
+
+          {/* Movimientos */}
+          <FadeIn delay={220}>
+            <Text className="mb-3 mt-7 font-display text-xl uppercase text-cream" style={{ lineHeight: 26, paddingTop: 2 }}>
+              Movimientos
+            </Text>
+            {movs.length === 0 ? (
+              <Text className="font-body text-sm text-muted">
+                Todavía no hay movimientos. Tus ingresos por reservas online aparecerán acá.
+              </Text>
+            ) : (
+              movs.map((m) => {
+                const positivo = m.monto > 0;
+                const color = positivo ? Colors.primary : Colors.danger;
+                return (
+                  <View
+                    key={m.id}
+                    className="mb-3 flex-row items-center rounded-2xl border border-border bg-card p-4">
+                    <View
+                      className="h-10 w-10 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: color + '22' }}>
+                      <Ionicons
+                        name={positivo ? 'arrow-down-circle' : 'arrow-up-circle'}
+                        size={20}
+                        color={color}
+                      />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="font-body-bold text-sm text-cream" numberOfLines={1}>
+                        {TIPO_MOVIMIENTO[m.tipo]}
+                      </Text>
+                      {m.descripcion ? (
+                        <Text className="font-body text-xs text-muted" numberOfLines={1}>
+                          {m.descripcion}
+                        </Text>
+                      ) : null}
+                      <Text className="font-body text-[11px] text-muted">{tiempoRelativo(m.created_at)}</Text>
+                    </View>
+                    <Text className="font-display text-base" style={{ color }}>
+                      {positivo ? '+' : '-'}
+                      {precioCOP(Math.abs(m.monto))}
+                    </Text>
+                  </View>
+                );
+              })
+            )}
+          </FadeIn>
+
+          {/* Retiros */}
+          {retiros.length > 0 ? (
+            <FadeIn delay={280}>
+              <Text className="mb-3 mt-7 font-display text-xl uppercase text-cream" style={{ lineHeight: 26, paddingTop: 2 }}>
+                Retiros
+              </Text>
+              {retiros.map((r) => {
+                const estado = ESTADO_RETIRO[r.estado];
+                return (
+                  <View
+                    key={r.id}
+                    className="mb-3 flex-row items-center rounded-2xl border border-border bg-card p-4">
+                    <View className="flex-1">
+                      <Text className="font-display text-base text-cream">{precioCOP(r.monto)}</Text>
+                      <Text className="font-body text-xs text-muted">{tiempoRelativo(r.solicitado_at)}</Text>
+                    </View>
+                    <View
+                      className="rounded-full px-3 py-1"
+                      style={{ backgroundColor: estado.color + '22' }}>
+                      <Text
+                        className="font-body-bold text-[11px] uppercase tracking-wide"
+                        style={{ color: estado.color }}>
+                        {estado.label}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </FadeIn>
+          ) : null}
+        </ScrollView>
+      )}
+
+      {/* Modal de retiro */}
+      <Modal visible={modalRetiro} transparent animationType="fade" onRequestClose={() => setModalRetiro(false)}>
+        <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <View className="w-full rounded-3xl border border-borderStrong bg-background p-6">
+            <View className="flex-row items-center justify-between">
+              <Text className="font-display text-2xl uppercase text-cream" style={{ lineHeight: 30, paddingTop: 2 }}>
+                Solicitar retiro
+              </Text>
+              <Pressable onPress={() => setModalRetiro(false)} hitSlop={12}>
+                <Ionicons name="close" size={24} color={Colors.muted} />
+              </Pressable>
+            </View>
+            <Text className="mb-4 mt-1 font-body text-sm text-muted">
+              Saldo disponible: {precioCOP(saldo)}
+            </Text>
+            <Field
+              label="Monto a retirar"
+              icon="cash-outline"
+              placeholder="Ej: 50000"
+              keyboardType="numeric"
+              value={monto}
+              onChangeText={setMonto}
+            />
+            <GlowButton
+              label="Confirmar"
+              variant="primary"
+              icon="checkmark"
+              loading={enviando}
+              onPress={confirmarRetiro}
+            />
+          </View>
+        </View>
+      </Modal>
+    </Screen>
+  );
+}

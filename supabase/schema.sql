@@ -278,7 +278,7 @@ grant select on public.perfiles_publicos to anon, authenticated;
 
 -- El usuario NO puede editar su reputación: solo estas columnas son actualizables.
 revoke update on public.profiles from anon, authenticated;
-grant update (nombre, ciudad, posicion, nivel, celular, avatar_url, politica_version, politica_aceptada_at)
+grant update (nombre, ciudad, posicion, nivel, celular, avatar_url, politica_version, politica_aceptada_at, roles)
   on public.profiles to authenticated;
 
 -- "Me gusta" del muro en su propia tabla (evita reescribir el post ajeno / forjar likes)

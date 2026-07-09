@@ -190,7 +190,7 @@ export default function Register() {
               </Text>
             </Pressable>
 
-            <GlowButton label="Crear cuenta" variant="accent" icon="rocket" loading={loading} onPress={onSubmit} disabled={!acepta} />
+            <GlowButton label="Crear cuenta" variant="accent" icon="rocket" loading={loading} onPress={onSubmit} disabled={!valido} />
           </FadeIn>
 
           <Pressable onPress={() => router.replace('/(auth)/login')} className="mt-6 py-2">

@@ -100,9 +100,14 @@ and `metro.config.js` (`withNativeWind`, `input: ./global.css`).
 
 ## Expo SDK version
 
-The repo pins **Expo SDK 54** (`expo` in `package.json`). Before writing Expo/RN code, consult the
-versioned docs for the **installed** SDK: https://docs.expo.dev/versions/v54.0.0/ — verify the version
-in `package.json` first, since `AGENTS.md` references v56.
+The repo pins **Expo SDK 57** (`expo` in `package.json`: RN 0.86, React 19.2, TypeScript 6). Before
+writing Expo/RN code, consult the versioned docs for the **installed** SDK:
+https://docs.expo.dev/versions/v57.0.0/ — always verify the version in `package.json` first.
+
+Lint note: `eslint-config-expo` 57 turns on the React Compiler hook rules. `eslint.config.js` disables
+the advisory ones (`react-hooks/immutability`, `set-state-in-effect`, `preserve-manual-memoization`,
+`purity`) because they flag Reanimated's `sharedValue.value = …` API and standard data-loading
+effects — they are optimization hints, not bugs. It also ignores `supabase/functions/**` (Deno).
 
 ## Design docs
 

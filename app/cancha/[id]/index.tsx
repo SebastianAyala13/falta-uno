@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import CanchaMap from '@/components/CanchaMap';
 import FadeIn from '@/components/FadeIn';
@@ -127,7 +127,16 @@ export default function PerfilCancha() {
                     <CanchaMap
                       coords={{ latitude: cancha.lat, longitude: cancha.lng }}
                       cancha={cancha.nombre}
-                      zona={cancha.direccion}
+                      zona={cancha.zona}
+                      onComoLlegar={() => {
+                        const label = encodeURIComponent(cancha.nombre);
+                        const url = Platform.select({
+                          ios: `maps://?q=${label}&ll=${cancha.lat},${cancha.lng}`,
+                          android: `geo:${cancha.lat},${cancha.lng}?q=${cancha.lat},${cancha.lng}(${label})`,
+                          default: `https://www.google.com/maps/search/?api=1&query=${cancha.lat},${cancha.lng}`,
+                        });
+                        if (url) Linking.openURL(url).catch(() => {});
+                      }}
                     />
                   </View>
                 ) : null}

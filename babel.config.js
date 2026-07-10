@@ -2,10 +2,10 @@ module.exports = function (api) {
   api.cache(true);
   return {
     presets: [
-      // unstable_transformImportMeta: convierte `import.meta` en algo válido para
-      // el bundle web (script clásico) y para Hermes. Necesario en SDK 54 porque
-      // deps como zustand/middleware traen `import.meta.env`; pasa a default en SDK 56.
-      ['babel-preset-expo', { jsxImportSource: 'nativewind', unstable_transformImportMeta: true }],
+      // El transform de `import.meta` (que deps como zustand/middleware necesitan en
+      // el bundle web) es DEFAULT desde SDK 56 (`babel-preset-expo` -> transformImportMeta),
+      // así que no hace falta configurarlo acá. El Dockerfile igual verifica el bundle.
+      ['babel-preset-expo', { jsxImportSource: 'nativewind' }],
       'nativewind/babel',
     ],
   };

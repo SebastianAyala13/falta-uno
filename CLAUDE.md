@@ -83,10 +83,11 @@ and `metro.config.js` (`withNativeWind`, `input: ./global.css`).
 - **Never `import 'react-native-maps'` directly in `app/`** — it is native-only and breaks the web
   bundle. Always use `@/components/CanchaMap` (platform-split `CanchaMap.tsx` / `CanchaMap.web.tsx`,
   where web renders a Google Maps iframe). The Dockerfile fails the build if a direct import reappears in `app/`.
-- **`babel.config.js` sets `unstable_transformImportMeta: true`** — dependencies (e.g. zustand
-  middleware) emit `import.meta`, which is a SyntaxError in Expo's classic-`<script>` web bundle
-  (becomes the default in SDK 56). The Dockerfile also parse-checks the emitted bundle so this class of
-  error fails the build instead of shipping a blank page.
+- **`import.meta` in the web bundle** — deps (e.g. zustand middleware) emit `import.meta`, a
+  SyntaxError in Expo's classic-`<script>` web bundle. Expo's transform for it is **default since
+  SDK 56** (`babel-preset-expo`'s `transformImportMeta`), so no babel config is needed on SDK 57. The
+  Dockerfile still parse-checks the emitted bundle (`vm.Script`) so this class of error fails the build
+  instead of shipping a blank page.
 
 ## Deploy
 

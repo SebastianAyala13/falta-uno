@@ -24,15 +24,32 @@ que Metro necesita). Usar npm rompe el build.
    `EXPO_PUBLIC_SUPABASE_ANON_KEY` (Supabase → Settings → API; pedíselas al owner). Sin ellas la app
    corre en **modo demo** (datos locales) — sirve para casi todo el trabajo de UI, pero auth/chat/datos
    reales necesitan las llaves. La `service_role` NO va en la app (solo en Edge Functions).
-6. Correr: **`pnpm start`** (Expo Go / emulador) o **`pnpm web`**.
+6. Correr: **`pnpm web`** (rápido, en el navegador) o un **development build** en device/simulador
+   (ver sección 3). ⚠️ Expo Go de las tiendas **no** sirve para SDK 57 (ver abajo).
 
-## 3. La tarea: upgrade de Expo SDK 54 → 57
+## 3. Correr en un dispositivo o simulador (development build)
 
-- **Runbook:** [`docs/superpowers/plans/2026-07-07-expo-sdk-54-to-57-upgrade.md`](superpowers/plans/2026-07-07-expo-sdk-54-to-57-upgrade.md).
-  Abrilo y pedile a tu Claude que lo ejecute **paso a paso** (incremental 54→55→56→57).
-- **Necesitás un device o emulador** (Android Studio / Xcode): el smoke nativo (mapas, animaciones,
-  gestos, date picker, fotos, notificaciones) NO se valida solo con el build web.
-- Trabajá en una rama: `chore/expo-sdk-57-upgrade`. No mergees a `main` hasta que los 3 saltos validen.
+> El **upgrade a Expo SDK 57 ya está hecho** (contexto en
+> [`docs/superpowers/plans/2026-07-07-expo-sdk-54-to-57-upgrade.md`](superpowers/plans/2026-07-07-expo-sdk-54-to-57-upgrade.md)).
+
+⚠️ **Expo Go de las tiendas todavía no soporta SDK 57** — escanear el QR con Expo Go da *"requires a
+newer version of Expo Go"* aunque la tengas actualizada. Para probar en device/simulador se usa un
+**development build**. El repo ya trae `expo-dev-client` y el perfil `development` en `eas.json`.
+
+- **Web (lo más rápido, sin setup nativo):** `pnpm web` (o `http://localhost:8081`). Ideal para
+  UI/lógica; lo nativo (mapas/cámara/notificaciones) no se prueba igual que en el celu.
+- **iOS Simulator (Mac):** necesitás **Xcode**. Luego `npx expo run:ios` genera `ios/`, compila y abre
+  el Simulador con el dev build (la 1ª vez tarda: CocoaPods + Xcode). Día a día: `pnpm start` y conecta.
+  Sin EAS, sin cuenta Expo, sin cuenta Apple.
+- **Android (device/emulador):** con **Android Studio** → `npx expo run:android`. Sin toolchain local
+  → `eas build --profile development -p android` (build en la nube, requiere cuenta Expo) → instalás el
+  APK → `pnpm start`.
+- **iPhone físico:** necesita **cuenta Apple Developer** ($99/año) + registrar el UDID del iPhone con
+  `npx eas-cli device:create`, y buildear con un perfil sin `simulator: true`.
+
+> Tip (Windows + pnpm): si `pnpm start` se cae con un `ENOENT ... _tmp_...` en `node_modules`, es un
+> temp dir huérfano de una instalación interrumpida — reiniciá con `pnpm start -c` (limpia la caché de
+> Metro); si persiste, `rm -rf node_modules && pnpm install`.
 
 ## 4. Accesos que podés necesitar
 

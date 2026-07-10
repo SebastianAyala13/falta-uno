@@ -3,6 +3,11 @@ module.exports = {
   // NativeWind escanea estos archivos para generar las clases de Tailwind
   content: ['./app/**/*.{js,jsx,ts,tsx}', './components/**/*.{js,jsx,ts,tsx}'],
   presets: [require('nativewind/preset')],
+  // 'class' (no el default 'media'): el runtime web de NativeWind maneja el color
+  // scheme manualmente y con 'media' tira "Cannot manually set color scheme". La app
+  // tematiza con variables CSS (ver themes.ts), no usa la variante `dark:`, así que
+  // esto no cambia nada visual — solo evita el error en web.
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {

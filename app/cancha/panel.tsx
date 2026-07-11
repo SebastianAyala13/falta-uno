@@ -107,7 +107,7 @@ export default function PanelCancha() {
           icon="business-outline"
           titulo="Aún no tenés cancha"
           texto="Registrá tu cancha y empezá a recibir reservas de los parceros de la zona."
-          cta={{ label: 'Registrar mi cancha', onPress: () => router.push('/cancha/editar') }}
+          cta={{ label: 'Registrar mi cancha', onPress: () => router.push('/cancha/registrar') }}
         />
       </Screen>
     );

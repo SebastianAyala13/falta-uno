@@ -65,7 +65,7 @@ export default function Register() {
           [{ text: 'Ir a entrar', onPress: () => router.replace('/(auth)/login') }],
         );
       } else {
-        router.replace(esCancha ? '/cancha/editar' : '/(tabs)');
+        router.replace(esCancha ? '/cancha/registrar' : '/(tabs)');
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos crear la cuenta.');

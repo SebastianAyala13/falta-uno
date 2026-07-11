@@ -211,3 +211,30 @@ export const URL_CANCELACIONES = `${LEGAL_URL}/cancelaciones.html`;
 
 /** Versión vigente del mandato de recaudo + T&C de canchas (prueba de aceptación). */
 export const LEGAL_CANCHA_VERSION = '2026-07-07';
+
+/** Bancos/billeteras comunes en Colombia (datos de desembolso del dueño). */
+export const BANCOS = [
+  'Bancolombia',
+  'Nequi',
+  'Daviplata',
+  'Davivienda',
+  'BBVA',
+  'Banco de Bogotá',
+  'Nu',
+  'Lulo Bank',
+  'Scotiabank Colpatria',
+  'Banco de Occidente',
+  'Banco Popular',
+  'Otro',
+] as const;
+
+/** Tipo de acceso del establecimiento (paso de zonas del onboarding). */
+export const TIPOS_ACCESO = [
+  { id: 'privado', label: 'Privado (dentro del establecimiento)' },
+  { id: 'publico', label: 'Público' },
+  { id: 'calle', label: 'En la calle' },
+] as const;
+export type TipoAcceso = (typeof TIPOS_ACCESO)[number]['id'];
+
+/** Duraciones de turno disponibles por cancha (minutos). */
+export const DURACIONES_TURNO = [60, 90] as const;

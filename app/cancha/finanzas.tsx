@@ -12,15 +12,18 @@ import {
   View,
 } from 'react-native';
 
+import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
-import { COMISION_CANCHA_DEFAULT, MEMBRESIA, MERCADOPAGO_CONFIGURADO } from '@/constants/config';
+import { BANCOS, COMISION_CANCHA_DEFAULT, MEMBRESIA, MERCADOPAGO_CONFIGURADO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import {
+  getDatosDesembolso,
+  guardarDatosDesembolso,
   membresiaActiva,
   misCanchas,
   movimientos,
@@ -29,7 +32,14 @@ import {
   solicitarRetiro,
 } from '@/lib/canchas';
 import { precioCOP, tiempoRelativo } from '@/lib/format';
-import type { Cancha, MovimientoCancha, Retiro } from '@/types/database';
+import type { Cancha, DatosDesembolso, MovimientoCancha, Retiro } from '@/types/database';
+
+const TIPOS_CUENTA: { id: DatosDesembolso['tipo_cuenta']; label: string }[] = [
+  { id: 'ahorros', label: 'Ahorros' },
+  { id: 'corriente', label: 'Corriente' },
+  { id: 'nequi', label: 'Nequi' },
+  { id: 'daviplata', label: 'Daviplata' },
+];
 
 const TIPO_MOVIMIENTO: Record<MovimientoCancha['tipo'], string> = {
   ingreso_reserva: 'Ingreso por reserva',
@@ -61,6 +71,16 @@ export default function Finanzas() {
   const [monto, setMonto] = useState('');
   const [enviando, setEnviando] = useState(false);
 
+  // Datos de desembolso (cuenta del dueño)
+  const [desembolso, setDesembolso] = useState<DatosDesembolso | null>(null);
+  const [modalCuenta, setModalCuenta] = useState(false);
+  const [banco, setBanco] = useState<string>(BANCOS[0]);
+  const [tipoCuenta, setTipoCuenta] = useState<DatosDesembolso['tipo_cuenta']>('ahorros');
+  const [numero, setNumero] = useState('');
+  const [titular, setTitular] = useState('');
+  const [documento, setDocumento] = useState('');
+  const [guardandoCuenta, setGuardandoCuenta] = useState(false);
+
   const cargarDatos = useCallback(async (c: Cancha) => {
     const [s, m, r, pro] = await Promise.all([
       saldoCancha(c.id),
@@ -79,10 +99,11 @@ export default function Finanzas() {
     (async () => {
       try {
         if (!profile) return;
-        const canchas = await misCanchas(profile.id);
+        const [canchas, dd] = await Promise.all([misCanchas(profile.id), getDatosDesembolso(profile.id)]);
         if (!activo) return;
         const c = canchas[0] ?? null;
         setCancha(c);
+        setDesembolso(dd);
         if (c) await cargarDatos(c);
       } finally {
         if (activo) setLoading(false);
@@ -124,6 +145,43 @@ export default function Finanzas() {
     }
   };
 
+  const abrirCuenta = () => {
+    if (desembolso) {
+      setBanco(desembolso.banco);
+      setTipoCuenta(desembolso.tipo_cuenta);
+      setNumero(desembolso.numero);
+      setTitular(desembolso.titular);
+      setDocumento(desembolso.documento);
+    }
+    setModalCuenta(true);
+  };
+
+  const guardarCuenta = async () => {
+    if (!profile) return;
+    if (!titular.trim() || !numero.trim() || !documento.trim()) {
+      Alert.alert('Faltan datos', 'Completá titular, número de cuenta y documento.');
+      return;
+    }
+    setGuardandoCuenta(true);
+    try {
+      const datos = {
+        banco,
+        tipo_cuenta: tipoCuenta,
+        numero: numero.trim(),
+        titular: titular.trim(),
+        documento: documento.trim(),
+      };
+      await guardarDatosDesembolso(profile.id, datos);
+      setDesembolso({ owner_id: profile.id, ...datos, created_at: '', updated_at: '' });
+      setModalCuenta(false);
+      Alert.alert('Guardado', 'Tus datos de desembolso quedaron guardados.');
+    } catch (e) {
+      Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
+    } finally {
+      setGuardandoCuenta(false);
+    }
+  };
+
   return (
     <Screen edges={['top']}>
       <View className="flex-row items-center px-6 pb-2 pt-2">
@@ -147,7 +205,7 @@ export default function Finanzas() {
           icon="business-outline"
           titulo="Sin cancha registrada"
           texto="Registrá tu cancha para empezar a recibir reservas y ver tus finanzas acá."
-          cta={{ label: 'Registrar mi cancha', onPress: () => router.push('/cancha/editar') }}
+          cta={{ label: 'Registrar mi cancha', onPress: () => router.push('/cancha/registrar') }}
         />
       ) : (
         <ScrollView
@@ -211,6 +269,43 @@ export default function Finanzas() {
                 ) : (
                   <GlowButton label="Próximamente" variant="dark" icon="time-outline" disabled />
                 )}
+              </View>
+            </View>
+          </FadeIn>
+
+          {/* Datos de desembolso (cuenta del dueño) */}
+          <FadeIn delay={130}>
+            <View className="mt-4 rounded-3xl border border-border bg-card p-5">
+              <View className="flex-row items-center">
+                <View
+                  className="h-11 w-11 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: Colors.primary + '22' }}>
+                  <Ionicons name="card-outline" size={22} color={Colors.primary} />
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text className="font-body-bold text-base text-cream">Datos para recibir tu plata</Text>
+                  <Text className="font-body text-xs text-muted">
+                    {desembolso ? 'A dónde te desembolsamos tus retiros.' : 'Cargá tu cuenta para poder retirar.'}
+                  </Text>
+                </View>
+              </View>
+              {desembolso ? (
+                <View className="mt-3 rounded-2xl border border-border bg-background p-3">
+                  <Text className="font-body-semibold text-sm text-cream">
+                    {desembolso.banco} · {TIPOS_CUENTA.find((t) => t.id === desembolso.tipo_cuenta)?.label}
+                  </Text>
+                  <Text className="font-body text-xs text-muted">
+                    •••• {desembolso.numero.slice(-4)} · {desembolso.titular}
+                  </Text>
+                </View>
+              ) : null}
+              <View className="mt-4">
+                <GlowButton
+                  label={desembolso ? 'Editar cuenta' : 'Agregar cuenta'}
+                  variant={desembolso ? 'dark' : 'primary'}
+                  icon="card-outline"
+                  onPress={abrirCuenta}
+                />
               </View>
             </View>
           </FadeIn>
@@ -337,6 +432,70 @@ export default function Finanzas() {
               onPress={confirmarRetiro}
             />
           </View>
+        </View>
+      </Modal>
+
+      {/* Modal de datos de desembolso */}
+      <Modal visible={modalCuenta} transparent animationType="fade" onRequestClose={() => setModalCuenta(false)}>
+        <View className="flex-1 justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <View className="w-full rounded-3xl border border-borderStrong bg-background p-6">
+              <View className="mb-3 flex-row items-center justify-between">
+                <Text className="font-display text-2xl uppercase text-cream" style={{ lineHeight: 30, paddingTop: 2 }}>
+                  Tu cuenta
+                </Text>
+                <Pressable onPress={() => setModalCuenta(false)} hitSlop={12}>
+                  <Ionicons name="close" size={24} color={Colors.muted} />
+                </Pressable>
+              </View>
+              <Text className="mb-2 font-body-semibold text-sm text-cream">Banco / billetera</Text>
+              <View className="mb-3 flex-row flex-wrap">
+                {BANCOS.map((b) => (
+                  <Chip key={b} label={b} selected={banco === b} onPress={() => setBanco(b)} />
+                ))}
+              </View>
+              <Text className="mb-2 font-body-semibold text-sm text-cream">Tipo de cuenta</Text>
+              <View className="mb-3 flex-row flex-wrap">
+                {TIPOS_CUENTA.map((t) => (
+                  <Chip key={t.id} label={t.label} selected={tipoCuenta === t.id} onPress={() => setTipoCuenta(t.id)} />
+                ))}
+              </View>
+              <Field
+                label="Número de cuenta / celular"
+                icon="card-outline"
+                placeholder="Número"
+                keyboardType="numeric"
+                value={numero}
+                onChangeText={setNumero}
+              />
+              <Field
+                label="Titular"
+                icon="person-outline"
+                placeholder="Nombre del titular"
+                value={titular}
+                onChangeText={setTitular}
+                autoCapitalize="words"
+              />
+              <Field
+                label="Documento (cédula/NIT)"
+                icon="document-text-outline"
+                placeholder="Documento del titular"
+                keyboardType="numeric"
+                value={documento}
+                onChangeText={setDocumento}
+              />
+              <GlowButton
+                label="Guardar cuenta"
+                variant="primary"
+                icon="save"
+                loading={guardandoCuenta}
+                onPress={guardarCuenta}
+              />
+            </View>
+          </ScrollView>
         </View>
       </Modal>
     </Screen>

@@ -13,6 +13,7 @@
  * - secrets:   carga los secretos de Wompi con `supabase secrets set --env-file`
  *              (así los valores NUNCA aparecen en la línea de comandos ni en logs).
  */
+import { Buffer } from 'node:buffer';
 import { execFileSync } from 'node:child_process';
 import dns from 'node:dns/promises';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

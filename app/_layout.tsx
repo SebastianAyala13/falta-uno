@@ -83,6 +83,7 @@ export default function RootLayout() {
             <Stack.Screen name="cancha/agenda" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="cancha/finanzas" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="cancha/editar" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="cancha/registrar" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="cancha/[id]/index" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="cancha/[id]/reservar" options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
             {/* Plataforma Madre (admin) */}

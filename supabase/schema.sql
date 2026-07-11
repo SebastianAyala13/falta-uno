@@ -659,3 +659,26 @@ begin
   values (p_cancha, 'ajuste', p_monto, coalesce(p_desc, 'Ajuste manual (admin)'));
 end $$;
 grant execute on function public.admin_ajuste_saldo(uuid, int, text) to authenticated;
+
+-- ============================================================================
+-- DATOS DE DESEMBOLSO de las canchas (una cuenta por dueño). El dueño los carga
+-- en su panel de Finanzas; el admin los lee para procesar los retiros.
+-- ============================================================================
+create table if not exists public.datos_desembolso (
+  owner_id uuid primary key references public.profiles (id) on delete cascade,
+  banco text not null,
+  tipo_cuenta text not null check (tipo_cuenta in ('ahorros','corriente','nequi','daviplata')),
+  numero text not null,
+  titular text not null,
+  documento text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.datos_desembolso enable row level security;
+
+-- El dueño hace CRUD SOLO de sus datos; el admin los lee para desembolsar.
+drop policy if exists "desembolso_dueno" on public.datos_desembolso;
+create policy "desembolso_dueno" on public.datos_desembolso for all
+  using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
+drop policy if exists "desembolso_admin_lee" on public.datos_desembolso;
+create policy "desembolso_admin_lee" on public.datos_desembolso for select using (public.is_admin());

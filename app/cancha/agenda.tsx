@@ -97,7 +97,7 @@ export default function AgendaCancha() {
           icon="business-outline"
           titulo="Aún no tenés cancha"
           texto="Registrá tu cancha para ver acá la agenda de reservas día a día."
-          cta={{ label: 'Registrar mi cancha', onPress: () => router.push('/cancha/editar') }}
+          cta={{ label: 'Registrar mi cancha', onPress: () => router.push('/cancha/registrar') }}
         />
       ) : (
         <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>

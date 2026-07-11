@@ -12,6 +12,7 @@ import type {
   Amenidades,
   Cancha,
   CanchaDisponibilidad,
+  DatosDesembolso,
   MovimientoCancha,
   Reserva,
   Retiro,
@@ -358,4 +359,104 @@ export async function subirFotoCancha(uri: string): Promise<string> {
     .upload(path, arrayBuffer, { contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}`, upsert: false });
   if (error) throw new Error('No pudimos subir la foto. Probá de nuevo.');
   return supabase.storage.from('canchas').getPublicUrl(path).data.publicUrl;
+}
+
+// ---------------------------------------------------------------------------
+// Onboarding: un establecimiento crea N canchas (cada una es una fila reservable)
+// ---------------------------------------------------------------------------
+export interface CanchaDelEstablecimiento {
+  nombre: string;
+  formato: Formato;
+  precio: number;
+  duracion: number; // minutos
+  fotos: string[];
+}
+export interface HorarioEstablecimiento {
+  dia_semana: number;
+  hora_apertura: string;
+  hora_cierre: string;
+}
+export interface NuevoEstablecimiento {
+  direccion: string;
+  zona: string;
+  ciudad: string;
+  lat?: number | null;
+  lng?: number | null;
+  telefono?: string | null;
+  descripcion?: string | null;
+  amenidades: Amenidades;
+  canchas: CanchaDelEstablecimiento[];
+  horarios: HorarioEstablecimiento[];
+  legal_version?: string | null;
+  legal_aceptado_at?: string | null;
+}
+
+/**
+ * Crea el establecimiento: una fila `canchas` por cada cancha física (compartiendo
+ * dirección/zona/ciudad/amenidades/teléfono) + su disponibilidad (los horarios del
+ * establecimiento con la duración y el precio de cada cancha). Devuelve las canchas
+ * creadas. No rompe nada: cada cancha sigue siendo una fila reservable normal.
+ */
+export async function crearEstablecimiento(
+  ownerId: string,
+  data: NuevoEstablecimiento,
+): Promise<Cancha[]> {
+  if (!supabaseConfigurado) throw new Error(SIN_CONEXION);
+  const creadas: Cancha[] = [];
+  for (const c of data.canchas) {
+    const cancha = await crearCancha(ownerId, {
+      nombre: c.nombre,
+      direccion: data.direccion,
+      zona: data.zona,
+      ciudad: data.ciudad,
+      lat: data.lat ?? null,
+      lng: data.lng ?? null,
+      descripcion: data.descripcion ?? null,
+      telefono: data.telefono ?? null,
+      formatos: [c.formato],
+      amenidades: data.amenidades,
+      fotos: c.fotos,
+      foto_portada: c.fotos[0] ?? null,
+      legal_version: data.legal_version ?? null,
+      legal_aceptado_at: data.legal_aceptado_at ?? null,
+    });
+    if (data.horarios.length) {
+      await setDisponibilidad(
+        cancha.id,
+        data.horarios.map((h) => ({
+          dia_semana: h.dia_semana,
+          hora_apertura: h.hora_apertura,
+          hora_cierre: h.hora_cierre,
+          duracion_min: c.duracion,
+          precio: c.precio,
+        })),
+      );
+    }
+    creadas.push(cancha);
+  }
+  return creadas;
+}
+
+// ---------------------------------------------------------------------------
+// Datos de desembolso (cuenta del dueño) — se editan en el panel de Finanzas
+// ---------------------------------------------------------------------------
+export async function getDatosDesembolso(ownerId: string): Promise<DatosDesembolso | null> {
+  if (!supabaseConfigurado) return null;
+  const { data } = await supabase
+    .from('datos_desembolso')
+    .select('*')
+    .eq('owner_id', ownerId)
+    .maybeSingle();
+  return (data as unknown as DatosDesembolso | null) ?? null;
+}
+
+export async function guardarDatosDesembolso(
+  ownerId: string,
+  datos: Pick<DatosDesembolso, 'banco' | 'tipo_cuenta' | 'numero' | 'titular' | 'documento'>,
+): Promise<void> {
+  if (!supabaseConfigurado) throw new Error(SIN_CONEXION);
+  const { error } = await supabase
+    .from('datos_desembolso')
+    .upsert({ owner_id: ownerId, ...datos, updated_at: new Date().toISOString() } as never);
+  if (error) throw new Error('No pudimos guardar tus datos de desembolso. Probá de nuevo.');
 }

@@ -140,7 +140,7 @@ export default function Perfil() {
         {/* Modo cancha: panel del dueño o CTA para registrar la cancha */}
         <FadeIn delay={160}>
           <Pressable
-            onPress={() => router.push(esDueno ? '/cancha/panel' : '/cancha/editar')}
+            onPress={() => router.push(esDueno ? '/cancha/panel' : '/cancha/registrar')}
             className="mx-6 mt-6 flex-row items-center overflow-hidden rounded-3xl border border-accent/40 bg-accent/10 p-4 active:opacity-80">
             <View className="h-12 w-12 items-center justify-center rounded-2xl bg-accent/20">
               <Ionicons name="business" size={24} color={Colors.accent} />

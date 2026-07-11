@@ -8,6 +8,39 @@ export interface Coords {
 /** Centro aproximado de Pereira. */
 export const PEREIRA: Coords = { latitude: 4.8133, longitude: -75.6961 };
 
+/** Centros aproximados por ciudad (para centrar el mapa al registrar una cancha). */
+export const CIUDAD_COORDS: Record<string, Coords> = {
+  Pereira: PEREIRA,
+  Cali: { latitude: 3.4516, longitude: -76.532 },
+  Medellín: { latitude: 6.2442, longitude: -75.5812 },
+  Bogotá: { latitude: 4.711, longitude: -74.0721 },
+  Manizales: { latitude: 5.0703, longitude: -75.5138 },
+  Armenia: { latitude: 4.5339, longitude: -75.6811 },
+};
+
+/**
+ * Dirección aproximada a partir de coordenadas (reverse geocoding). Usa el
+ * servicio público de OSM/Nominatim por fetch: funciona en móvil y web sin
+ * módulo nativo. Best-effort: si falla o hay rate limit, devuelve null y el
+ * usuario escribe la dirección a mano.
+ */
+export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2&accept-language=es`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'FaltaUno/1.0 (soporte@faltauno.app)' } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const a = data?.address ?? {};
+    const calle = [a.road, a.house_number].filter(Boolean).join(' ');
+    const barrio = a.neighbourhood || a.suburb || a.quarter || '';
+    const ciudad = a.city || a.town || a.village || a.county || '';
+    const partes = [calle, barrio, ciudad].filter(Boolean);
+    return partes.length ? partes.join(', ') : (data?.display_name ?? null);
+  } catch {
+    return null;
+  }
+}
+
 /** Coordenadas aproximadas por zona (para ubicar la cancha en el mapa). */
 const ZONA_COORDS: Record<string, Coords> = {
   Centro: { latitude: 4.8143, longitude: -75.6946 },

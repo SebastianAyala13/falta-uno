@@ -146,6 +146,18 @@ export interface MembresiaCancha {
   created_at: string;
 }
 
+/** Datos bancarios para desembolsarle la plata al dueño de la(s) cancha(s). */
+export interface DatosDesembolso {
+  owner_id: string;
+  banco: string;
+  tipo_cuenta: 'ahorros' | 'corriente' | 'nequi' | 'daviplata';
+  numero: string;
+  titular: string;
+  documento: string;
+  created_at: string;
+  updated_at: string;
+}
+
 /** Un partido publicado por un usuario. */
 export interface Partido {
   id: string; // uuid
@@ -364,6 +376,12 @@ export interface Database {
         Row: MembresiaCancha;
         Insert: Omit<MembresiaCancha, 'id' | 'created_at'>;
         Update: Partial<MembresiaCancha>;
+        Relationships: [];
+      };
+      datos_desembolso: {
+        Row: DatosDesembolso;
+        Insert: Omit<DatosDesembolso, 'created_at' | 'updated_at'>;
+        Update: Partial<DatosDesembolso>;
         Relationships: [];
       };
       reportes: {

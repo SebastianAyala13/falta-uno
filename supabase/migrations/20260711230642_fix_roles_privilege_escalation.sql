@@ -6,14 +6,16 @@
 --     ver app/cancha/editar.tsx).
 --   * La policy `perfiles_propio_update` permite a cada usuario editar su propia fila.
 --   * `is_admin()` deriva el admin de public.profiles.roles ('admin' = any(roles)).
---   => Sin guard, cualquier usuario autenticado (incluso con solo la anon key pública) podía:
---        update public.profiles set roles = roles || '{admin}' where id = auth.uid();
---      y volverse admin. Escalada de privilegios remota.
+--   => Sin guard, cualquier usuario autenticado podía escalar a admin por DOS vías (la policy
+--      perfiles_propio_insert permite auto-INSERT y perfiles_propio_update auto-UPDATE de la propia fila):
+--        UPDATE: update public.profiles set roles = roles || '{admin}' where id = auth.uid();
+--        INSERT: al registrarse, insertar el perfil con roles = '{jugador,admin}'.
+--      Ambas remotas (incluso con solo la anon key pública).
 --
--- Fix: trigger BEFORE UPDATE OF roles que rechaza cualquier cambio en la pertenencia al rol
--- 'admin' salvo que el que ejecuta sea (a) un admin ya existente, o (b) un contexto de backend
--- sin usuario JWT (service_role o conexión directa/SQL editor → auth.uid() is null). Los cambios
--- a los roles 'jugador'/'cancha' siguen permitidos: el flujo de "volverse dueño de cancha" no se rompe.
+-- Fix: trigger BEFORE INSERT OR UPDATE OF roles que rechaza cualquier alta/cambio en la pertenencia
+-- al rol 'admin' salvo que el que ejecuta sea (a) un admin ya existente, o (b) un contexto de backend
+-- sin usuario JWT (service_role o conexión directa/SQL editor → auth.uid() is null). Los cambios a los
+-- roles 'jugador'/'cancha' siguen permitidos: el registro y "volverse dueño de cancha" no se rompen.
 
 create or replace function public.fn_guard_roles()
 returns trigger
@@ -38,6 +40,6 @@ alter function public.fn_guard_roles() owner to postgres;
 
 drop trigger if exists trg_guard_roles on public.profiles;
 create trigger trg_guard_roles
-  before update of roles on public.profiles
+  before insert or update of roles on public.profiles
   for each row
   execute function public.fn_guard_roles();

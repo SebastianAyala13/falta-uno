@@ -577,3 +577,82 @@ drop policy if exists "canchas_fotos_lectura" on storage.objects;
 drop policy if exists "canchas_fotos_subida" on storage.objects;
 create policy "canchas_fotos_lectura" on storage.objects for select using (bucket_id = 'canchas');
 create policy "canchas_fotos_subida" on storage.objects for insert to authenticated with check (bucket_id = 'canchas');
+
+-- ============================================================================
+-- PLATAFORMA MADRE (ADMIN) — visibilidad total + control del flujo de plata
+-- El primer admin se setea a mano:
+--   update public.profiles set roles = array_append(roles,'admin')
+--     where email = 'TU_EMAIL';
+-- ============================================================================
+
+-- ¿El usuario actual es admin? (security definer: salta RLS al leer profiles,
+-- por eso no hay recursión aunque profiles tenga policy que llame a is_admin()).
+create or replace function public.is_admin()
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and 'admin' = any(p.roles)
+  );
+$$;
+grant execute on function public.is_admin() to authenticated, anon;
+
+-- Lectura total del admin (se SUMA a las policies existentes; RLS combina con OR).
+drop policy if exists "admin_lee_profiles" on public.profiles;
+create policy "admin_lee_profiles" on public.profiles for select using (public.is_admin());
+drop policy if exists "admin_lee_reservas" on public.reservas;
+create policy "admin_lee_reservas" on public.reservas for select using (public.is_admin());
+drop policy if exists "admin_lee_pagos" on public.pagos;
+create policy "admin_lee_pagos" on public.pagos for select using (public.is_admin());
+drop policy if exists "admin_lee_retiros" on public.retiros;
+create policy "admin_lee_retiros" on public.retiros for select using (public.is_admin());
+drop policy if exists "admin_lee_movimientos" on public.movimientos_cancha;
+create policy "admin_lee_movimientos" on public.movimientos_cancha for select using (public.is_admin());
+drop policy if exists "admin_lee_membresias" on public.membresias_cancha;
+create policy "admin_lee_membresias" on public.membresias_cancha for select using (public.is_admin());
+drop policy if exists "admin_lee_reportes" on public.reportes;
+create policy "admin_lee_reportes" on public.reportes for select using (public.is_admin());
+
+-- Procesar un retiro (desembolso): server-authoritative y atómico. Solo admin.
+-- 'pagado' baja el saldo de la cancha con un movimiento 'retiro' en el ledger.
+create or replace function public.admin_procesar_retiro(p_retiro uuid, p_estado text, p_motivo text default null)
+returns void language plpgsql security definer set search_path = public as $$
+declare r public.retiros%rowtype;
+begin
+  if not public.is_admin() then raise exception 'No autorizado'; end if;
+  if p_estado not in ('pagado','rechazado') then raise exception 'Estado inválido'; end if;
+  select * into r from public.retiros where id = p_retiro for update;
+  if not found then raise exception 'Retiro no encontrado'; end if;
+  if r.estado not in ('solicitado','procesando') then raise exception 'El retiro ya fue procesado'; end if;
+
+  update public.retiros
+    set estado = p_estado,
+        motivo_rechazo = case when p_estado = 'rechazado' then p_motivo else null end,
+        procesado_at = now()
+    where id = p_retiro;
+
+  if p_estado = 'pagado' then
+    insert into public.movimientos_cancha (cancha_id, tipo, monto, retiro_id, descripcion)
+    values (r.cancha_id, 'retiro', -abs(r.monto), r.id, 'Retiro procesado por admin');
+  end if;
+end $$;
+grant execute on function public.admin_procesar_retiro(uuid, text, text) to authenticated;
+
+-- Activar/pausar una cancha (moderación operativa). Solo admin.
+create or replace function public.admin_set_estado_cancha(p_cancha uuid, p_estado text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then raise exception 'No autorizado'; end if;
+  if p_estado not in ('activa','pausada') then raise exception 'Estado inválido'; end if;
+  update public.canchas set estado = p_estado where id = p_cancha;
+end $$;
+grant execute on function public.admin_set_estado_cancha(uuid, text) to authenticated;
+
+-- Ajuste manual del saldo de una cancha (crédito/débito con signo). Solo admin.
+create or replace function public.admin_ajuste_saldo(p_cancha uuid, p_monto int, p_desc text default null)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then raise exception 'No autorizado'; end if;
+  insert into public.movimientos_cancha (cancha_id, tipo, monto, descripcion)
+  values (p_cancha, 'ajuste', p_monto, coalesce(p_desc, 'Ajuste manual (admin)'));
+end $$;
+grant execute on function public.admin_ajuste_saldo(uuid, int, text) to authenticated;

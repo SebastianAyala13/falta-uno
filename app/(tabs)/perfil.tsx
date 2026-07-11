@@ -43,6 +43,7 @@ export default function Perfil() {
 
   const u = profile;
   const esDueno = !!u?.roles?.includes('cancha');
+  const esAdmin = !!u?.roles?.includes('admin');
   const jugados = u?.partidos_jugados ?? 0;
   const puntualidad = Math.max(0, Math.round(100 - ((u?.no_shows ?? 0) / Math.max(1, jugados)) * 100));
   const racha = Math.min(jugados, 5); // racha simple basada en partidos jugados
@@ -117,6 +118,24 @@ export default function Perfil() {
             </View>
           </View>
         </FadeIn>
+
+        {/* Plataforma Madre — solo admins */}
+        {esAdmin ? (
+          <FadeIn delay={150}>
+            <Pressable
+              onPress={() => router.push('/admin')}
+              className="mx-6 mt-6 flex-row items-center overflow-hidden rounded-3xl border border-primary/50 bg-primary/10 p-4 active:opacity-80">
+              <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary/20">
+                <Ionicons name="shield-checkmark" size={24} color={Colors.primary} />
+              </View>
+              <View className="ml-3 flex-1">
+                <Text className="font-body-bold text-base text-cream">Plataforma Madre</Text>
+                <Text className="font-body text-xs text-muted">Métricas, canchas, pagos y retiros</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Colors.primary} />
+            </Pressable>
+          </FadeIn>
+        ) : null}
 
         {/* Modo cancha: panel del dueño o CTA para registrar la cancha */}
         <FadeIn delay={160}>

@@ -392,6 +392,22 @@ export interface Database {
         Args: { p_cancha: string };
         Returns: number;
       };
+      is_admin: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
+      admin_procesar_retiro: {
+        Args: { p_retiro: string; p_estado: string; p_motivo?: string };
+        Returns: undefined;
+      };
+      admin_set_estado_cancha: {
+        Args: { p_cancha: string; p_estado: string };
+        Returns: undefined;
+      };
+      admin_ajuste_saldo: {
+        Args: { p_cancha: string; p_monto: number; p_desc?: string };
+        Returns: undefined;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

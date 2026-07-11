@@ -85,6 +85,14 @@ export default function RootLayout() {
             <Stack.Screen name="cancha/editar" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="cancha/[id]/index" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="cancha/[id]/reservar" options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
+            {/* Plataforma Madre (admin) */}
+            <Stack.Screen name="admin/index" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="admin/retiros" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="admin/canchas" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="admin/reservas" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="admin/pagos" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="admin/usuarios" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="admin/reportes" options={{ animation: 'slide_from_right' }} />
           </Stack>
         </AuthProvider>
       </SafeAreaProvider>

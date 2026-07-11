@@ -45,7 +45,7 @@ export default function Checkout() {
 
   // El servicio de Falta Uno solo aplica al pago online (que la app procesa).
   // En efectivo la app no cobra nada, así que no se suma comisión.
-  const comision = medio.provider === 'lemonsqueezy' ? Math.round(partido.precio * COMISION_SERVICIO) : 0;
+  const comision = medio.provider === 'wompi' ? Math.round(partido.precio * COMISION_SERVICIO) : 0;
   const total = partido.precio + comision;
 
   const pagar = async () => {
@@ -53,9 +53,9 @@ export default function Checkout() {
     try {
       let nuevoPago: Pago;
       if (medio.id === 'online') {
-        // Checkout real de Lemon Squeezy en el navegador externo. El pago
-        // queda 'pendiente' en el cliente: el estado 'aprobado' lo escribe
-        // SOLO el servidor (webhook) cuando la pasarela confirma el cobro.
+        // Checkout real de Wompi en el navegador externo. El pago queda
+        // 'pendiente' en el cliente: el estado 'aprobado' lo escribe SOLO el
+        // servidor (wompi-webhook) cuando Wompi confirma el cobro.
         const referencia = genRef();
         const { url } = await crearCheckoutOnline({
           partidoId: id,
@@ -182,7 +182,7 @@ function Procesando({ medio }: { medio: MedioPago }) {
       <Text className="mt-6 font-display text-2xl uppercase text-cream">Procesando…</Text>
       <Text className="mt-2 text-center font-body text-sm text-muted">
         {medio.id === 'online'
-          ? 'Te llevamos al pago seguro de Lemon Squeezy en tu navegador.'
+          ? 'Te llevamos al pago seguro de Wompi en tu navegador.'
           : `Confirmando tu pago con ${medio.nombre}. No cierres la app, parce.`}
       </Text>
     </View>

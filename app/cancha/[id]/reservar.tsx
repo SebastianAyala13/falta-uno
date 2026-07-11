@@ -2,15 +2,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 
 import DateTimeField from '@/components/DateTimeField';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
+import { COMISION_CANCHA_DEFAULT, WOMPI_CONFIGURADO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { crearReserva, getCancha, slotsDelDia, type Slot } from '@/lib/canchas';
 import { fechaLarga, precioCOP } from '@/lib/format';
+import { crearCheckoutReserva } from '@/lib/payments';
 import { useStore } from '@/lib/store';
 import type { Cancha } from '@/types/database';
 
@@ -29,8 +32,10 @@ export default function Reservar() {
   const [cargandoSlots, setCargandoSlots] = useState(false);
   const [slot, setSlot] = useState<Slot | null>(null);
   const [abrirPartido, setAbrirPartido] = useState(false);
+  const [medio, setMedio] = useState<'efectivo' | 'online'>(WOMPI_CONFIGURADO ? 'online' : 'efectivo');
   const [loading, setLoading] = useState(false);
   const [referencia, setReferencia] = useState<string | null>(null);
+  const [online, setOnline] = useState(false); // el comprobante fue de un pago online (queda pendiente)
 
   useEffect(() => {
     if (!id) return;
@@ -56,10 +61,15 @@ export default function Reservar() {
     };
   }, [id, fecha]);
 
+  const pagaOnline = medio === 'online' && WOMPI_CONFIGURADO;
+
   const reservar = async () => {
     if (!id || !cancha || !slot || !profile) return;
     setLoading(true);
     try {
+      // Online: la reserva nace 'pendiente' y Wompi la confirma por webhook.
+      // Efectivo: queda 'confirmada' (se paga en la cancha).
+      const comision = Math.round(slot.precio * (cancha.comision_pct ?? COMISION_CANCHA_DEFAULT));
       const r = await crearReserva({
         canchaId: id,
         jugadorId: profile.id,
@@ -67,9 +77,20 @@ export default function Reservar() {
         horaInicio: slot.hora_inicio,
         horaFin: slot.hora_fin,
         precio: slot.precio,
-        medio: 'efectivo',
-        estado: 'confirmada',
+        comision: pagaOnline ? comision : 0,
+        medio: pagaOnline ? 'online' : 'efectivo',
+        estado: pagaOnline ? 'pendiente' : 'confirmada',
       });
+
+      if (pagaOnline) {
+        const { url } = await crearCheckoutReserva({
+          reservaId: r.id,
+          referencia: r.referencia,
+          email: profile.email,
+        });
+        await WebBrowser.openBrowserAsync(url);
+      }
+
       if (abrirPartido) {
         await crearPartido(
           {
@@ -86,6 +107,7 @@ export default function Reservar() {
           { id: profile.id, nombre: profile.nombre ?? 'Vos' },
         );
       }
+      setOnline(pagaOnline);
       setReferencia(r.referencia);
     } catch (e) {
       Alert.alert('No se pudo reservar', e instanceof Error ? e.message : 'Probá de nuevo.');
@@ -94,23 +116,29 @@ export default function Reservar() {
     }
   };
 
-  // Comprobante (estado "listo")
+  // Comprobante (estado "listo"). Online → pendiente hasta que Wompi confirme.
   if (referencia && cancha && slot) {
+    const tint = online ? Colors.warning : Colors.primary;
     return (
       <Screen edges={['top']}>
         <FadeIn delay={40} className="flex-1 items-center justify-center px-8">
-          <View className="h-24 w-24 items-center justify-center rounded-full" style={{ backgroundColor: Colors.primary + '22' }}>
-            <Ionicons name="checkmark" size={52} color={Colors.primary} />
+          <View className="h-24 w-24 items-center justify-center rounded-full" style={{ backgroundColor: tint + '22' }}>
+            <Ionicons name={online ? 'time' : 'checkmark'} size={52} color={tint} />
           </View>
           <Text className="mt-6 text-center font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-            Cupo reservado en {cancha.nombre}
+            {online ? 'Cupo reservado' : `Cupo reservado en ${cancha.nombre}`}
           </Text>
-          <Text className="mt-3 font-body-semibold text-base text-primary">{referencia}</Text>
+          <Text className="mt-3 font-body-semibold text-base" style={{ color: tint }}>{referencia}</Text>
           <Text className="mt-1 font-body text-sm text-muted">
             {fechaLarga(fecha)} · {slot.hora_inicio}
           </Text>
+          <Text className="mt-3 text-center font-body text-sm text-muted">
+            {online
+              ? 'Tu cupo se confirma apenas Wompi verifique el pago. Lo ves en "Mis reservas".'
+              : `Pagás en la cancha al llegar.`}
+          </Text>
           <View className="mt-8 w-full">
-            <GlowButton label="Listo" variant="primary" icon="checkmark" onPress={() => router.replace('/mis-reservas')} />
+            <GlowButton label="Ver mis reservas" variant="primary" icon="calendar" onPress={() => router.replace('/mis-reservas')} />
           </View>
         </FadeIn>
       </Screen>
@@ -196,6 +224,32 @@ export default function Reservar() {
               />
             </View>
 
+            {/* Medio de pago (online con Wompi solo si está habilitado) */}
+            {WOMPI_CONFIGURADO ? (
+              <View className="mt-4">
+                <Text className="mb-2 font-body-semibold text-sm text-cream">¿Cómo pagás?</Text>
+                <View className="flex-row gap-3">
+                  {[
+                    { key: 'online' as const, label: 'Online', hint: 'Nequi, PSE o tarjeta', icon: 'card' as const },
+                    { key: 'efectivo' as const, label: 'En la cancha', hint: 'Pagás al llegar', icon: 'cash' as const },
+                  ].map((m) => {
+                    const sel = medio === m.key;
+                    return (
+                      <Pressable
+                        key={m.key}
+                        onPress={() => setMedio(m.key)}
+                        className="flex-1 rounded-2xl border p-3"
+                        style={{ backgroundColor: sel ? Colors.primary + '1A' : Colors.card, borderColor: sel ? Colors.primary : Colors.border }}>
+                        <Ionicons name={m.icon} size={20} color={sel ? Colors.primary : Colors.muted} />
+                        <Text className="mt-1.5 font-body-bold text-sm" style={{ color: sel ? Colors.primary : Colors.cream }}>{m.label}</Text>
+                        <Text className="font-body text-xs text-muted">{m.hint}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
+
             {slot ? (
               <View className="mt-4 rounded-2xl border border-border bg-card p-4">
                 <View className="flex-row items-center justify-between">
@@ -203,7 +257,9 @@ export default function Reservar() {
                   <Text className="font-display text-2xl text-cream">{precioCOP(slot.precio)}</Text>
                 </View>
                 <Text className="mt-2 font-body text-xs text-muted">
-                  Por ahora pagás en la cancha. El pago online (Mercado Pago) llega pronto.
+                  {pagaOnline
+                    ? 'Pago seguro con Wompi (Nequi, PSE o tarjeta). Tu cupo se confirma al pagar.'
+                    : 'Pagás en la cancha al llegar. Tu cupo queda reservado.'}
                 </Text>
               </View>
             ) : null}

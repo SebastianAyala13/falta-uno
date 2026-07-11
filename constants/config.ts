@@ -67,6 +67,14 @@ export type Zona = (typeof ZONAS)[number];
 export const LEMONSQUEEZY_CONFIGURADO = !!process.env.EXPO_PUBLIC_LEMONSQUEEZY_ENABLED;
 
 /**
+ * `true` cuando Wompi está habilitado para esta build. Wompi es el PSP colombiano
+ * unificado (partidos y canchas): Nequi, PSE, tarjetas, Bancolombia. Las llaves
+ * privadas / integrity / events viven SOLO en las Edge Functions
+ * (`wompi-crear-transaccion`, `wompi-webhook`), nunca con prefijo EXPO_PUBLIC_.
+ */
+export const WOMPI_CONFIGURADO = !!process.env.EXPO_PUBLIC_WOMPI_ENABLED;
+
+/**
  * Medios de pago (contexto colombiano).
  * `provider` marca qué pasarela procesa el pago: 'lemonsqueezy' abre un
  * checkout real en el navegador; 'efectivo' es acuerdo directo con el
@@ -118,10 +126,10 @@ export const MEDIOS_PAGO: MedioPago[] = [
   },
   {
     id: 'online',
-    nombre: 'Tarjeta / PSE / Nequi',
-    detalle: 'Pago seguro con Lemon Squeezy',
+    nombre: 'Nequi, PSE o tarjeta',
+    detalle: 'Pago seguro con Wompi',
     icon: 'card',
-    provider: 'lemonsqueezy',
+    provider: 'wompi',
     instantaneo: true,
   },
 ];
@@ -130,13 +138,13 @@ export const MEDIOS_PAGO: MedioPago[] = [
  * Medios de pago ACTIVOS en producción.
  *
  * "Efectivo" está siempre (pago real al organizador en la cancha). "Online"
- * (Lemon Squeezy) aparece solo cuando `EXPO_PUBLIC_LEMONSQUEEZY_ENABLED` está
- * seteada: es un checkout REAL procesado por la pasarela y confirmado por
- * webhook en el servidor. Nunca mostramos un pago simulado que finja
- * "Aprobado": eso es causa de rechazo en App Store (2.1) y Google Play.
+ * (Wompi) aparece solo cuando `EXPO_PUBLIC_WOMPI_ENABLED` está seteada: es un
+ * checkout REAL procesado por Wompi y confirmado por webhook en el servidor.
+ * Nunca mostramos un pago simulado que finja "Aprobado": eso es causa de rechazo
+ * en App Store (2.1) y Google Play.
  */
 export const MEDIOS_PAGO_ACTIVOS: MedioPago[] = MEDIOS_PAGO.filter(
-  (m) => m.id === 'efectivo' || (m.id === 'online' && LEMONSQUEEZY_CONFIGURADO),
+  (m) => m.id === 'efectivo' || (m.id === 'online' && WOMPI_CONFIGURADO),
 );
 
 /** Comisión de servicio de Falta Uno (sobre el precio del cupo). */

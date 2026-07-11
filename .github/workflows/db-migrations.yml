@@ -2,10 +2,11 @@ name: Aplicar migraciones a Supabase (prod)
 
 # Aplica las migraciones pendientes de supabase/migrations/ a producción con
 # `supabase db push` cada vez que se mergea a main un cambio de schema.
-# Requiere el secret del repo SUPABASE_ACCESS_TOKEN (el CLI 2.x autentica la
-# conexión a la base con el access token, sin DB password). Si una versión del
-# CLI llegara a pedir la password, agregá el secret SUPABASE_DB_PASSWORD y
-# volvé a exponerlo con `env:` en los steps `link` y `db push`.
+#
+# Autenticación: un único secret del repo, SUPABASE_DB_URL = el connection string
+# del **Session pooler** (Dashboard → Settings → Database → Connection string →
+# Session pooler → URI), con la DB password embebida. Es una credencial
+# project-scoped (solo esta base) y rotable (reseteás la password cuando quieras).
 # (Edge Functions y secrets NO se despliegan acá — se gestionan en el dashboard.)
 
 on:
@@ -27,8 +28,6 @@ concurrency:
 jobs:
   db-push:
     runs-on: ubuntu-latest
-    env:
-      PROJECT_REF: gwkzcjgsuxgqejaukbse # público (está en la URL de Supabase), no es secreto
     steps:
       # Actions pinneadas a SHA completo (supply-chain); el comentario indica la versión.
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -36,14 +35,8 @@ jobs:
         with:
           version: 2.109.1
 
-      # El secret se pasa SOLO a los steps que lo usan (no a checkout/setup-cli
-      # ni al resto del job), para minimizar su exposición.
-      - name: Link al proyecto
-        run: supabase link --project-ref "$PROJECT_REF"
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
+      # El secret (connection string con password) se pasa SOLO a este step.
       - name: Aplicar migraciones pendientes
-        run: supabase db push
+        run: supabase db push --db-url "$SUPABASE_DB_URL"
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}

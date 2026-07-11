@@ -14,7 +14,9 @@
  *              (así los valores NUNCA aparecen en la línea de comandos ni en logs).
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const REF = 'gwkzcjgsuxgqejaukbse';
 const ENV_FILE = '.supabase-deploy.env';
@@ -94,14 +96,17 @@ if (want('--secrets')) {
   if (!env.SUPABASE_ACCESS_TOKEN || presentes.length === 0) {
     console.log('⏭️  secrets: falta SUPABASE_ACCESS_TOKEN o llaves de Wompi — lo salto.');
   } else {
-    // Archivo temporal para --env-file (los valores no van por argv/logs)
-    const tmp = 'supabase/.tmp-secrets.env';
-    writeFileSync(tmp, presentes.map((k) => `${k}=${env[k]}`).join('\n') + '\n');
+    // Archivo temporal para --env-file (los valores no van por argv/logs). Va en
+    // un directorio temporal propio (0700) y el archivo en 0600, así ningún otro
+    // usuario local puede leer los secretos durante el instante que existe.
+    const dir = mkdtempSync(join(tmpdir(), 'supa-'));
+    const tmp = join(dir, 'secrets.env');
+    writeFileSync(tmp, presentes.map((k) => `${k}=${env[k]}`).join('\n') + '\n', { mode: 0o600 });
     try {
       console.log(`🔐 cargando secretos: ${presentes.join(', ')}`);
       sh('pnpm', ['dlx', 'supabase', 'secrets', 'set', '--env-file', tmp, '--project-ref', REF]);
     } finally {
-      rmSync(tmp, { force: true });
+      rmSync(dir, { recursive: true, force: true });
     }
     hizoAlgo = true;
   }

@@ -258,7 +258,17 @@ function traducirError(msg: string): string {
   const m = msg.toLowerCase();
   if (m.includes('invalid login')) return 'Correo o contraseña incorrectos, parce.';
   if (m.includes('already registered') || m.includes('already exists'))
-    return 'Ese correo ya está registrado.';
+    return 'Ese correo ya está registrado. Entrá con tu cuenta.';
+  // Límite de tasa de Supabase Auth (registro/emails muy seguidos)
+  if (
+    m.includes('for security purposes') ||
+    m.includes('rate limit') ||
+    m.includes('too many requests') ||
+    (m.includes('after') && m.includes('second'))
+  )
+    return 'Muchos intentos seguidos. Esperá un minuto y probá de nuevo, parce.';
+  if (m.includes('confirm') && m.includes('email'))
+    return 'Confirmá tu correo con el enlace que te enviamos y luego entrá.';
   if (m.includes('password')) return 'La contraseña debe tener al menos 6 caracteres.';
   if (m.includes('email')) return 'Revisá el correo, parece inválido.';
   return msg;

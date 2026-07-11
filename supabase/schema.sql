@@ -277,6 +277,9 @@ create or replace view public.perfiles_publicos as
 grant select on public.perfiles_publicos to anon, authenticated;
 
 -- El usuario NO puede editar su reputación: solo estas columnas son actualizables.
+-- `roles` se crea acá porque el grant de abajo lo referencia y el schema corre de
+-- arriba a abajo (la sección de canchas que también la crea está más abajo).
+alter table public.profiles add column if not exists roles text[] not null default '{jugador}';
 revoke update on public.profiles from anon, authenticated;
 grant update (nombre, ciudad, posicion, nivel, celular, avatar_url, politica_version, politica_aceptada_at, roles)
   on public.profiles to authenticated;

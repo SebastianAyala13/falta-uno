@@ -102,6 +102,8 @@ function fetchRootCa(host, port, servername = host) {
 const REF = 'gwkzcjgsuxgqejaukbse';
 const ENV_FILE = '.supabase-deploy.env';
 const SCHEMA = 'supabase/schema.sql';
+const SEED = 'supabase/seed-demo.sql';
+const UNSEED = 'supabase/unseed-demo.sql';
 const FUNCS_WEBHOOK = ['wompi-webhook']; // van con --no-verify-jwt
 const FUNCS_JWT = ['wompi-crear-transaccion', 'delete-user'];
 const SECRET_KEYS = ['WOMPI_PUBLIC_KEY', 'WOMPI_INTEGRITY_SECRET', 'WOMPI_EVENTS_SECRET', 'WOMPI_REDIRECT_URL'];
@@ -127,6 +129,32 @@ const want = (f) => todo || args.includes(f);
 const sh = (cmd, cmdArgs, extraEnv = {}) =>
   execFileSync(cmd, cmdArgs, { stdio: 'inherit', shell: true, env: { ...env, ...extraEnv } });
 
+/** Aplica un archivo .sql al Postgres de Supabase (TLS verificado con CA pineada). */
+async function applySql(file, okMsg) {
+  const { default: pg } = await import('pg');
+  const sql = readFileSync(file, 'utf8');
+  const u = new URL(env.SUPABASE_DB_URL);
+  const host = u.hostname;
+  const port = Number(u.port || 5432);
+  const ip = await resolveHost(host);
+  const ca = env.SUPABASE_CA_CERT ? readFileSync(env.SUPABASE_CA_CERT, 'utf8') : await fetchRootCa(ip, port, host);
+  const client = new pg.Client({
+    host: ip,
+    port,
+    user: decodeURIComponent(u.username),
+    password: decodeURIComponent(u.password),
+    database: u.pathname.replace(/^\//, '') || 'postgres',
+    ssl: { ca, rejectUnauthorized: true, servername: host },
+  });
+  await client.connect();
+  try {
+    await client.query(sql);
+    console.log(okMsg);
+  } finally {
+    await client.end();
+  }
+}
+
 let hizoAlgo = false;
 
 // ── 1. SCHEMA ────────────────────────────────────────────────────────────────
@@ -134,32 +162,23 @@ if (want('--schema')) {
   if (!env.SUPABASE_DB_URL) {
     console.log('⏭️  schema: falta SUPABASE_DB_URL en ' + ENV_FILE + ' — lo salto.');
   } else {
-    const { default: pg } = await import('pg');
-    const sql = readFileSync(SCHEMA, 'utf8');
-    // Resolvemos la IP una vez (DNS de Supabase a veces es flaky) y conectamos a
-    // la IP con SNI/verificación por hostname. TLS verificado: fijamos la CA (de
-    // SUPABASE_CA_CERT si la diste, o la que presenta el servidor vía TOFU) y
-    // exigimos rejectUnauthorized para la conexión real. Nunca datos sin verificar.
-    const u = new URL(env.SUPABASE_DB_URL);
-    const host = u.hostname;
-    const port = Number(u.port || 5432);
-    const ip = await resolveHost(host);
-    const ca = env.SUPABASE_CA_CERT ? readFileSync(env.SUPABASE_CA_CERT, 'utf8') : await fetchRootCa(ip, port, host);
-    const client = new pg.Client({
-      host: ip,
-      port,
-      user: decodeURIComponent(u.username),
-      password: decodeURIComponent(u.password),
-      database: u.pathname.replace(/^\//, '') || 'postgres',
-      ssl: { ca, rejectUnauthorized: true, servername: host },
-    });
-    await client.connect();
-    try {
-      await client.query(sql);
-      console.log('✅ schema.sql aplicado a Supabase');
-    } finally {
-      await client.end();
-    }
+    await applySql(SCHEMA, '✅ schema.sql aplicado a Supabase');
+    hizoAlgo = true;
+  }
+}
+
+// ── 1b. SEED / UNSEED (datos de demo para presentar) ─────────────────────────
+if (args.includes('--seed')) {
+  if (!env.SUPABASE_DB_URL) console.log('⏭️  seed: falta SUPABASE_DB_URL — lo salto.');
+  else {
+    await applySql(SEED, '✅ datos de demo cargados (usuarios @demo.faltauno.app)');
+    hizoAlgo = true;
+  }
+}
+if (args.includes('--unseed')) {
+  if (!env.SUPABASE_DB_URL) console.log('⏭️  unseed: falta SUPABASE_DB_URL — lo salto.');
+  else {
+    await applySql(UNSEED, '🧹 datos de demo eliminados');
     hizoAlgo = true;
   }
 }

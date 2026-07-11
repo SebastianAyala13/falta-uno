@@ -65,6 +65,9 @@ export default function TabsLayout() {
         name="crear"
         options={{
           title: 'Crear',
+          // El ícono custom ya dibuja el texto "Crear"; ocultamos la etiqueta
+          // automática para que no aparezca duplicado.
+          tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
             <View style={{ alignItems: 'center', top: Platform.OS === 'ios' ? -8 : -12 }}>
               <View

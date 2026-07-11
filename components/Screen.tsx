@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { View, type ViewProps } from 'react-native';
+import { useWindowDimensions, View, type ViewProps } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/lib/theme';
@@ -9,6 +9,8 @@ interface ScreenProps extends ViewProps {
   edges?: Edge[];
   /** Muestra los "glows" decorativos de fondo (estadio de noche). */
   glow?: boolean;
+  /** Ancho máximo del contenido en pantallas anchas (web/tablet). Default 640. */
+  maxWidth?: number;
 }
 
 /** Mezcla un color hex con un alfa (0-1) en formato rgba. */
@@ -24,8 +26,12 @@ function withAlpha(hex: string, a: number): string {
  * Contenedor base de pantalla con el ambiente de marca: degradado del fondo del
  * tema + halos de luz con los colores activos. Sigue el tema (claro u oscuro).
  */
-export default function Screen({ children, edges = ['top'], glow = true, style, ...rest }: ScreenProps) {
+export default function Screen({ children, edges = ['top'], glow = true, maxWidth = 640, style, ...rest }: ScreenProps) {
   const t = useTheme();
+  const { width } = useWindowDimensions();
+  // En pantallas anchas (web/tablet) centramos el contenido como una columna;
+  // en teléfonos ocupa todo el ancho. El fondo/glows sí llenan toda la pantalla.
+  const centrar = width > maxWidth;
 
   return (
     <View className="flex-1 bg-background">
@@ -50,7 +56,14 @@ export default function Screen({ children, edges = ['top'], glow = true, style, 
         </>
       ) : null}
 
-      <SafeAreaView edges={edges} className="flex-1" style={style} {...rest}>
+      <SafeAreaView
+        edges={edges}
+        className="flex-1"
+        style={[
+          centrar ? { width: '100%', maxWidth, alignSelf: 'center' } : null,
+          style,
+        ]}
+        {...rest}>
         {children}
       </SafeAreaView>
     </View>

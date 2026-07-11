@@ -50,3 +50,6 @@ example
 
 # Archivos fuente de multimedia (originales; los usados viven en assets/brand)
 multimedia/
+
+# Backups/dumps de la base (pueden tener datos de prod — NUNCA commitear)
+backups/

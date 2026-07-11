@@ -62,7 +62,7 @@ y **feedback háptico** en las acciones clave.
 
 ### 🔐 Seguridad & 💳 Pagos
 - **Auth**: Supabase Auth (sesión persistida en el dispositivo) + RLS por usuario
-  en todas las tablas (`supabase/schema.sql`).
+  en todas las tablas (definido en las migraciones de `supabase/migrations/`).
 - **Pagos**: hay dos medios reales — **efectivo en cancha** (acuerdo con el
   organizador, sin custodia de dinero) y **pago online con Lemon Squeezy**
   (checkout externo + confirmación por webhook en el servidor). La llave
@@ -93,8 +93,8 @@ confirma **en el servidor** vía webhook. Para activarlo:
    `order_created` y el mismo *signing secret* que pusiste en el paso 2.
 5. **Activar el medio en la app:** en `.env` poné
    `EXPO_PUBLIC_LEMONSQUEEZY_ENABLED=1` (sin esto, el checkout solo muestra
-   efectivo). Re-corré `supabase/schema.sql` si tu base es anterior (agrega el
-   medio `online` y el índice de idempotencia).
+   efectivo). Aplicá las migraciones pendientes (`pnpm supabase db push`) si tu
+   base es anterior (agregan el medio `online` y el índice de idempotencia).
 
 > **Nota de cumplimiento (stores):** el checkout online se abre en el
 > **navegador externo** y cobra un **servicio del mundo real** (el cupo en una
@@ -133,7 +133,8 @@ La app funciona con **datos de prueba (mock)** sin backend. Para conectar Supaba
    EXPO_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key
    ```
    (las encontrás en **Dashboard → Settings → API**).
-3. Creá las tablas ejecutando [`supabase/schema.sql`](./supabase/schema.sql) en el **SQL Editor** de Supabase.
+3. Creá las tablas aplicando las migraciones con el CLI de Supabase: `pnpm supabase link
+   --project-ref <tu-ref>` y luego `pnpm supabase db push` (ver [`supabase/migrations/`](./supabase/migrations/)).
 4. Para probar el login sin esperar correos de confirmación, en **Authentication →
    Providers → Email** desactivá "Confirm email" (solo en desarrollo).
 
@@ -257,7 +258,7 @@ falta-uno/
 ├── constants/             # colors.ts y config.ts (tokens de marca)
 ├── lib/                   # supabase.ts y mockData.ts
 ├── types/                 # database.ts (tipos de Supabase)
-├── supabase/             # schema.sql
+├── supabase/             # migrations/, functions/, config.toml, seed-demo.sql
 ├── tailwind.config.js     # Tema de NativeWind con tokens de marca
 └── global.css             # Directivas de Tailwind
 ```

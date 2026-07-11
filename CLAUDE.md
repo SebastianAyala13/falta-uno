@@ -61,9 +61,15 @@ chat fallback, calificaciones/reputación, muro social posts+comentarios, modera
 Auth lives separately in `lib/auth.tsx`. Data layers: `lib/canchas.ts` (canchas: reservas, agenda,
 saldo, Mercado Pago), `lib/payments.ts`, `types/database.ts` (Supabase row types).
 
-**Supabase** — `supabase/schema.sql` defines tables + per-user RLS on everything. Server logic runs in
-`supabase/functions/` (`create-checkout`, `lemonsqueezy-webhook`, `delete-user`); deploy with
-`supabase functions deploy <name>` (the webhook with `--no-verify-jwt`).
+**Supabase** — the schema (tables + per-user RLS) is managed with **versioned migrations** in
+`supabase/migrations/` (the source of truth; there is no `schema.sql`). Local dev uses the Supabase CLI
+(a devDependency) with a Docker stack: `pnpm db:start`, add a change with `pnpm db:new <name>` (or
+`pnpm db:diff`), test with `pnpm db:reset` (re-applies every migration + `supabase/seed-demo.sql`).
+Merging to `main` triggers `.github/workflows/db-migrations.yml`, which runs `supabase db push` to apply
+pending migrations to prod. `db reset` is **local only**, never against prod; there is **no staging**, so
+always test locally before merging. Server logic lives in `supabase/functions/` (`create-checkout`,
+`lemonsqueezy-webhook`, `wompi-crear-transaccion`, `wompi-webhook`, `delete-user`) and — together with its
+secrets — is **managed in the Supabase dashboard**, not deployed by the CLI or CI.
 
 **Payments (hard invariant)** — the client **never** marks a payment `aprobado`. Cash stays
 `pendiente` (Falta Uno holds no money). Online payments (Lemon Squeezy for partidos, Mercado Pago for

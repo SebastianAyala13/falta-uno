@@ -51,7 +51,24 @@ newer version of Expo Go"* aunque la tengas actualizada. Para probar en device/s
 > temp dir huérfano de una instalación interrumpida — reiniciá con `pnpm start -c` (limpia la caché de
 > Metro); si persiste, `rm -rf node_modules && pnpm install`.
 
-## 4. Accesos que podés necesitar
+## 4. Base de datos: migraciones con el Supabase CLI
+
+El schema se gestiona con **migraciones versionadas** en `supabase/migrations/` (ya no hay `schema.sql`).
+El CLI viene como **devDependency** (`pnpm supabase …`). Para tocar el schema necesitás **Docker Desktop**
+(levanta un Postgres local).
+
+- **Setup (una vez):** `pnpm supabase login`.
+- **Día a día:**
+  1. `pnpm db:start` — levanta el stack local (Docker).
+  2. `pnpm db:new <nombre>` — crea una migración vacía; escribís el `ALTER`/`CREATE` (o cambiás el schema
+     local y `pnpm db:diff -f <nombre>`).
+  3. `pnpm db:reset` — re-aplica **todas** las migraciones + `seed-demo.sql` en local, para probar.
+  4. Commit → PR → merge a `main`.
+- **Prod:** el merge a `main` dispara `.github/workflows/db-migrations.yml`, que corre `supabase db push`.
+  ⚠️ `db reset` es **solo local**, nunca contra prod. **No hay staging** → probá con `db:reset` antes de mergear.
+- **Edge Functions y secrets:** se gestionan en el **dashboard** de Supabase (fuera del CLI/CI).
+
+## 5. Accesos que podés necesitar
 
 | Para | Qué |
 |---|---|
@@ -60,14 +77,14 @@ newer version of Expo Go"* aunque la tengas actualizada. Para probar en device/s
 | Builds móviles | Cuenta Expo/EAS (`eas build`). |
 | Deploy web | Dokploy — los `EXPO_PUBLIC_*` van en **Build-time Arguments** (ver [`docs/DESPLIEGUE-DOKPLOY.md`](DESPLIEGUE-DOKPLOY.md)). |
 
-## 5. Guardarraíles ya puestos (para que tu Claude no tropiece con lo que ya resolvimos)
+## 6. Guardarraíles ya puestos (para que tu Claude no tropiece con lo que ya resolvimos)
 
 - El **Dockerfile** falla el build si se importa `react-native-maps` directo en `app/` (usar
   `@/components/CanchaMap`) o si el bundle web tiene un error de parseo de script clásico.
 - La sección "web-export gotchas" de `CLAUDE.md` cubre la trampa del `EXPO_PUBLIC_*` en string vacío
   y la de `import.meta`.
 
-## 6. Claude Code — paridad de setup
+## 7. Claude Code — paridad de setup
 
 - `CLAUDE.md` se autocarga; con eso alcanza para la mayoría del trabajo.
 - Si vas a tocar **Supabase** o **Mercado Pago**, conectá sus MCP en Claude Code (`/mcp`).

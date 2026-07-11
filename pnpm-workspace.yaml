@@ -2,6 +2,9 @@
 # ESLint; en pnpm 11 hay que aprobar explícitamente su build script.
 allowBuilds:
   unrs-resolver: true
+  # El CLI de Supabase (devDependency) descarga su binario en un postinstall;
+  # pnpm 11 lo bloquea salvo que lo aprobemos acá.
+  supabase: true
 # React Native / Metro no soportan bien el node_modules con symlinks de pnpm
 # (autolinking de módulos nativos + imports inyectados como
 # "react-native-css-interop/jsx-runtime" por el babel de NativeWind).

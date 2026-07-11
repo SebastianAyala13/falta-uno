@@ -34,6 +34,11 @@ yarn-error.*
 .env
 .env*.local
 
+# Credenciales de deploy/migración a Supabase (NUNCA commitear)
+.supabase-deploy.env
+supabase/.tmp-secrets.env
+supabase/.env.wompi
+
 # typescript
 *.tsbuildinfo
 

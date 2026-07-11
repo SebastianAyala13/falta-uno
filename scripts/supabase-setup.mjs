@@ -14,9 +14,74 @@
  *              (así los valores NUNCA aparecen en la línea de comandos ni en logs).
  */
 import { execFileSync } from 'node:child_process';
+import dns from 'node:dns/promises';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import net from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import tls from 'node:tls';
+
+/** Resuelve un host a IP con reintentos (Supabase a veces tiene DNS flaky). */
+async function resolveHost(host, tries = 5) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const { address } = await dns.lookup(host);
+      return address;
+    } catch (e) {
+      last = e;
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+  }
+  throw last;
+}
+
+/** DER -> PEM. */
+function certToPem(raw) {
+  return `-----BEGIN CERTIFICATE-----\n${raw.toString('base64').match(/.{1,64}/g).join('\n')}\n-----END CERTIFICATE-----\n`;
+}
+
+/**
+ * Obtiene la CA raíz que presenta el servidor Postgres (Trust-On-First-Use).
+ * Postgres no habla TLS directo: primero se negocia con un SSLRequest y recién
+ * ahí se sube a TLS sobre el mismo socket. Este socket NO transmite datos de la
+ * app: solo lee la cadena de certificados para FIJAR la CA y verificar contra
+ * ella la conexión real (que sí usa rejectUnauthorized:true).
+ */
+function fetchRootCa(host, port, servername = host) {
+  return new Promise((resolve, reject) => {
+    const sock = net.connect({ host, port }, () => {
+      const req = Buffer.alloc(8);
+      req.writeInt32BE(8, 0); // longitud
+      req.writeInt32BE(80877103, 4); // código SSLRequest de Postgres
+      sock.write(req);
+    });
+    sock.once('data', (resp) => {
+      if (resp[0] !== 0x53 /* 'S' */) {
+        sock.end();
+        return reject(new Error('el servidor Postgres no ofrece SSL'));
+      }
+      const tlsSock = tls.connect({ socket: sock, servername, rejectUnauthorized: false }, () => {
+        let cert = tlsSock.getPeerCertificate(true);
+        const visto = new Set();
+        while (
+          cert?.issuerCertificate &&
+          cert.fingerprint256 &&
+          !visto.has(cert.fingerprint256) &&
+          cert.issuerCertificate.fingerprint256 !== cert.fingerprint256
+        ) {
+          visto.add(cert.fingerprint256);
+          cert = cert.issuerCertificate;
+        }
+        const pem = cert?.raw ? certToPem(cert.raw) : null;
+        tlsSock.end();
+        pem ? resolve(pem) : reject(new Error('no se pudo leer la CA del servidor'));
+      });
+      tlsSock.on('error', reject);
+    });
+    sock.on('error', reject);
+  });
+}
 
 const REF = 'gwkzcjgsuxgqejaukbse';
 const ENV_FILE = '.supabase-deploy.env';
@@ -55,13 +120,23 @@ if (want('--schema')) {
   } else {
     const { default: pg } = await import('pg');
     const sql = readFileSync(SCHEMA, 'utf8');
-    // TLS verificado (nada de rejectUnauthorized:false). El pooler de Supabase
-    // (aws-*.pooler.supabase.com) tiene cert público de confianza. Si usás la
-    // conexión directa, bajá la CA de Supabase y apuntá SUPABASE_CA_CERT a ella.
-    const ssl = env.SUPABASE_CA_CERT
-      ? { ca: readFileSync(env.SUPABASE_CA_CERT, 'utf8'), rejectUnauthorized: true }
-      : { rejectUnauthorized: true };
-    const client = new pg.Client({ connectionString: env.SUPABASE_DB_URL, ssl });
+    // Resolvemos la IP una vez (DNS de Supabase a veces es flaky) y conectamos a
+    // la IP con SNI/verificación por hostname. TLS verificado: fijamos la CA (de
+    // SUPABASE_CA_CERT si la diste, o la que presenta el servidor vía TOFU) y
+    // exigimos rejectUnauthorized para la conexión real. Nunca datos sin verificar.
+    const u = new URL(env.SUPABASE_DB_URL);
+    const host = u.hostname;
+    const port = Number(u.port || 5432);
+    const ip = await resolveHost(host);
+    const ca = env.SUPABASE_CA_CERT ? readFileSync(env.SUPABASE_CA_CERT, 'utf8') : await fetchRootCa(ip, port, host);
+    const client = new pg.Client({
+      host: ip,
+      port,
+      user: decodeURIComponent(u.username),
+      password: decodeURIComponent(u.password),
+      database: u.pathname.replace(/^\//, '') || 'postgres',
+      ssl: { ca, rejectUnauthorized: true, servername: host },
+    });
     await client.connect();
     try {
       await client.query(sql);

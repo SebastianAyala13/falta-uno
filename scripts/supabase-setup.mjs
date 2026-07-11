@@ -36,17 +36,26 @@ async function resolveHost(host, tries = 5) {
   throw last;
 }
 
+/**
+ * Huella SHA-256 de la CA raíz oficial de Supabase (Supabase Root 2021 CA,
+ * pública y compartida por todos los proyectos). Pin OUT-OF-BAND: verificamos
+ * que la CA que presenta el servidor sea EXACTAMENTE esta antes de confiar en
+ * ella (mata el MITM de la primera conexión — fail closed si no coincide).
+ */
+const SUPABASE_ROOT_CA_FP =
+  '80:70:25:AD:50:D4:ED:21:9D:2C:9C:7D:29:9C:00:4F:82:4E:B0:0C:F7:F6:5A:FE:F6:07:D0:7B:72:E6:CA:FA';
+
 /** DER -> PEM. */
 function certToPem(raw) {
   return `-----BEGIN CERTIFICATE-----\n${raw.toString('base64').match(/.{1,64}/g).join('\n')}\n-----END CERTIFICATE-----\n`;
 }
 
 /**
- * Obtiene la CA raíz que presenta el servidor Postgres (Trust-On-First-Use).
- * Postgres no habla TLS directo: primero se negocia con un SSLRequest y recién
- * ahí se sube a TLS sobre el mismo socket. Este socket NO transmite datos de la
- * app: solo lee la cadena de certificados para FIJAR la CA y verificar contra
- * ella la conexión real (que sí usa rejectUnauthorized:true).
+ * Lee la CA raíz que presenta el servidor Postgres y la VERIFICA contra la huella
+ * pineada de Supabase (SUPABASE_ROOT_CA_FP) — si no coincide, aborta (fail closed).
+ * Postgres no habla TLS directo: primero se negocia con un SSLRequest y recién ahí
+ * se sube a TLS sobre el mismo socket. Este socket NO transmite datos de la app;
+ * la CA verificada se usa luego para la conexión real con rejectUnauthorized:true.
  */
 function fetchRootCa(host, port, servername = host) {
   return new Promise((resolve, reject) => {
@@ -73,9 +82,16 @@ function fetchRootCa(host, port, servername = host) {
           visto.add(cert.fingerprint256);
           cert = cert.issuerCertificate;
         }
+        const fp = cert?.fingerprint256;
         const pem = cert?.raw ? certToPem(cert.raw) : null;
         tlsSock.end();
-        pem ? resolve(pem) : reject(new Error('no se pudo leer la CA del servidor'));
+        // Fail-closed: solo confiamos si la CA es EXACTAMENTE la de Supabase.
+        if (!pem || fp !== SUPABASE_ROOT_CA_FP) {
+          return reject(
+            new Error('CA inesperada: la huella no coincide con la CA raíz de Supabase. Abortado por seguridad.'),
+          );
+        }
+        resolve(pem);
       });
       tlsSock.on('error', reject);
     });

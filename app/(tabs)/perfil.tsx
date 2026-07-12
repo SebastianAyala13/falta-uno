@@ -214,7 +214,7 @@ function Stat({
   return (
     <View className="flex-1 items-center rounded-2xl border border-border bg-card py-4">
       <Ionicons name={icon} size={18} color={tone === 'danger' ? Colors.danger : tint} />
-      <Text className={`mt-2 font-display text-2xl ${tone === 'danger' ? 'text-red-400' : 'text-cream'}`}>
+      <Text className={`mt-2 font-display text-2xl ${tone === 'danger' ? 'text-danger' : 'text-cream'}`}>
         {valor}
       </Text>
       <Text className="font-body text-xs text-muted">{label}</Text>

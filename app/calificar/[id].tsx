@@ -83,7 +83,7 @@ export default function Calificar() {
           {/* No-show */}
           <FadeIn delay={230}>
             <View className="mb-4 flex-row items-center rounded-3xl border border-border bg-card p-4">
-              <View className="h-10 w-10 items-center justify-center rounded-xl bg-red-500/15">
+              <View className="h-10 w-10 items-center justify-center rounded-xl bg-danger/15">
                 <Ionicons name="alert-circle-outline" size={20} color={Colors.danger} />
               </View>
               <Text className="ml-3 flex-1 font-body-semibold text-sm text-cream">¿Faltó alguien sin avisar?</Text>

@@ -149,5 +149,7 @@ export function buildVars(p: Palette): Record<string, string> {
     '--c-border': hexToRgbTriplet(p.border),
     '--c-border-strong': hexToRgbTriplet(p.borderStrong),
     '--c-ink': hexToRgbTriplet(p.ink),
+    '--c-danger': hexToRgbTriplet(p.danger),
+    '--c-warning': hexToRgbTriplet(p.warning),
   };
 }

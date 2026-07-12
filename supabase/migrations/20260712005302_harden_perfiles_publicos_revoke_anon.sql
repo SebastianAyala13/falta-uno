@@ -1,0 +1,12 @@
+-- Endurecimiento de la vista pública `perfiles_publicos` (SECURITY DEFINER).
+--
+-- La vista expone columnas PÚBLICAS (nombre/avatar/posición/nivel/rating) de todos los perfiles,
+-- salteando a propósito el RLS "solo mi fila" de profiles (para mostrar a otros jugadores, p.ej. el
+-- organizador de un partido en lib/store.ts). La app SIEMPRE la consulta como usuario autenticado
+-- (store.hidratar corre tras el login), nunca como anónimo.
+--
+-- Le sacamos TODO el acceso a `anon`: un usuario NO logueado no debe poder enumerar el directorio
+-- de usuarios. (No limpia el ERROR de advisor por la propiedad SECURITY DEFINER —que es
+-- intencional y seguro— pero reduce la exposición real. También limpia los grants ALL sin sentido
+-- que anon tenía sobre la vista: INSERT/UPDATE/DELETE/TRUNCATE.)
+revoke all on public.perfiles_publicos from anon;

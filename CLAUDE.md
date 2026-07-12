@@ -132,6 +132,14 @@ fit — prefer them over ad-hoc work:
   components, visual polish. This app has a real design system (NativeWind brand tokens in
   `constants/colors.ts`, runtime themes, glassmorphism, staggered Reanimated motion, haptics); keep new
   screens consistent with it and avoid generic/templated layouts.
+  - **HARD RULE — `docs/DESIGN.md` governs all UI.** Any work that touches `app/` or `components/`
+    MUST follow the project design standard in [`docs/DESIGN.md`](docs/DESIGN.md) and pass its
+    **Pre-flight checklist** before being considered done. The taste skill supplies the *principles*
+    (it is web-oriented; §13 lists native mobile as out of scope) — `docs/DESIGN.md` is its
+    **React Native / Expo / NativeWind translation** and **wins on any RN-specific conflict**. The
+    core non-negotiables: tokens only (never hardcoded hex), `useTheme()` in components (not the
+    `Colors` proxy), the `rounded-sm/md/lg/full` radius scale only, works across all 7 themes
+    (incl. light `Blanco`), motivated motion, and complete empty/loading/error states.
 
 > These are **per-machine Claude Code plugins**, not part of the repo, so this guidance only takes effect
 > if your Claude Code has them installed. If it doesn't, install them via `/plugin` (the superpowers

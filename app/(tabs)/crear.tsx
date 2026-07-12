@@ -11,19 +11,20 @@ import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { CUPOS_POR_FORMATO, FORMATOS, NIVELES, ZONAS, type Formato, type Nivel, type Zona } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { listarCanchas } from '@/lib/canchas';
 import { haptics } from '@/lib/haptics';
 import { elegirImagen } from '@/lib/images';
 import { useStore } from '@/lib/store';
+import { useTheme } from '@/lib/theme';
 import type { Cancha } from '@/types/database';
 
 export default function Crear() {
   const router = useRouter();
   const { profile } = useAuth();
   const crearPartido = useStore((s) => s.crearPartido);
+  const c = useTheme();
 
   const [canchasDisponibles, setCanchasDisponibles] = useState<Cancha[]>([]);
   const [canchaSelId, setCanchaSelId] = useState<string | null>(null);
@@ -45,12 +46,12 @@ export default function Crear() {
     listarCanchas().then(setCanchasDisponibles).catch(() => {});
   }, []);
 
-  const elegirCancha = (c: Cancha) => {
-    setCanchaSelId(c.id);
+  const elegirCancha = (cch: Cancha) => {
+    setCanchaSelId(cch.id);
     setOtraCancha(false);
-    setCancha(c.nombre);
-    if ((ZONAS as readonly string[]).includes(c.zona)) setZona(c.zona as Zona);
-    if (c.formatos?.[0]) setFormato(c.formatos[0]);
+    setCancha(cch.nombre);
+    if ((ZONAS as readonly string[]).includes(cch.zona)) setZona(cch.zona as Zona);
+    if (cch.formatos?.[0]) setFormato(cch.formatos[0]);
   };
 
   const agregarFoto = async () => {
@@ -113,18 +114,18 @@ export default function Crear() {
             <Pressable
               onPress={agregarFoto}
               className="mb-4 h-40 items-center justify-center overflow-hidden rounded-2xl border bg-card"
-              style={{ borderColor: Colors.border, borderStyle: foto ? 'solid' : 'dashed' }}>
+              style={{ borderColor: c.border, borderStyle: foto ? 'solid' : 'dashed' }}>
               {foto ? (
                 <>
                   <Image source={{ uri: foto }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                   <View className="absolute bottom-2 right-2 flex-row items-center gap-1 rounded-full bg-black/60 px-3 py-1.5">
-                    <Ionicons name="camera" size={14} color={Colors.cream} />
+                    <Ionicons name="camera" size={14} color={c.cream} />
                     <Text className="font-body-semibold text-xs text-cream">Cambiar</Text>
                   </View>
                 </>
               ) : (
                 <View className="items-center">
-                  <Ionicons name="image-outline" size={32} color={Colors.muted} />
+                  <Ionicons name="image-outline" size={32} color={c.muted} />
                   <Text className="mt-2 font-body text-sm text-muted">Agregá una foto (opcional)</Text>
                 </View>
               )}
@@ -134,26 +135,26 @@ export default function Crear() {
             <Text className="mb-2 font-body-semibold text-sm text-cream">Cancha</Text>
             {canchasDisponibles.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 8 }} className="mb-3">
-                {canchasDisponibles.map((c) => {
-                  const sel = canchaSelId === c.id && !otraCancha;
+                {canchasDisponibles.map((cch) => {
+                  const sel = canchaSelId === cch.id && !otraCancha;
                   return (
                     <Pressable
-                      key={c.id}
-                      onPress={() => elegirCancha(c)}
-                      style={{ width: 170, borderColor: sel ? Colors.primary : Colors.border }}
+                      key={cch.id}
+                      onPress={() => elegirCancha(cch)}
+                      style={{ width: 170, borderColor: sel ? c.primary : c.border }}
                       className="overflow-hidden rounded-2xl border bg-card p-3">
-                      {c.foto_portada ? (
-                        <Image source={{ uri: c.foto_portada }} style={{ width: '100%', height: 64, borderRadius: 10 }} contentFit="cover" />
+                      {cch.foto_portada ? (
+                        <Image source={{ uri: cch.foto_portada }} style={{ width: '100%', height: 64, borderRadius: 10 }} contentFit="cover" />
                       ) : (
                         <View className="h-16 items-center justify-center rounded-xl bg-background">
-                          <Ionicons name="business" size={24} color={Colors.muted} />
+                          <Ionicons name="business" size={24} color={c.muted} />
                         </View>
                       )}
-                      <Text className="mt-2 font-body-bold text-sm text-cream" numberOfLines={1}>{c.nombre}</Text>
-                      <Text className="font-body text-xs text-muted" numberOfLines={1}>{c.zona}</Text>
+                      <Text className="mt-2 font-body-bold text-sm text-cream" numberOfLines={1}>{cch.nombre}</Text>
+                      <Text className="font-body text-xs text-muted" numberOfLines={1}>{cch.zona}</Text>
                       {sel ? (
                         <View className="mt-1 flex-row items-center gap-1">
-                          <Ionicons name="checkmark-circle" size={14} color={Colors.primary} />
+                          <Ionicons name="checkmark-circle" size={14} color={c.primary} />
                           <Text className="font-body-semibold text-xs text-primary">Elegida</Text>
                         </View>
                       ) : null}
@@ -162,10 +163,10 @@ export default function Crear() {
                 })}
                 <Pressable
                   onPress={() => { setOtraCancha(true); setCanchaSelId(null); setCancha(''); }}
-                  style={{ width: 120, borderColor: otraCancha ? Colors.primary : Colors.border, borderStyle: 'dashed' }}
+                  style={{ width: 120, borderColor: otraCancha ? c.primary : c.border, borderStyle: 'dashed' }}
                   className="items-center justify-center rounded-2xl border bg-card p-3">
-                  <Ionicons name="add-circle-outline" size={22} color={otraCancha ? Colors.primary : Colors.muted} />
-                  <Text className="mt-1 font-body-semibold text-xs" style={{ color: otraCancha ? Colors.primary : Colors.muted }}>Otra cancha</Text>
+                  <Ionicons name="add-circle-outline" size={22} color={otraCancha ? c.primary : c.muted} />
+                  <Text className="mt-1 font-body-semibold text-xs" style={{ color: otraCancha ? c.primary : c.muted }}>Otra cancha</Text>
                 </Pressable>
               </ScrollView>
             ) : (

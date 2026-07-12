@@ -15,18 +15,19 @@ import ProgressBar from '@/components/ProgressBar';
 import Screen from '@/components/Screen';
 import StatCard from '@/components/StatCard';
 import UrgencyPill from '@/components/UrgencyPill';
-import { Colors } from '@/constants/colors';
 import { COMISION_SERVICIO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { fechaLarga, precioCOP, urgencyLabel } from '@/lib/format';
 import { coordsDePartido } from '@/lib/geo';
 import { cancelarRecordatorio } from '@/lib/notifications';
 import { useStore } from '@/lib/store';
+import { useTheme } from '@/lib/theme';
 
 export default function PartidoDetalle() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile } = useAuth();
+  const c = useTheme();
 
   const partido = useStore((s) => s.getPartido(id));
   const inscrito = useStore((s) => s.estaInscrito(id));
@@ -36,7 +37,7 @@ export default function PartidoDetalle() {
     return (
       <Screen edges={['top', 'bottom']}>
         <View className="flex-1 items-center justify-center px-6">
-          <Ionicons name="alert-circle-outline" size={48} color={Colors.muted} />
+          <Ionicons name="alert-circle-outline" size={48} color={c.muted} />
           <Text className="mt-3 font-body text-base text-muted">Este partido ya no existe.</Text>
           <Pressable onPress={() => router.back()} className="mt-4">
             <Text className="font-body-semibold text-primary">Volver</Text>
@@ -98,18 +99,18 @@ export default function PartidoDetalle() {
             <Image source={{ uri: partido.foto_url }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" />
           ) : null}
           <LinearGradient
-            colors={partido.foto_url ? ['rgba(11,15,13,0.30)', 'rgba(11,15,13,0.94)'] : [Colors.secondary, '#0C1712']}
+            colors={partido.foto_url ? ['rgba(11,15,13,0.30)', 'rgba(11,15,13,0.94)'] : [c.secondary, '#0C1712']}
             style={{ paddingBottom: 24 }}>
             <View
               pointerEvents="none"
               className="absolute rounded-full"
-              style={{ right: -60, top: -40, width: 220, height: 220, backgroundColor: Colors.accent, opacity: 0.1 }}
+              style={{ right: -60, top: -40, width: 220, height: 220, backgroundColor: c.accent, opacity: 0.1 }}
             />
             <SafeAreaView edges={['top']}>
               <View className="flex-row items-center justify-between px-5 pt-2">
                 <BackButton variant="overlay" />
                 <Pressable onPress={compartir} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-black/30">
-                  <Ionicons name="share-social-outline" size={20} color={Colors.cream} />
+                  <Ionicons name="share-social-outline" size={20} color={c.cream} />
                 </Pressable>
               </View>
 
@@ -122,7 +123,7 @@ export default function PartidoDetalle() {
                   {partido.cancha}
                 </Text>
                 <View className="mt-2 flex-row items-center">
-                  <Ionicons name="location-sharp" size={15} color={Colors.cream} />
+                  <Ionicons name="location-sharp" size={15} color={c.cream} />
                   <Text className="ml-1 font-body text-base text-cream/80">{partido.zona} · Pereira</Text>
                 </View>
               </View>
@@ -176,8 +177,8 @@ export default function PartidoDetalle() {
                     className="mb-2 items-center">
                     <View
                       className="h-11 w-11 items-center justify-center rounded-full"
-                      style={{ borderWidth: 1.5, borderColor: Colors.accent, borderStyle: 'dashed' }}>
-                      <Ionicons name="add" size={20} color={Colors.accent} />
+                      style={{ borderWidth: 1.5, borderColor: c.accent, borderStyle: 'dashed' }}>
+                      <Ionicons name="add" size={20} color={c.accent} />
                     </View>
                     <Text className="mt-1 font-body-semibold text-[10px] text-accent" numberOfLines={1}>Vos</Text>
                   </Pressable>
@@ -195,7 +196,7 @@ export default function PartidoDetalle() {
                 <Text className="font-body-bold text-base text-cream">{partido.organizador?.nombre}</Text>
               </View>
               <View className="flex-row items-center gap-1 rounded-full bg-background px-3 py-1.5">
-                <Ionicons name="star" size={14} color={Colors.accent} />
+                <Ionicons name="star" size={14} color={c.accent} />
                 <Text className="font-body-semibold text-sm text-cream">{partido.organizador?.rating?.toFixed(1)}</Text>
               </View>
             </View>
@@ -207,13 +208,13 @@ export default function PartidoDetalle() {
               onPress={irAlChat}
               className="mb-4 flex-row items-center rounded-3xl border border-border bg-card p-4 active:bg-border/40">
               <View className="h-11 w-11 items-center justify-center rounded-xl bg-accent/15">
-                <Ionicons name="chatbubbles" size={22} color={Colors.accent} />
+                <Ionicons name="chatbubbles" size={22} color={c.accent} />
               </View>
               <View className="ml-3 flex-1">
                 <Text className="font-body-bold text-base text-cream">Chat del parche</Text>
                 <Text className="font-body text-xs text-muted">Cuadrá detalles con los demás</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={Colors.muted} />
+              <Ionicons name="chevron-forward" size={18} color={c.muted} />
             </Pressable>
           </FadeIn>
 
@@ -254,7 +255,7 @@ export default function PartidoDetalle() {
         {inscrito ? (
           <View className="gap-2">
             <View className="flex-row items-center justify-center gap-2 rounded-2xl bg-primary/15 py-3">
-              <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
+              <Ionicons name="checkmark-circle" size={20} color={c.primary} />
               <Text className="font-body-bold text-base text-primary">¡Ya estás cuadrado!</Text>
             </View>
             <Pressable onPress={confirmarSalida} className="py-1">

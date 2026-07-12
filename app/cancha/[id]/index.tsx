@@ -9,14 +9,15 @@ import CanchaMap from '@/components/CanchaMap';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { AMENIDADES } from '@/constants/config';
 import { getCancha } from '@/lib/canchas';
+import { useTheme } from '@/lib/theme';
 import type { Cancha } from '@/types/database';
 
 export default function PerfilCancha() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const c = useTheme();
 
   const [cancha, setCancha] = useState<Cancha | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -38,11 +39,11 @@ export default function PerfilCancha() {
 
       {cargando ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={c.primary} />
         </View>
       ) : !cancha ? (
         <View className="flex-1 items-center justify-center px-8">
-          <Ionicons name="alert-circle-outline" size={42} color={Colors.muted} />
+          <Ionicons name="alert-circle-outline" size={42} color={c.muted} />
           <Text className="mt-3 text-center font-body text-base text-muted">Esta cancha ya no existe</Text>
         </View>
       ) : (
@@ -72,7 +73,7 @@ export default function PerfilCancha() {
                   {cancha.nombre}
                 </Text>
                 <View className="mt-1 flex-row items-center">
-                  <Ionicons name="location" size={16} color={Colors.primary} />
+                  <Ionicons name="location" size={16} color={c.primary} />
                   <Text className="ml-1 flex-1 font-body text-sm text-muted">
                     {cancha.zona} · {cancha.direccion}
                   </Text>
@@ -95,7 +96,7 @@ export default function PerfilCancha() {
                       {activas.map((a) => (
                         <View key={a.id} className="mb-2 w-1/2 flex-row items-center pr-2">
                           <View className="h-9 w-9 items-center justify-center rounded-xl bg-card">
-                            <Ionicons name={a.icon as keyof typeof Ionicons.glyphMap} size={18} color={Colors.primary} />
+                            <Ionicons name={a.icon as keyof typeof Ionicons.glyphMap} size={18} color={c.primary} />
                           </View>
                           <Text className="ml-2 flex-1 font-body text-sm text-cream">{a.label}</Text>
                         </View>
@@ -108,7 +109,7 @@ export default function PerfilCancha() {
                   <Pressable
                     onPress={() => Linking.openURL(`tel:${cancha.telefono}`)}
                     className="mt-3 flex-row items-center rounded-2xl border border-border bg-card p-4 active:opacity-80">
-                    <Ionicons name="call" size={20} color={Colors.accent} />
+                    <Ionicons name="call" size={20} color={c.accent} />
                     <Text className="ml-3 font-body-semibold text-base text-cream">{cancha.telefono}</Text>
                   </Pressable>
                 ) : null}

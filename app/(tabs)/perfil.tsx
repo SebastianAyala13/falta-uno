@@ -8,16 +8,17 @@ import Badge from '@/components/Badge';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import StatCard from '@/components/StatCard';
-import { Colors } from '@/constants/colors';
 import { URL_PRIVACIDAD } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { useStore } from '@/lib/store';
+import { useTheme } from '@/lib/theme';
 import { useShallow } from 'zustand/react/shallow';
 
 export default function Perfil() {
   const router = useRouter();
   const { profile, signOut, eliminarCuenta, demo } = useAuth();
   const misPartidos = useStore(useShallow((s) => s.misPartidos()));
+  const c = useTheme();
 
   const abrirPrivacidad = () => Linking.openURL(URL_PRIVACIDAD).catch(() => {});
   const borrarCuenta = () => {
@@ -59,7 +60,7 @@ export default function Perfil() {
         <View className="flex-row items-center justify-between px-6 pb-2 pt-2">
           <Text className="font-display text-4xl uppercase text-cream" style={{ lineHeight: 44, paddingTop: 2 }}>Mi perfil</Text>
           <Pressable onPress={cerrarSesion} hitSlop={12} className="h-11 w-11 items-center justify-center rounded-full border border-border bg-card">
-            <Ionicons name="log-out-outline" size={21} color={Colors.cream} />
+            <Ionicons name="log-out-outline" size={21} color={c.cream} />
           </Pressable>
         </View>
 
@@ -69,12 +70,12 @@ export default function Perfil() {
             <LinearGradient colors={['#10231C', '#0C1712']} style={{ padding: 24, alignItems: 'center' }}>
               <View
                 className="rounded-full"
-                style={{ padding: 3, borderWidth: 2, borderColor: Colors.primary }}>
+                style={{ padding: 3, borderWidth: 2, borderColor: c.primary }}>
                 <Avatar nombre={u?.nombre ?? '?'} uri={u?.avatar_url} size={92} />
               </View>
               <Text className="mt-4 font-display text-3xl uppercase text-cream">{u?.nombre ?? 'Invitado'}</Text>
               <View className="mt-1 flex-row items-center">
-                <Ionicons name="location-sharp" size={14} color={Colors.muted} />
+                <Ionicons name="location-sharp" size={14} color={c.muted} />
                 <Text className="ml-1 font-body text-sm text-muted">{u?.ciudad ?? 'Pereira'}</Text>
               </View>
               <View className="mt-4 flex-row gap-2">
@@ -114,7 +115,7 @@ export default function Perfil() {
               align="center"
               labelPosition="bottom"
               icon="star"
-              tint={Colors.accent}
+              tint={c.accent}
               value={(u?.rating ?? 5).toFixed(1)}
               label="Rating"
             />
@@ -149,13 +150,13 @@ export default function Perfil() {
               onPress={() => router.push('/admin')}
               className="mx-6 mt-6 flex-row items-center overflow-hidden rounded-3xl border border-primary/50 bg-primary/10 p-4 active:opacity-80">
               <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary/20">
-                <Ionicons name="shield-checkmark" size={24} color={Colors.primary} />
+                <Ionicons name="shield-checkmark" size={24} color={c.primary} />
               </View>
               <View className="ml-3 flex-1">
                 <Text className="font-body-bold text-base text-cream">Plataforma Madre</Text>
                 <Text className="font-body text-xs text-muted">Métricas, canchas, pagos y retiros</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={Colors.primary} />
+              <Ionicons name="chevron-forward" size={18} color={c.primary} />
             </Pressable>
           </FadeIn>
         ) : null}
@@ -166,7 +167,7 @@ export default function Perfil() {
             onPress={() => router.push(esDueno ? '/cancha/panel' : '/cancha/registrar')}
             className="mx-6 mt-6 flex-row items-center overflow-hidden rounded-3xl border border-accent/40 bg-accent/10 p-4 active:opacity-80">
             <View className="h-12 w-12 items-center justify-center rounded-2xl bg-accent/20">
-              <Ionicons name="business" size={24} color={Colors.accent} />
+              <Ionicons name="business" size={24} color={c.accent} />
             </View>
             <View className="ml-3 flex-1">
               <Text className="font-body-bold text-base text-cream">
@@ -176,7 +177,7 @@ export default function Perfil() {
                 {esDueno ? 'Reservas, agenda, saldo y retiros' : 'Recibí reservas y cobrá por la app'}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={Colors.accent} />
+            <Ionicons name="chevron-forward" size={18} color={c.accent} />
           </Pressable>
         </FadeIn>
 
@@ -197,16 +198,16 @@ export default function Perfil() {
           <View className="mx-6 mt-4 overflow-hidden rounded-md border border-border bg-card">
             <Pressable onPress={abrirPrivacidad} className="flex-row items-center border-b border-border px-4 py-4 active:bg-border/40">
               <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
-                <Ionicons name="shield-checkmark-outline" size={18} color={Colors.primary} />
+                <Ionicons name="shield-checkmark-outline" size={18} color={c.primary} />
               </View>
               <Text className="ml-3 flex-1 font-body-semibold text-base text-cream">Privacidad y términos</Text>
-              <Ionicons name="open-outline" size={18} color={Colors.muted} />
+              <Ionicons name="open-outline" size={18} color={c.muted} />
             </Pressable>
             <Pressable onPress={borrarCuenta} className="flex-row items-center px-4 py-4 active:bg-border/40">
-              <View className="h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: Colors.danger + '22' }}>
-                <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+              <View className="h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: c.danger + '22' }}>
+                <Ionicons name="trash-outline" size={18} color={c.danger} />
               </View>
-              <Text className="ml-3 flex-1 font-body-semibold text-base" style={{ color: Colors.danger }}>Eliminar cuenta</Text>
+              <Text className="ml-3 flex-1 font-body-semibold text-base" style={{ color: c.danger }}>Eliminar cuenta</Text>
             </Pressable>
           </View>
         </FadeIn>
@@ -246,14 +247,15 @@ function Accion({
   onPress: () => void;
   ultimo?: boolean;
 }) {
+  const c = useTheme();
   return (
     <Pressable onPress={onPress} className={`flex-row items-center px-4 py-4 active:bg-border/40 ${ultimo ? '' : 'border-b border-border'}`}>
       <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
-        <Ionicons name={icon} size={18} color={Colors.primary} />
+        <Ionicons name={icon} size={18} color={c.primary} />
       </View>
       <Text className="ml-3 flex-1 font-body-semibold text-base text-cream">{label}</Text>
       {valor ? <Text className="mr-2 font-body text-sm text-muted">{valor}</Text> : null}
-      <Ionicons name="chevron-forward" size={18} color={Colors.muted} />
+      <Ionicons name="chevron-forward" size={18} color={c.muted} />
     </Pressable>
   );
 }

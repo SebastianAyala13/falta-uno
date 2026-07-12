@@ -22,7 +22,6 @@ import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import {
   FORMATOS,
   LEGAL_CANCHA_VERSION,
@@ -41,6 +40,7 @@ import {
   subirFotoCancha,
 } from '@/lib/canchas';
 import { elegirImagen } from '@/lib/images';
+import { useTheme } from '@/lib/theme';
 import type { Amenidades, Cancha } from '@/types/database';
 
 const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -57,6 +57,7 @@ const diaInicial = (): DiaConfig => ({ abierto: false, apertura: '08:00', cierre
 export default function EditarCancha() {
   const router = useRouter();
   const { profile, updateProfile } = useAuth();
+  const c = useTheme();
 
   const [cargando, setCargando] = useState(true);
   const [cancha, setCancha] = useState<Cancha | null>(null);
@@ -88,18 +89,18 @@ export default function EditarCancha() {
       try {
         const canchas = await misCanchas(profile.id);
         if (!activo) return;
-        const c = canchas[0];
-        if (c) {
-          setCancha(c);
-          setNombre(c.nombre);
-          setDireccion(c.direccion);
-          setZona(c.zona);
-          setTelefono(c.telefono ?? '');
-          setDescripcion(c.descripcion ?? '');
-          setFormatos(c.formatos ?? []);
-          setAmenidades(c.amenidades ?? {});
-          setFotos(c.fotos ?? []);
-          const franjas = await getDisponibilidad(c.id);
+        const cch = canchas[0];
+        if (cch) {
+          setCancha(cch);
+          setNombre(cch.nombre);
+          setDireccion(cch.direccion);
+          setZona(cch.zona);
+          setTelefono(cch.telefono ?? '');
+          setDescripcion(cch.descripcion ?? '');
+          setFormatos(cch.formatos ?? []);
+          setAmenidades(cch.amenidades ?? {});
+          setFotos(cch.fotos ?? []);
+          const franjas = await getDisponibilidad(cch.id);
           if (!activo) return;
           setDias(() => {
             const sig = DIAS.map(() => diaInicial());
@@ -201,12 +202,12 @@ export default function EditarCancha() {
         await setDisponibilidad(cancha.id, franjas);
         router.back();
       } else {
-        const c = await crearCancha(profile.id, {
+        const nueva = await crearCancha(profile.id, {
           ...datos,
           legal_version: LEGAL_CANCHA_VERSION,
           legal_aceptado_at: new Date().toISOString(),
         });
-        await setDisponibilidad(c.id, franjas);
+        await setDisponibilidad(nueva.id, franjas);
         if (!profile.roles?.includes('cancha')) {
           await updateProfile({ roles: Array.from(new Set([...(profile.roles ?? ['jugador']), 'cancha'])) });
         }
@@ -223,7 +224,7 @@ export default function EditarCancha() {
     return (
       <Screen edges={['top']}>
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={c.primary} />
         </View>
       </Screen>
     );
@@ -319,8 +320,8 @@ export default function EditarCancha() {
                       onPress={() => quitarFoto(i)}
                       hitSlop={8}
                       className="absolute -right-1.5 -top-1.5 h-6 w-6 items-center justify-center rounded-full"
-                      style={{ backgroundColor: Colors.danger }}>
-                      <Ionicons name="close" size={14} color={Colors.cream} />
+                      style={{ backgroundColor: c.danger }}>
+                      <Ionicons name="close" size={14} color={c.cream} />
                     </Pressable>
                   </View>
                 ))}
@@ -331,10 +332,10 @@ export default function EditarCancha() {
               disabled={subiendoFoto}
               className="mb-4 h-14 flex-row items-center justify-center rounded-2xl border border-border bg-card active:border-primary/50">
               {subiendoFoto ? (
-                <ActivityIndicator color={Colors.primary} />
+                <ActivityIndicator color={c.primary} />
               ) : (
                 <>
-                  <Ionicons name="image-outline" size={20} color={Colors.primary} />
+                  <Ionicons name="image-outline" size={20} color={c.primary} />
                   <Text className="ml-2 font-body-semibold text-sm text-cream">Agregar foto</Text>
                 </>
               )}
@@ -359,17 +360,17 @@ export default function EditarCancha() {
                       hitSlop={8}
                       className="flex-row items-center rounded-full border px-3 py-1.5"
                       style={{
-                        borderColor: d.abierto ? Colors.primary : Colors.border,
-                        backgroundColor: d.abierto ? Colors.primary + '1A' : 'transparent',
+                        borderColor: d.abierto ? c.primary : c.border,
+                        backgroundColor: d.abierto ? c.primary + '1A' : 'transparent',
                       }}>
                       <Ionicons
                         name={d.abierto ? 'checkmark-circle' : 'close-circle-outline'}
                         size={16}
-                        color={d.abierto ? Colors.primary : Colors.muted}
+                        color={d.abierto ? c.primary : c.muted}
                       />
                       <Text
                         className="ml-1.5 font-body-semibold text-xs"
-                        style={{ color: d.abierto ? Colors.primary : Colors.muted }}>
+                        style={{ color: d.abierto ? c.primary : c.muted }}>
                         {d.abierto ? 'Abierto' : 'Cerrado'}
                       </Text>
                     </Pressable>
@@ -420,10 +421,10 @@ export default function EditarCancha() {
                 <View
                   className="mt-0.5 h-6 w-6 items-center justify-center rounded-md border-2"
                   style={{
-                    borderColor: acepta ? Colors.primary : Colors.border,
-                    backgroundColor: acepta ? Colors.primary : 'transparent',
+                    borderColor: acepta ? c.primary : c.border,
+                    backgroundColor: acepta ? c.primary : 'transparent',
                   }}>
-                  {acepta ? <Ionicons name="checkmark" size={16} color={Colors.ink} /> : null}
+                  {acepta ? <Ionicons name="checkmark" size={16} color={c.ink} /> : null}
                 </View>
                 <Text className="flex-1 font-body text-sm text-cream">
                   Acepto el{' '}

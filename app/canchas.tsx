@@ -9,13 +9,14 @@ import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { FORMATOS, ZONAS, type Formato } from '@/constants/config';
 import { listarCanchas } from '@/lib/canchas';
+import { useTheme } from '@/lib/theme';
 import type { Cancha } from '@/types/database';
 
 export default function Canchas() {
   const router = useRouter();
+  const c = useTheme();
 
   const [canchas, setCanchas] = useState<Cancha[]>([]);
   const [query, setQuery] = useState('');
@@ -41,7 +42,7 @@ export default function Canchas() {
   const resultados = useMemo(() => {
     if (!query) return canchas;
     const q = query.toLowerCase();
-    return canchas.filter((c) => `${c.nombre} ${c.zona}`.toLowerCase().includes(q));
+    return canchas.filter((cancha) => `${cancha.nombre} ${cancha.zona}`.toLowerCase().includes(q));
   }, [canchas, query]);
 
   return (
@@ -51,16 +52,16 @@ export default function Canchas() {
           <ScreenHeader title="Canchas" />
 
           <View className="mt-3 h-14 flex-row items-center rounded-2xl border border-border bg-card px-4">
-            <Ionicons name="search" size={20} color={Colors.muted} />
+            <Ionicons name="search" size={20} color={c.muted} />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder="Nombre o zona..."
-              placeholderTextColor={Colors.muted}
+              placeholderTextColor={c.muted}
               className="ml-3 flex-1 font-body text-base text-cream"
             />
             {query ? (
-              <Ionicons name="close-circle" size={20} color={Colors.muted} onPress={() => setQuery('')} />
+              <Ionicons name="close-circle" size={20} color={c.muted} onPress={() => setQuery('')} />
             ) : null}
           </View>
         </View>
@@ -70,7 +71,7 @@ export default function Canchas() {
         contentContainerStyle={{ paddingBottom: 60 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} colors={[Colors.primary]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} />
         }>
         <FadeIn delay={100}>
           <View className="px-6">
@@ -101,30 +102,30 @@ export default function Canchas() {
               }
             />
           ) : (
-            resultados.map((c, i) => {
-              const amenidades = Object.values(c.amenidades ?? {}).filter(Boolean).length;
+            resultados.map((cancha, i) => {
+              const amenidades = Object.values(cancha.amenidades ?? {}).filter(Boolean).length;
               return (
-                <FadeIn key={c.id} delay={60 + i * 50}>
+                <FadeIn key={cancha.id} delay={60 + i * 50}>
                   <Pressable
-                    onPress={() => router.push({ pathname: '/cancha/[id]', params: { id: c.id } })}
+                    onPress={() => router.push({ pathname: '/cancha/[id]', params: { id: cancha.id } })}
                     className="mb-4 overflow-hidden rounded-2xl border border-border bg-card active:opacity-80">
-                    {c.foto_portada ? (
-                      <Image source={{ uri: c.foto_portada }} style={{ width: '100%', height: 150 }} contentFit="cover" />
+                    {cancha.foto_portada ? (
+                      <Image source={{ uri: cancha.foto_portada }} style={{ width: '100%', height: 150 }} contentFit="cover" />
                     ) : (
                       <View className="h-[150px] w-full items-center justify-center bg-background">
-                        <Ionicons name="business" size={42} color={Colors.muted} />
+                        <Ionicons name="business" size={42} color={c.muted} />
                       </View>
                     )}
                     <View className="p-4">
                       <Text className="font-display text-xl uppercase text-cream" style={{ lineHeight: 26, paddingTop: 2 }} numberOfLines={1}>
-                        {c.nombre}
+                        {cancha.nombre}
                       </Text>
                       <View className="mt-1 flex-row items-center">
-                        <Ionicons name="location" size={14} color={Colors.muted} />
-                        <Text className="ml-1 font-body text-sm text-muted">{c.zona}</Text>
+                        <Ionicons name="location" size={14} color={c.muted} />
+                        <Text className="ml-1 font-body text-sm text-muted">{cancha.zona}</Text>
                       </View>
                       <View className="mt-3 flex-row flex-wrap items-center">
-                        {c.formatos.map((f) => (
+                        {cancha.formatos.map((f) => (
                           <View key={f} className="mb-1 mr-2 rounded-full border border-border bg-background px-3 py-1">
                             <Text className="font-body-semibold text-xs text-primary">{f}</Text>
                           </View>

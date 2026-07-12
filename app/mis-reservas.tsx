@@ -7,10 +7,11 @@ import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
+import type { Palette } from '@/constants/themes';
 import { useAuth } from '@/lib/auth';
 import { cancelarReserva, listarCanchas, misReservas } from '@/lib/canchas';
 import { fechaLarga, precioCOP } from '@/lib/format';
+import { useTheme } from '@/lib/theme';
 import type { EstadoReserva, Reserva } from '@/types/database';
 
 const ESTADO_LABEL: Record<EstadoReserva, string> = {
@@ -20,15 +21,16 @@ const ESTADO_LABEL: Record<EstadoReserva, string> = {
   completada: 'Completada',
 };
 
-const colorEstado = (estado: EstadoReserva) => {
-  if (estado === 'confirmada') return Colors.primary;
-  if (estado === 'pendiente') return Colors.warning;
-  return Colors.muted;
+const colorEstado = (estado: EstadoReserva, c: Palette) => {
+  if (estado === 'confirmada') return c.primary;
+  if (estado === 'pendiente') return c.warning;
+  return c.muted;
 };
 
 export default function MisReservas() {
   const router = useRouter();
   const { profile } = useAuth();
+  const c = useTheme();
 
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [nombres, setNombres] = useState<Record<string, string>>({});
@@ -38,7 +40,7 @@ export default function MisReservas() {
     if (!profile?.id) return;
     const [filas, canchas] = await Promise.all([misReservas(profile.id), listarCanchas()]);
     setReservas(filas);
-    setNombres(Object.fromEntries(canchas.map((c) => [c.id, c.nombre])));
+    setNombres(Object.fromEntries(canchas.map((cch) => [cch.id, cch.nombre])));
   }, [profile?.id]);
 
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function MisReservas() {
         contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 60 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} colors={[Colors.primary]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} />
         }>
         {reservas.length === 0 ? (
           <EmptyState
@@ -90,7 +92,7 @@ export default function MisReservas() {
           />
         ) : (
           reservas.map((r, i) => {
-            const color = colorEstado(r.estado);
+            const color = colorEstado(r.estado, c);
             const cancelable = (r.estado === 'confirmada' || r.estado === 'pendiente') && r.fecha >= hoy;
             return (
               <FadeIn key={r.id} delay={60 + i * 50}>
@@ -118,8 +120,8 @@ export default function MisReservas() {
                     <Pressable
                       onPress={() => confirmarCancelacion(r)}
                       className="mt-3 flex-row items-center justify-center rounded-xl border border-border py-2.5 active:opacity-70">
-                      <Ionicons name="close-circle-outline" size={16} color={Colors.danger} />
-                      <Text className="ml-1.5 font-body-semibold text-sm" style={{ color: Colors.danger }}>
+                      <Ionicons name="close-circle-outline" size={16} color={c.danger} />
+                      <Text className="ml-1.5 font-body-semibold text-sm" style={{ color: c.danger }}>
                         Cancelar
                       </Text>
                     </Pressable>

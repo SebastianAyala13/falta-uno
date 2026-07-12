@@ -8,18 +8,19 @@ import DateTimeField from '@/components/DateTimeField';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
+import type { Palette } from '@/constants/themes';
 import { useAuth } from '@/lib/auth';
 import { misCanchas, reservasDeCancha, slotsDelDia, type Slot } from '@/lib/canchas';
 import { precioCOP } from '@/lib/format';
+import { useTheme } from '@/lib/theme';
 import type { Cancha, Reserva } from '@/types/database';
 
-const ESTADO_COLOR: Record<Reserva['estado'], string> = {
-  pendiente: Colors.warning,
-  confirmada: Colors.primary,
-  completada: Colors.accent,
-  cancelada: Colors.danger,
-};
+const ESTADO_COLOR = (c: Palette): Record<Reserva['estado'], string> => ({
+  pendiente: c.warning,
+  confirmada: c.primary,
+  completada: c.accent,
+  cancelada: c.danger,
+});
 
 const ESTADO_LABEL: Record<Reserva['estado'], string> = {
   pendiente: 'Pendiente',
@@ -31,6 +32,8 @@ const ESTADO_LABEL: Record<Reserva['estado'], string> = {
 export default function AgendaCancha() {
   const router = useRouter();
   const { profile } = useAuth();
+  const c = useTheme();
+  const estadoColor = ESTADO_COLOR(c);
 
   const [loading, setLoading] = useState(true);
   const [cargandoDia, setCargandoDia] = useState(false);
@@ -84,7 +87,7 @@ export default function AgendaCancha() {
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={c.primary} />
         </View>
       ) : !cancha ? (
         <EmptyState
@@ -101,7 +104,7 @@ export default function AgendaCancha() {
 
           {cargandoDia ? (
             <View className="items-center py-10">
-              <ActivityIndicator color={Colors.primary} />
+              <ActivityIndicator color={c.primary} />
             </View>
           ) : (
             <>
@@ -110,20 +113,20 @@ export default function AgendaCancha() {
                 <Text className="mb-2 font-body-semibold text-xs uppercase tracking-wide text-muted">Horarios del día</Text>
                 {slots.length === 0 ? (
                   <View className="items-center rounded-2xl border border-border bg-card p-5">
-                    <Ionicons name="time-outline" size={22} color={Colors.muted} />
+                    <Ionicons name="time-outline" size={22} color={c.muted} />
                     <Text className="mt-2 text-center font-body text-sm text-muted">
                       No hay horarios configurados para este día.
                     </Text>
                   </View>
                 ) : (
                   slots.map((s) => {
-                    const color = s.ocupado ? Colors.muted : Colors.primary;
+                    const color = s.ocupado ? c.muted : c.primary;
                     return (
                       <View
                         key={`${s.hora_inicio}-${s.hora_fin}`}
                         className="mb-2 flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3">
                         <View className="flex-row items-center">
-                          <Ionicons name="time-outline" size={16} color={Colors.muted} />
+                          <Ionicons name="time-outline" size={16} color={c.muted} />
                           <Text className="ml-2 font-body-bold text-sm text-cream">
                             {s.hora_inicio} – {s.hora_fin}
                           </Text>
@@ -147,7 +150,7 @@ export default function AgendaCancha() {
                 <Text className="mb-2 mt-4 font-body-semibold text-xs uppercase tracking-wide text-muted">Reservas del día</Text>
                 {reservas.length === 0 ? (
                   <View className="items-center rounded-2xl border border-border bg-card p-5">
-                    <Ionicons name="calendar-outline" size={22} color={Colors.muted} />
+                    <Ionicons name="calendar-outline" size={22} color={c.muted} />
                     <Text className="mt-2 font-body text-sm text-muted">Sin reservas para esta fecha.</Text>
                   </View>
                 ) : (
@@ -159,8 +162,8 @@ export default function AgendaCancha() {
                           Ref: {r.referencia}
                         </Text>
                       </View>
-                      <View className="rounded-full px-3 py-1" style={{ backgroundColor: ESTADO_COLOR[r.estado] + '22' }}>
-                        <Text className="font-body-bold text-[10px] uppercase tracking-wide" style={{ color: ESTADO_COLOR[r.estado] }}>
+                      <View className="rounded-full px-3 py-1" style={{ backgroundColor: estadoColor[r.estado] + '22' }}>
+                        <Text className="font-body-bold text-[10px] uppercase tracking-wide" style={{ color: estadoColor[r.estado] }}>
                           {ESTADO_LABEL[r.estado]}
                         </Text>
                       </View>

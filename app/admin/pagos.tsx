@@ -8,9 +8,10 @@ import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import StatCard from '@/components/StatCard';
-import { Colors } from '@/constants/colors';
+import type { Palette } from '@/constants/themes';
 import { listarPagosAdmin } from '@/lib/admin';
 import { precioCOP, tiempoRelativo } from '@/lib/format';
+import { useTheme } from '@/lib/theme';
 import type { EstadoPago, Pago } from '@/types/database';
 
 const FILTROS: { label: string; valor?: EstadoPago }[] = [
@@ -26,14 +27,15 @@ const ESTADO_LABEL: Record<EstadoPago, string> = {
   rechazado: 'Rechazado',
 };
 
-const colorEstado = (estado: EstadoPago) => {
-  if (estado === 'aprobado') return Colors.primary;
-  if (estado === 'pendiente') return Colors.warning;
-  return Colors.danger;
+const colorEstado = (estado: EstadoPago, c: Palette) => {
+  if (estado === 'aprobado') return c.primary;
+  if (estado === 'pendiente') return c.warning;
+  return c.danger;
 };
 
 /** Plataforma Madre — listado global de pagos con filtro por estado y resumen. */
 export default function PagosAdmin() {
+  const c = useTheme();
   const [filtro, setFiltro] = useState<EstadoPago | undefined>(undefined);
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,12 +82,12 @@ export default function PagosAdmin() {
                   onPress={() => setFiltro(f.valor)}
                   className="rounded-full border px-4 py-2 active:opacity-80"
                   style={{
-                    backgroundColor: activo ? Colors.primary : Colors.card,
-                    borderColor: activo ? Colors.primary : Colors.border,
+                    backgroundColor: activo ? c.primary : c.card,
+                    borderColor: activo ? c.primary : c.border,
                   }}>
                   <Text
                     className="font-body-semibold text-xs uppercase tracking-wide"
-                    style={{ color: activo ? Colors.ink : Colors.muted }}>
+                    style={{ color: activo ? c.ink : c.muted }}>
                     {f.label}
                   </Text>
                 </Pressable>
@@ -95,7 +97,7 @@ export default function PagosAdmin() {
 
           {loading ? (
             <View className="flex-1 items-center justify-center">
-              <ActivityIndicator size="large" color={Colors.primary} />
+              <ActivityIndicator size="large" color={c.primary} />
             </View>
           ) : (
             <ScrollView
@@ -105,8 +107,8 @@ export default function PagosAdmin() {
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={onRefresh}
-                  tintColor={Colors.primary}
-                  colors={[Colors.primary]}
+                  tintColor={c.primary}
+                  colors={[c.primary]}
                 />
               }>
               {/* Resumen sobre lo cargado */}
@@ -120,7 +122,7 @@ export default function PagosAdmin() {
                   className="flex-1"
                   label="Aprobado (mostrado)"
                   value={precioCOP(totalAprobado)}
-                  valueColor={Colors.primary}
+                  valueColor={c.primary}
                 />
               </View>
 
@@ -132,7 +134,7 @@ export default function PagosAdmin() {
                 />
               ) : (
                 pagos.map((p, i) => {
-                  const color = colorEstado(p.estado);
+                  const color = colorEstado(p.estado, c);
                   return (
                     <FadeIn key={p.id} delay={40 + Math.min(i, 10) * 40}>
                       <View className="mb-3 rounded-2xl border border-border bg-card p-4">
@@ -160,7 +162,7 @@ export default function PagosAdmin() {
                             <Ionicons
                               name={p.medio === 'efectivo' ? 'cash-outline' : 'card-outline'}
                               size={13}
-                              color={Colors.muted}
+                              color={c.muted}
                             />
                             <Text className="ml-1.5 font-body text-xs uppercase text-muted">{p.medio}</Text>
                           </View>

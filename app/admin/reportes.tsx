@@ -13,18 +13,19 @@ import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
+import type { Palette } from '@/constants/themes';
 import { reportesAdmin } from '@/lib/admin';
 import { tiempoRelativo } from '@/lib/format';
+import { useTheme } from '@/lib/theme';
 import type { Reporte } from '@/types/database';
 
-const MOTIVO_CHIP: Record<Reporte['motivo'], { label: string; color: string }> = {
-  spam: { label: 'Spam', color: Colors.warning },
-  acoso: { label: 'Acoso', color: Colors.danger },
-  sexual: { label: 'Contenido sexual', color: Colors.danger },
-  odio: { label: 'Odio', color: Colors.danger },
-  otro: { label: 'Otro', color: Colors.warning },
-};
+const MOTIVO_CHIP = (c: Palette): Record<Reporte['motivo'], { label: string; color: string }> => ({
+  spam: { label: 'Spam', color: c.warning },
+  acoso: { label: 'Acoso', color: c.danger },
+  sexual: { label: 'Contenido sexual', color: c.danger },
+  odio: { label: 'Odio', color: c.danger },
+  otro: { label: 'Otro', color: c.warning },
+});
 
 const TIPO_CONTENIDO: Record<Reporte['tipo'], { label: string; icon: keyof typeof Ionicons.glyphMap }> = {
   post: { label: 'Post', icon: 'newspaper-outline' },
@@ -38,6 +39,8 @@ function idCorto(id: string): string {
 }
 
 export default function AdminReportes() {
+  const c = useTheme();
+  const motivoChip = MOTIVO_CHIP(c);
   const [reportes, setReportes] = useState<Reporte[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -79,14 +82,14 @@ export default function AdminReportes() {
 
         {loading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color={Colors.primary} />
+            <ActivityIndicator color={c.primary} />
           </View>
         ) : (
           <ScrollView
             contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }}
             showsVerticalScrollIndicator={false}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
             }>
             {/* Nota de moderación */}
             <FadeIn delay={40}>
@@ -94,7 +97,7 @@ export default function AdminReportes() {
                 <Ionicons
                   name="shield-half-outline"
                   size={20}
-                  color={Colors.muted}
+                  color={c.muted}
                   style={{ marginTop: 1 }}
                 />
                 <Text className="ml-2 flex-1 font-body text-xs text-muted">
@@ -117,7 +120,7 @@ export default function AdminReportes() {
                 </Text>
 
                 {reportes.map((r, i) => {
-                  const motivo = MOTIVO_CHIP[r.motivo];
+                  const motivo = motivoChip[r.motivo];
                   const tipo = TIPO_CONTENIDO[r.tipo];
                   return (
                     <FadeIn key={r.id} delay={Math.min(80 + i * 30, 380)}>
@@ -134,7 +137,7 @@ export default function AdminReportes() {
                             </Text>
                           </View>
                           <View className="mr-2 flex-row items-center">
-                            <Ionicons name={tipo.icon} size={14} color={Colors.muted} />
+                            <Ionicons name={tipo.icon} size={14} color={c.muted} />
                             <Text className="ml-1 font-body-semibold text-xs text-cream">{tipo.label}</Text>
                           </View>
                           <Text className="ml-auto font-body text-[11px] text-muted">

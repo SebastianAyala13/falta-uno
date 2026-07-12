@@ -16,17 +16,20 @@ import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
+import type { Palette } from '@/constants/themes';
 import { listarUsuarios } from '@/lib/admin';
+import { useTheme } from '@/lib/theme';
 import type { Profile } from '@/types/database';
 
-const ROL_CHIP: Record<string, { label: string; color: string }> = {
-  admin: { label: 'Admin', color: Colors.primary },
-  cancha: { label: 'Cancha', color: Colors.accent },
-  jugador: { label: 'Jugador', color: Colors.muted },
-};
+const ROL_CHIP = (c: Palette): Record<string, { label: string; color: string }> => ({
+  admin: { label: 'Admin', color: c.primary },
+  cancha: { label: 'Cancha', color: c.accent },
+  jugador: { label: 'Jugador', color: c.muted },
+});
 
 export default function AdminUsuarios() {
+  const c = useTheme();
+  const rolChip = ROL_CHIP(c);
   const [usuarios, setUsuarios] = useState<Profile[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -73,11 +76,11 @@ export default function AdminUsuarios() {
         {/* Buscador */}
         <View className="px-6 pb-1 pt-1">
           <View className="flex-row items-center rounded-2xl border border-border bg-card px-4">
-            <Ionicons name="search" size={18} color={Colors.muted} />
+            <Ionicons name="search" size={18} color={c.muted} />
             <TextInput
               className="ml-2 flex-1 py-3 font-body text-sm text-cream"
               placeholder="Buscar por nombre, email o ciudad…"
-              placeholderTextColor={Colors.muted}
+              placeholderTextColor={c.muted}
               value={query}
               onChangeText={setQuery}
               autoCapitalize="none"
@@ -85,7 +88,7 @@ export default function AdminUsuarios() {
             />
             {query.length > 0 ? (
               <Pressable onPress={() => setQuery('')} hitSlop={8}>
-                <Ionicons name="close-circle" size={18} color={Colors.muted} />
+                <Ionicons name="close-circle" size={18} color={c.muted} />
               </Pressable>
             ) : null}
           </View>
@@ -93,14 +96,14 @@ export default function AdminUsuarios() {
 
         {loading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color={Colors.primary} />
+            <ActivityIndicator color={c.primary} />
           </View>
         ) : (
           <ScrollView
             contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }}
             showsVerticalScrollIndicator={false}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
             }>
             {usuarios.length === 0 ? (
               <EmptyState
@@ -141,7 +144,7 @@ export default function AdminUsuarios() {
                           </View>
                           <View className="ml-3 items-end">
                             <View className="flex-row items-center">
-                              <Ionicons name="star" size={13} color={Colors.accent} />
+                              <Ionicons name="star" size={13} color={c.accent} />
                               <Text className="ml-1 font-body-bold text-sm text-cream">
                                 {u.rating.toFixed(1)}
                               </Text>
@@ -155,7 +158,7 @@ export default function AdminUsuarios() {
                         {/* Roles */}
                         <View className="mt-3 flex-row flex-wrap">
                           {roles.map((rol) => {
-                            const chip = ROL_CHIP[rol] ?? { label: rol, color: Colors.muted };
+                            const chip = rolChip[rol] ?? { label: rol, color: c.muted };
                             return (
                               <View
                                 key={rol}

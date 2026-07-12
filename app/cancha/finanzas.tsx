@@ -19,8 +19,8 @@ import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { BANCOS, COMISION_CANCHA_DEFAULT, MEMBRESIA, MERCADOPAGO_CONFIGURADO } from '@/constants/config';
+import type { Palette } from '@/constants/themes';
 import { useAuth } from '@/lib/auth';
 import {
   getDatosDesembolso,
@@ -33,6 +33,7 @@ import {
   solicitarRetiro,
 } from '@/lib/canchas';
 import { precioCOP, tiempoRelativo } from '@/lib/format';
+import { useTheme } from '@/lib/theme';
 import type { Cancha, DatosDesembolso, MovimientoCancha, Retiro } from '@/types/database';
 
 const TIPOS_CUENTA: { id: DatosDesembolso['tipo_cuenta']; label: string }[] = [
@@ -49,16 +50,18 @@ const TIPO_MOVIMIENTO: Record<MovimientoCancha['tipo'], string> = {
   ajuste: 'Ajuste',
 };
 
-const ESTADO_RETIRO: Record<Retiro['estado'], { label: string; color: string }> = {
-  solicitado: { label: 'Solicitado', color: Colors.warning },
-  procesando: { label: 'Procesando', color: Colors.warning },
-  pagado: { label: 'Pagado', color: Colors.primary },
-  rechazado: { label: 'Rechazado', color: Colors.danger },
-};
+const ESTADO_RETIRO = (c: Palette): Record<Retiro['estado'], { label: string; color: string }> => ({
+  solicitado: { label: 'Solicitado', color: c.warning },
+  procesando: { label: 'Procesando', color: c.warning },
+  pagado: { label: 'Pagado', color: c.primary },
+  rechazado: { label: 'Rechazado', color: c.danger },
+});
 
 export default function Finanzas() {
   const router = useRouter();
   const { profile } = useAuth();
+  const c = useTheme();
+  const estadoRetiro = ESTADO_RETIRO(c);
 
   const [cancha, setCancha] = useState<Cancha | null>(null);
   const [saldo, setSaldo] = useState(0);
@@ -82,12 +85,12 @@ export default function Finanzas() {
   const [documento, setDocumento] = useState('');
   const [guardandoCuenta, setGuardandoCuenta] = useState(false);
 
-  const cargarDatos = useCallback(async (c: Cancha) => {
+  const cargarDatos = useCallback(async (cch: Cancha) => {
     const [s, m, r, pro] = await Promise.all([
-      saldoCancha(c.id),
-      movimientos(c.id),
-      retirosDeCancha(c.id),
-      membresiaActiva(c.id),
+      saldoCancha(cch.id),
+      movimientos(cch.id),
+      retirosDeCancha(cch.id),
+      membresiaActiva(cch.id),
     ]);
     setSaldo(s);
     setMovs(m);
@@ -102,10 +105,10 @@ export default function Finanzas() {
         if (!profile) return;
         const [canchas, dd] = await Promise.all([misCanchas(profile.id), getDatosDesembolso(profile.id)]);
         if (!activo) return;
-        const c = canchas[0] ?? null;
-        setCancha(c);
+        const cch = canchas[0] ?? null;
+        setCancha(cch);
         setDesembolso(dd);
-        if (c) await cargarDatos(c);
+        if (cch) await cargarDatos(cch);
       } finally {
         if (activo) setLoading(false);
       }
@@ -189,7 +192,7 @@ export default function Finanzas() {
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={c.primary} />
         </View>
       ) : !cancha ? (
         <EmptyState
@@ -203,7 +206,7 @@ export default function Finanzas() {
           contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
           }>
           {/* Saldo disponible */}
           <FadeIn delay={40}>
@@ -223,7 +226,7 @@ export default function Finanzas() {
               </View>
               <View className="mt-4 flex-row items-center justify-between border-t border-border pt-3">
                 <Text className="font-body text-sm text-muted">Comisión actual</Text>
-                <Text className="font-body-bold text-sm" style={{ color: esPro ? Colors.primary : Colors.cream }}>
+                <Text className="font-body-bold text-sm" style={{ color: esPro ? c.primary : c.cream }}>
                   {esPro ? '0% (Cancha Pro)' : `${Math.round(COMISION_CANCHA_DEFAULT * 100)}%`}
                 </Text>
               </View>
@@ -236,8 +239,8 @@ export default function Finanzas() {
               <View className="flex-row items-center">
                 <View
                   className="h-11 w-11 items-center justify-center rounded-xl"
-                  style={{ backgroundColor: Colors.accent + '22' }}>
-                  <Ionicons name="star" size={22} color={Colors.accent} />
+                  style={{ backgroundColor: c.accent + '22' }}>
+                  <Ionicons name="star" size={22} color={c.accent} />
                 </View>
                 <View className="ml-3 flex-1">
                   <Text className="font-body-bold text-base text-cream">{MEMBRESIA.nombre}</Text>
@@ -270,8 +273,8 @@ export default function Finanzas() {
               <View className="flex-row items-center">
                 <View
                   className="h-11 w-11 items-center justify-center rounded-xl"
-                  style={{ backgroundColor: Colors.primary + '22' }}>
-                  <Ionicons name="card-outline" size={22} color={Colors.primary} />
+                  style={{ backgroundColor: c.primary + '22' }}>
+                  <Ionicons name="card-outline" size={22} color={c.primary} />
                 </View>
                 <View className="ml-3 flex-1">
                   <Text className="font-body-bold text-base text-cream">Datos para recibir tu plata</Text>
@@ -304,7 +307,7 @@ export default function Finanzas() {
           {/* Nota informativa */}
           <FadeIn delay={160}>
             <View className="mt-4 flex-row items-start rounded-2xl border border-border bg-card p-4">
-              <Ionicons name="information-circle-outline" size={20} color={Colors.muted} style={{ marginTop: 1 }} />
+              <Ionicons name="information-circle-outline" size={20} color={c.muted} style={{ marginTop: 1 }} />
               <Text className="ml-2 flex-1 font-body text-xs text-muted">
                 Los ingresos por reservas pagadas en efectivo los cobrás directo en la cancha. El saldo acá
                 refleja los pagos online (próximamente con Mercado Pago).
@@ -324,7 +327,7 @@ export default function Finanzas() {
             ) : (
               movs.map((m) => {
                 const positivo = m.monto > 0;
-                const color = positivo ? Colors.primary : Colors.danger;
+                const color = positivo ? c.primary : c.danger;
                 return (
                   <View
                     key={m.id}
@@ -366,7 +369,7 @@ export default function Finanzas() {
                 Retiros
               </Text>
               {retiros.map((r) => {
-                const estado = ESTADO_RETIRO[r.estado];
+                const estado = estadoRetiro[r.estado];
                 return (
                   <View
                     key={r.id}
@@ -401,7 +404,7 @@ export default function Finanzas() {
                 Solicitar retiro
               </Text>
               <Pressable onPress={() => setModalRetiro(false)} hitSlop={12}>
-                <Ionicons name="close" size={24} color={Colors.muted} />
+                <Ionicons name="close" size={24} color={c.muted} />
               </Pressable>
             </View>
             <Text className="mb-4 mt-1 font-body text-sm text-muted">
@@ -439,7 +442,7 @@ export default function Finanzas() {
                   Tu cuenta
                 </Text>
                 <Pressable onPress={() => setModalCuenta(false)} hitSlop={12}>
-                  <Ionicons name="close" size={24} color={Colors.muted} />
+                  <Ionicons name="close" size={24} color={c.muted} />
                 </Pressable>
               </View>
               <Text className="mb-2 font-body-semibold text-sm text-cream">Banco / billetera</Text>

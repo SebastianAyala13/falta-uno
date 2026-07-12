@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { ScreenHeader } from '@/components/BackButton';
 import FadeIn from '@/components/FadeIn';
 import GameCard from '@/components/GameCard';
 import GlowButton from '@/components/GlowButton';
@@ -18,12 +19,7 @@ export default function MisPartidos() {
 
   return (
     <Screen edges={['top']}>
-      <View className="flex-row items-center px-6 pb-2 pt-2">
-        <Pressable onPress={() => router.back()} hitSlop={12} className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
-        <Text className="font-display text-3xl uppercase text-cream">Mis partidos</Text>
-      </View>
+      <ScreenHeader title="Mis partidos" className="px-6 pb-2 pt-2" />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         {misPartidos.length === 0 ? (

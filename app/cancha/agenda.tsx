@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 
+import { ScreenHeader } from '@/components/BackButton';
 import DateTimeField from '@/components/DateTimeField';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
@@ -79,14 +80,7 @@ export default function AgendaCancha() {
 
   return (
     <Screen edges={['top']}>
-      <View className="flex-row items-center px-6 pb-2 pt-2">
-        <Pressable onPress={() => router.back()} hitSlop={12} className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
-        <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-          Agenda
-        </Text>
-      </View>
+      <ScreenHeader title="Agenda" className="px-6 pb-2 pt-2" />
 
       {loading ? (
         <View className="flex-1 items-center justify-center">

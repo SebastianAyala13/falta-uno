@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
@@ -72,17 +73,7 @@ export default function MisReservas() {
 
   return (
     <Screen edges={['top']}>
-      <View className="flex-row items-center px-6 pb-2 pt-2">
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
-        <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-          Mis reservas
-        </Text>
-      </View>
+      <ScreenHeader title="Mis reservas" className="px-6 pb-2 pt-2" />
 
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 60 }}

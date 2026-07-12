@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { ScreenHeader } from '@/components/BackButton';
 import Chip from '@/components/Chip';
 import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
@@ -77,15 +78,7 @@ export default function Register() {
 
   return (
     <Screen edges={['top']}>
-      <View className="flex-row items-center px-6 pb-2 pt-2">
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
-        <Text className="font-display text-3xl uppercase text-cream">Armá tu perfil</Text>
-      </View>
+      <ScreenHeader title="Armá tu perfil" className="px-6 pb-2 pt-2" />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView

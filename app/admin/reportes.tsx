@@ -1,9 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   RefreshControl,
   ScrollView,
   Text,
@@ -11,6 +9,7 @@ import {
 } from 'react-native';
 
 import AdminGate from '@/components/AdminGate';
+import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
@@ -39,8 +38,6 @@ function idCorto(id: string): string {
 }
 
 export default function AdminReportes() {
-  const router = useRouter();
-
   const [reportes, setReportes] = useState<Reporte[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -78,17 +75,7 @@ export default function AdminReportes() {
     <AdminGate>
       <Screen edges={['top']}>
         {/* Header */}
-        <View className="flex-row items-center px-6 pb-2 pt-2">
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={12}
-            className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-            <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-          </Pressable>
-          <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-            Reportes
-          </Text>
-        </View>
+        <ScreenHeader title="Reportes" className="px-6 pb-2 pt-2" />
 
         {loading ? (
           <View className="flex-1 items-center justify-center">

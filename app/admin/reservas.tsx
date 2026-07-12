@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import AdminGate from '@/components/AdminGate';
+import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
@@ -35,8 +35,6 @@ const colorEstado = (estado: EstadoReserva) => {
 
 /** Plataforma Madre — listado global de reservas con filtro por estado. */
 export default function ReservasAdmin() {
-  const router = useRouter();
-
   const [filtro, setFiltro] = useState<EstadoReserva | undefined>(undefined);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,17 +61,7 @@ export default function ReservasAdmin() {
       <Screen edges={['top']}>
         {/* Contenedor web-first: centrado y con ancho máximo en desktop */}
         <View className="flex-1 self-center" style={{ width: '100%', maxWidth: 1040 }}>
-          <View className="flex-row items-center px-6 pb-2 pt-2">
-            <Pressable
-              onPress={() => router.back()}
-              hitSlop={12}
-              className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-              <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-            </Pressable>
-            <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-              Reservas
-            </Text>
-          </View>
+          <ScreenHeader title="Reservas" className="px-6 pb-2 pt-2" />
 
           <ScrollView
             horizontal

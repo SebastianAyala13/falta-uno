@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
+import { ScreenHeader } from '@/components/BackButton';
 import DateTimeField from '@/components/DateTimeField';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
@@ -147,17 +148,7 @@ export default function Reservar() {
 
   return (
     <Screen edges={['top']}>
-      <View className="flex-row items-center px-6 pb-2 pt-2">
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
-        <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-          Reservar
-        </Text>
-      </View>
+      <ScreenHeader title="Reservar" className="px-6 pb-2 pt-2" />
 
       {cargando ? (
         <View className="flex-1 items-center justify-center">

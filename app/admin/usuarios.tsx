@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,6 +12,7 @@ import {
 
 import AdminGate from '@/components/AdminGate';
 import Avatar from '@/components/Avatar';
+import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
@@ -27,8 +27,6 @@ const ROL_CHIP: Record<string, { label: string; color: string }> = {
 };
 
 export default function AdminUsuarios() {
-  const router = useRouter();
-
   const [usuarios, setUsuarios] = useState<Profile[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -70,17 +68,7 @@ export default function AdminUsuarios() {
     <AdminGate>
       <Screen edges={['top']}>
         {/* Header */}
-        <View className="flex-row items-center px-6 pb-2 pt-2">
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={12}
-            className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-            <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-          </Pressable>
-          <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-            Usuarios
-          </Text>
-        </View>
+        <ScreenHeader title="Usuarios" className="px-6 pb-2 pt-2" />
 
         {/* Buscador */}
         <View className="px-6 pb-1 pt-1">

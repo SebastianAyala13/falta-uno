@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { ScreenHeader } from '@/components/BackButton';
 import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
@@ -47,17 +48,7 @@ export default function Canchas() {
     <Screen edges={['top']}>
       <FadeIn delay={40}>
         <View className="px-6 pb-3 pt-2">
-          <View className="flex-row items-center">
-            <Pressable
-              onPress={() => router.back()}
-              hitSlop={12}
-              className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-              <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-            </Pressable>
-            <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-              Canchas
-            </Text>
-          </View>
+          <ScreenHeader title="Canchas" />
 
           <View className="mt-3 h-14 flex-row items-center rounded-2xl border border-border bg-card px-4">
             <Ionicons name="search" size={20} color={Colors.muted} />

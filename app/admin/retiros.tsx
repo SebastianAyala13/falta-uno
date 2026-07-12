@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,6 +12,7 @@ import {
 } from 'react-native';
 
 import AdminGate from '@/components/AdminGate';
+import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
@@ -32,8 +32,6 @@ const ESTADO_RETIRO: Record<Retiro['estado'], { label: string; color: string }> 
 
 /** Cola de retiros de la Plataforma Madre: aprobar (pagado) o rechazar desembolsos. */
 export default function RetirosAdmin() {
-  const router = useRouter();
-
   const [retiros, setRetiros] = useState<Retiro[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -184,17 +182,7 @@ export default function RetirosAdmin() {
     <AdminGate>
       <Screen edges={['top']}>
         {/* Header */}
-        <View className="flex-row items-center px-6 pb-2 pt-2">
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={12}
-            className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-            <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-          </Pressable>
-          <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-            Retiros
-          </Text>
-        </View>
+        <ScreenHeader title="Retiros" className="px-6 pb-2 pt-2" />
 
         {loading ? (
           <View className="flex-1 items-center justify-center">

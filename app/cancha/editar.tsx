@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 
 import AmenidadPicker from '@/components/AmenidadPicker';
+import { ScreenHeader } from '@/components/BackButton';
 import Chip from '@/components/Chip';
 import DateTimeField from '@/components/DateTimeField';
 import ErrorBanner from '@/components/ErrorBanner';
@@ -230,17 +231,7 @@ export default function EditarCancha() {
 
   return (
     <Screen edges={['top']}>
-      <View className="flex-row items-center px-6 pb-2 pt-2">
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
-        <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-          {esEdicion ? 'Mi cancha' : 'Registrar cancha'}
-        </Text>
-      </View>
+      <ScreenHeader title={esEdicion ? 'Mi cancha' : 'Registrar cancha'} className="px-6 pb-2 pt-2" />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView

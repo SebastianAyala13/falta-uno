@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import AdminGate from '@/components/AdminGate';
+import { ScreenHeader } from '@/components/BackButton';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import StatCard from '@/components/StatCard';
@@ -75,17 +76,7 @@ export default function AdminResumen() {
   return (
     <AdminGate>
       <Screen edges={['top']}>
-        <View className="flex-row items-center px-6 pb-2 pt-2">
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={12}
-            className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-            <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-          </Pressable>
-          <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-            Plataforma Madre
-          </Text>
-        </View>
+        <ScreenHeader title="Plataforma Madre" className="px-6 pb-2 pt-2" />
 
         {cargando ? (
           <View className="flex-1 items-center justify-center">

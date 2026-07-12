@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 
+import { ScreenHeader } from '@/components/BackButton';
 import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
@@ -184,17 +185,7 @@ export default function Finanzas() {
 
   return (
     <Screen edges={['top']}>
-      <View className="flex-row items-center px-6 pb-2 pt-2">
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
-        <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-          Finanzas
-        </Text>
-      </View>
+      <ScreenHeader title="Finanzas" className="px-6 pb-2 pt-2" />
 
       {loading ? (
         <View className="flex-1 items-center justify-center">

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
+import { ScreenHeader } from '@/components/BackButton';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
@@ -12,18 +12,12 @@ import { useStore } from '@/lib/store';
 const nombreMedio = (id: string) => MEDIOS_PAGO.find((m) => m.id === id)?.nombre ?? id;
 
 export default function MisPagos() {
-  const router = useRouter();
   const pagos = useStore((s) => s.pagos);
   const getPartido = useStore((s) => s.getPartido);
 
   return (
     <Screen edges={['top']}>
-      <View className="flex-row items-center px-6 pb-2 pt-2">
-        <Pressable onPress={() => router.back()} hitSlop={12} className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
-        <Text className="font-display text-3xl uppercase text-cream">Mis pagos</Text>
-      </View>
+      <ScreenHeader title="Mis pagos" className="px-6 pb-2 pt-2" />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         {pagos.length === 0 ? (

@@ -4,8 +4,8 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 import Field from '@/components/Field';
-import { Colors } from '@/constants/colors';
 import { CIUDAD_COORDS, PEREIRA, reverseGeocode } from '@/lib/geo';
+import { useTheme } from '@/lib/theme';
 
 export interface Ubicacion {
   lat: number | null;
@@ -24,6 +24,7 @@ interface Props {
  * dirección se completa sola (reverse geocoding) y queda editable.
  */
 export default function UbicacionPicker({ value, ciudad, onChange }: Props) {
+  const c = useTheme();
   const [buscando, setBuscando] = useState(false);
   const base =
     value.lat != null && value.lng != null
@@ -55,7 +56,7 @@ export default function UbicacionPicker({ value, ciudad, onChange }: Props) {
         </MapView>
       </View>
       <View className="mb-2 mt-1 flex-row items-center gap-1">
-        <Ionicons name="information-circle-outline" size={14} color={Colors.muted} />
+        <Ionicons name="information-circle-outline" size={14} color={c.muted} />
         <Text className="font-body text-xs text-muted">Tocá el mapa o arrastrá el pin para ubicar tu cancha.</Text>
       </View>
       <Field
@@ -68,7 +69,7 @@ export default function UbicacionPicker({ value, ciudad, onChange }: Props) {
       />
       {buscando ? (
         <View className="-mt-2 flex-row items-center gap-2">
-          <ActivityIndicator size="small" color={Colors.primary} />
+          <ActivityIndicator size="small" color={c.primary} />
           <Text className="font-body text-xs text-muted">Buscando la dirección…</Text>
         </View>
       ) : null}

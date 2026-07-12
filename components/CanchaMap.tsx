@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/lib/theme';
 
 type Props = {
   coords: { latitude: number; longitude: number };
@@ -13,6 +13,7 @@ type Props = {
 };
 
 export default function CanchaMap({ coords, cancha, zona, onComoLlegar }: Props) {
+  const c = useTheme();
   return (
     <View className="mb-4 overflow-hidden rounded-3xl border border-border bg-card">
       <MapView
@@ -30,7 +31,7 @@ export default function CanchaMap({ coords, cancha, zona, onComoLlegar }: Props)
         <Pressable
           onPress={onComoLlegar}
           className="flex-row items-center justify-center gap-2 border-t border-border py-3.5 active:bg-border/40">
-          <Ionicons name="navigate" size={18} color={Colors.primary} />
+          <Ionicons name="navigate" size={18} color={c.primary} />
           <Text className="font-body-bold text-sm uppercase tracking-wide text-primary">
             Cómo llegar
           </Text>

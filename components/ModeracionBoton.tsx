@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Alert, Pressable } from 'react-native';
 
-import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { MOTIVOS_REPORTE } from '@/lib/moderation';
 import { useStore } from '@/lib/store';
+import { useTheme } from '@/lib/theme';
 import type { MotivoReporte, TipoContenido } from '@/types/database';
 
 interface Props {
@@ -30,9 +30,11 @@ export default function ModeracionBoton({
   autorId,
   autorNombre,
   texto,
-  color = Colors.muted,
+  color,
   size = 18,
 }: Props) {
+  const c = useTheme();
+  const col = color ?? c.muted;
   const { profile } = useAuth();
   const uid = profile?.id ?? 'demo';
   const reportarContenido = useStore((s) => s.reportarContenido);
@@ -90,7 +92,7 @@ export default function ModeracionBoton({
 
   return (
     <Pressable onPress={abrirMenu} hitSlop={10} accessibilityLabel="Opciones de moderación">
-      <Ionicons name="ellipsis-horizontal" size={size} color={color} />
+      <Ionicons name="ellipsis-horizontal" size={size} color={col} />
     </Pressable>
   );
 }

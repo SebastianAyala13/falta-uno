@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } 
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import StatCard from '@/components/StatCard';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { misCanchas, reservasDeCancha, saldoCancha, slotsDelDia } from '@/lib/canchas';
@@ -167,18 +168,20 @@ export default function PanelCancha() {
         {/* Reservas de hoy + ocupación */}
         <FadeIn delay={160}>
           <View className="mt-3 flex-row">
-            <View className="mr-3 flex-1 rounded-2xl border border-border bg-card p-4">
-              <Text className="font-body-semibold text-xs uppercase tracking-wide text-muted">Reservas de hoy</Text>
-              <Text className="mt-1 font-display text-3xl text-primary" style={{ lineHeight: 38, paddingTop: 2 }}>
-                {reservasHoy.length}
-              </Text>
-            </View>
-            <View className="flex-1 rounded-2xl border border-border bg-card p-4">
-              <Text className="font-body-semibold text-xs uppercase tracking-wide text-muted">% Ocupación hoy</Text>
-              <Text className="mt-1 font-display text-3xl text-accent" style={{ lineHeight: 38, paddingTop: 2 }}>
-                {ocupacion}%
-              </Text>
-            </View>
+            <StatCard
+              className="mr-3 flex-1"
+              size="md"
+              valueColor={Colors.primary}
+              label="Reservas de hoy"
+              value={String(reservasHoy.length)}
+            />
+            <StatCard
+              className="flex-1"
+              size="md"
+              valueColor={Colors.accent}
+              label="% Ocupación hoy"
+              value={`${ocupacion}%`}
+            />
           </View>
         </FadeIn>
 

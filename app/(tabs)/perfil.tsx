@@ -7,6 +7,7 @@ import Avatar from '@/components/Avatar';
 import Badge from '@/components/Badge';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import StatCard from '@/components/StatCard';
 import { Colors } from '@/constants/colors';
 import { URL_PRIVACIDAD } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
@@ -100,9 +101,31 @@ export default function Perfil() {
         {/* Stats */}
         <FadeIn delay={140}>
           <View className="mx-6 mt-4 flex-row gap-3">
-            <Stat valor={String(jugados)} label="Partidos" icon="football" />
-            <Stat valor={(u?.rating ?? 5).toFixed(1)} label="Rating" icon="star" tint={Colors.accent} />
-            <Stat valor={`${puntualidad}%`} label="Puntualidad" icon="checkmark-circle" />
+            <StatCard
+              className="flex-1"
+              align="center"
+              labelPosition="bottom"
+              icon="football"
+              value={String(jugados)}
+              label="Partidos"
+            />
+            <StatCard
+              className="flex-1"
+              align="center"
+              labelPosition="bottom"
+              icon="star"
+              tint={Colors.accent}
+              value={(u?.rating ?? 5).toFixed(1)}
+              label="Rating"
+            />
+            <StatCard
+              className="flex-1"
+              align="center"
+              labelPosition="bottom"
+              icon="checkmark-circle"
+              value={`${puntualidad}%`}
+              label="Puntualidad"
+            />
           </View>
         </FadeIn>
 
@@ -195,30 +218,6 @@ export default function Perfil() {
         </FadeIn>
       </ScrollView>
     </Screen>
-  );
-}
-
-function Stat({
-  valor,
-  label,
-  icon,
-  tone = 'default',
-  tint = Colors.primary,
-}: {
-  valor: string;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  tone?: 'default' | 'danger';
-  tint?: string;
-}) {
-  return (
-    <View className="flex-1 items-center rounded-2xl border border-border bg-card py-4">
-      <Ionicons name={icon} size={18} color={tone === 'danger' ? Colors.danger : tint} />
-      <Text className={`mt-2 font-display text-2xl ${tone === 'danger' ? 'text-danger' : 'text-cream'}`}>
-        {valor}
-      </Text>
-      <Text className="font-body text-xs text-muted">{label}</Text>
-    </View>
   );
 }
 

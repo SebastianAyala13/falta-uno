@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } 
 import AdminGate from '@/components/AdminGate';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import StatCard from '@/components/StatCard';
 import { Colors } from '@/constants/colors';
 import { metricas, type MetricasAdmin } from '@/lib/admin';
 import { precioCOP } from '@/lib/format';
@@ -107,23 +108,16 @@ export default function AdminResumen() {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                 {tarjetas.map((t, i) => (
                   <FadeIn key={t.label} delay={40 + i * 50} style={{ flexGrow: 1, flexBasis: '30%', minWidth: 150 }}>
-                    <View
-                      className="rounded-2xl border border-border bg-card p-4"
-                      style={t.destacada ? { borderColor: Colors.warning, backgroundColor: Colors.warning + '14' } : undefined}>
-                      <View
-                        className="h-9 w-9 items-center justify-center rounded-full"
-                        style={{ backgroundColor: t.color + '22' }}>
-                        <Ionicons name={t.icon} size={18} color={t.color} />
-                      </View>
-                      <Text
-                        className="mt-3 font-display text-2xl text-cream"
-                        style={[{ lineHeight: 30, paddingTop: 2 }, t.destacada ? { color: Colors.warning } : null]}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit>
-                        {t.valor}
-                      </Text>
-                      <Text className="mt-0.5 font-body text-xs text-muted">{t.label}</Text>
-                    </View>
+                    <StatCard
+                      icon={t.icon}
+                      iconStyle="badge"
+                      tint={t.color}
+                      labelPosition="bottom"
+                      fitValue
+                      highlight={t.destacada ? { color: Colors.warning } : undefined}
+                      value={t.valor}
+                      label={t.label}
+                    />
                   </FadeIn>
                 ))}
               </View>

@@ -7,6 +7,7 @@ import AdminGate from '@/components/AdminGate';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import StatCard from '@/components/StatCard';
 import { Colors } from '@/constants/colors';
 import { listarPagosAdmin } from '@/lib/admin';
 import { precioCOP, tiempoRelativo } from '@/lib/format';
@@ -122,18 +123,17 @@ export default function PagosAdmin() {
               }>
               {/* Resumen sobre lo cargado */}
               <View className="mb-4 flex-row gap-3">
-                <View className="flex-1 rounded-2xl border border-border bg-card p-4">
-                  <Text className="font-body-semibold text-xs uppercase tracking-wide text-muted">Mostrados</Text>
-                  <Text className="mt-1 font-display text-2xl text-cream">{pagos.length}</Text>
-                </View>
-                <View className="flex-1 rounded-2xl border border-border bg-card p-4">
-                  <Text className="font-body-semibold text-xs uppercase tracking-wide text-muted">
-                    Aprobado (mostrado)
-                  </Text>
-                  <Text className="mt-1 font-display text-2xl" style={{ color: Colors.primary }}>
-                    {precioCOP(totalAprobado)}
-                  </Text>
-                </View>
+                <StatCard
+                  className="flex-1"
+                  label="Mostrados"
+                  value={String(pagos.length)}
+                />
+                <StatCard
+                  className="flex-1"
+                  label="Aprobado (mostrado)"
+                  value={precioCOP(totalAprobado)}
+                  valueColor={Colors.primary}
+                />
               </View>
 
               {pagos.length === 0 ? (

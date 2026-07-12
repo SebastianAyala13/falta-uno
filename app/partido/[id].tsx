@@ -12,6 +12,7 @@ import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import ProgressBar from '@/components/ProgressBar';
 import Screen from '@/components/Screen';
+import StatCard from '@/components/StatCard';
 import { Colors } from '@/constants/colors';
 import { COMISION_SERVICIO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
@@ -133,8 +134,20 @@ export default function PartidoDetalle() {
           {/* Cuándo */}
           <FadeIn delay={60}>
             <View className="-mt-4 mb-4 flex-row gap-3">
-              <InfoCard icon="calendar" titulo="Fecha" valor={fechaLarga(partido.fecha)} />
-              <InfoCard icon="time" titulo="Hora" valor={partido.hora} />
+              <StatCard
+                className="flex-1"
+                variant="info"
+                icon="calendar"
+                label="Fecha"
+                value={fechaLarga(partido.fecha)}
+              />
+              <StatCard
+                className="flex-1"
+                variant="info"
+                icon="time"
+                label="Hora"
+                value={partido.hora}
+              />
             </View>
           </FadeIn>
 
@@ -286,16 +299,6 @@ function rosterNombres(partido: { cupos_ocupados: number; organizador?: { nombre
   }
   if (inscrito && nombres.length) nombres[nombres.length - 1] = 'Vos';
   return nombres;
-}
-
-function InfoCard({ icon, titulo, valor }: { icon: keyof typeof Ionicons.glyphMap; titulo: string; valor: string }) {
-  return (
-    <View className="flex-1 rounded-2xl border border-border bg-card p-3">
-      <Ionicons name={icon} size={18} color={Colors.primary} />
-      <Text className="mt-2 font-body text-[10px] uppercase tracking-wide text-muted">{titulo}</Text>
-      <Text className="font-body-semibold text-sm text-cream">{valor}</Text>
-    </View>
-  );
 }
 
 function Linea({ label, valor, total = false }: { label: string; valor: string; total?: boolean }) {

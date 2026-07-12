@@ -18,6 +18,7 @@ import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
+import StatCard from '@/components/StatCard';
 import { Colors } from '@/constants/colors';
 import { ajusteSaldo, listarCanchasAdmin, movimientosCancha, setEstadoCancha } from '@/lib/admin';
 import { precioCOP, tiempoRelativo } from '@/lib/format';
@@ -376,17 +377,15 @@ export default function CanchasAdmin() {
                 </View>
               ) : (
                 <>
-                  <View className="mt-4 rounded-2xl border border-border bg-card p-4">
-                    <Text className="font-body text-xs uppercase tracking-wider text-muted">
-                      Saldo (suma del ledger)
-                    </Text>
-                    <Text
-                      className="mt-1 font-display text-3xl"
-                      style={{ lineHeight: 38, paddingTop: 2, color: saldo >= 0 ? Colors.cream : Colors.danger }}>
-                      {saldo < 0 ? '-' : ''}
-                      {precioCOP(Math.abs(saldo))}
-                    </Text>
-                  </View>
+                  <StatCard
+                    className="mt-4"
+                    size="md"
+                    labelWeight="body"
+                    labelTracking="wider"
+                    label="Saldo (suma del ledger)"
+                    value={`${saldo < 0 ? '-' : ''}${precioCOP(Math.abs(saldo))}`}
+                    valueColor={saldo >= 0 ? Colors.cream : Colors.danger}
+                  />
 
                   <ScrollView className="mt-4" style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
                     {movs.length === 0 ? (

@@ -9,8 +9,8 @@ import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { supabase, supabaseConfigurado } from '@/lib/supabase';
+import { useTheme } from '@/lib/theme';
 
 /**
  * Pantalla de restablecimiento de contraseña. Se abre desde el enlace del correo
@@ -23,6 +23,7 @@ import { supabase, supabaseConfigurado } from '@/lib/supabase';
 export default function Reset() {
   const router = useRouter();
   const url = useURL();
+  const c = useTheme();
 
   const [listo, setListo] = useState(false); // sesión de recuperación cargada
   const [password, setPassword] = useState('');
@@ -76,7 +77,7 @@ export default function Reset() {
           {ok ? (
             <FadeIn delay={40}>
               <View className="mt-6 items-center rounded-md border border-primary/40 bg-primary/10 px-5 py-8">
-                <Ionicons name="checkmark-circle" size={44} color={Colors.primary} />
+                <Ionicons name="checkmark-circle" size={44} color={c.primary} />
                 <Text className="mt-3 text-center font-body-bold text-base text-cream">¡Contraseña actualizada!</Text>
                 <View className="mt-5 w-full">
                   <GlowButton label="Entrar a la app" icon="log-in" onPress={() => router.replace('/(tabs)')} />

@@ -10,15 +10,16 @@ import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import StarRating from '@/components/StarRating';
-import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
 import { useStore } from '@/lib/store';
+import { useTheme } from '@/lib/theme';
 
 export default function Calificar() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile } = useAuth();
+  const c = useTheme();
 
   const partido = useStore((s) => s.getPartido(id));
   const calificarPartido = useStore((s) => s.calificarPartido);
@@ -80,14 +81,14 @@ export default function Calificar() {
           <FadeIn delay={230}>
             <View className="mb-4 flex-row items-center rounded-3xl border border-border bg-card p-4">
               <View className="h-10 w-10 items-center justify-center rounded-xl bg-danger/15">
-                <Ionicons name="alert-circle-outline" size={20} color={Colors.danger} />
+                <Ionicons name="alert-circle-outline" size={20} color={c.danger} />
               </View>
               <Text className="ml-3 flex-1 font-body-semibold text-sm text-cream">¿Faltó alguien sin avisar?</Text>
               <Switch
                 value={noShow}
                 onValueChange={setNoShow}
-                trackColor={{ false: Colors.border, true: Colors.danger }}
-                thumbColor={Colors.cream}
+                trackColor={{ false: c.border, true: c.danger }}
+                thumbColor={c.cream}
               />
             </View>
           </FadeIn>

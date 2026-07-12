@@ -7,12 +7,12 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, Tex
 import { ScreenHeader } from '@/components/BackButton';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
 import { elegirImagen } from '@/lib/images';
 import { MENSAJE_BLOQUEO_FILTRO, contieneContenidoObjetable } from '@/lib/moderation';
 import { useStore } from '@/lib/store';
+import { useTheme } from '@/lib/theme';
 import type { PostTipo } from '@/types/database';
 
 const TIPOS: { key: Exclude<PostTipo, 'recap'>; label: string; icon: keyof typeof Ionicons.glyphMap; hint: string }[] = [
@@ -24,6 +24,7 @@ export default function CrearPost() {
   const router = useRouter();
   const { profile } = useAuth();
   const crearPost = useStore((s) => s.crearPost);
+  const c = useTheme();
 
   const [tipo, setTipo] = useState<Exclude<PostTipo, 'recap'>>('encuentro');
   const [texto, setTexto] = useState('');
@@ -83,11 +84,11 @@ export default function CrearPost() {
                   onPress={() => setTipo(t.key)}
                   className="flex-1 rounded-2xl border p-3"
                   style={{
-                    backgroundColor: activo ? Colors.primary + '1A' : Colors.card,
-                    borderColor: activo ? Colors.primary : Colors.border,
+                    backgroundColor: activo ? c.primary + '1A' : c.card,
+                    borderColor: activo ? c.primary : c.border,
                   }}>
-                  <Ionicons name={t.icon} size={20} color={activo ? Colors.primary : Colors.muted} />
-                  <Text className="mt-1.5 font-body-bold text-sm" style={{ color: activo ? Colors.primary : Colors.cream }}>
+                  <Ionicons name={t.icon} size={20} color={activo ? c.primary : c.muted} />
+                  <Text className="mt-1.5 font-body-bold text-sm" style={{ color: activo ? c.primary : c.cream }}>
                     {t.label}
                   </Text>
                   <Text className="font-body text-xs text-muted">{t.hint}</Text>
@@ -101,7 +102,7 @@ export default function CrearPost() {
             value={texto}
             onChangeText={setTexto}
             placeholder={tipo === 'pregunta' ? '¿Qué querés preguntarle al parche?' : 'Contá cómo estuvo el partido…'}
-            placeholderTextColor={Colors.muted}
+            placeholderTextColor={c.muted}
             multiline
             autoFocus
             className="min-h-32 rounded-2xl border border-border bg-card p-4 font-body text-base text-cream"
@@ -115,14 +116,14 @@ export default function CrearPost() {
               <Pressable
                 onPress={() => setFoto(null)}
                 className="absolute right-2 top-2 h-8 w-8 items-center justify-center rounded-full bg-black/60">
-                <Ionicons name="trash" size={16} color={Colors.cream} />
+                <Ionicons name="trash" size={16} color={c.cream} />
               </Pressable>
             </View>
           ) : (
             <Pressable
               onPress={agregarFoto}
               className="mt-3 flex-row items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card py-3.5 active:border-primary/50">
-              <Ionicons name="image-outline" size={20} color={Colors.muted} />
+              <Ionicons name="image-outline" size={20} color={c.muted} />
               <Text className="font-body text-sm text-muted">Agregar foto (opcional)</Text>
             </Pressable>
           )}

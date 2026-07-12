@@ -19,8 +19,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '@/lib/auth';
 import { configurarNotificaciones } from '@/lib/notifications';
-import { Colors } from '@/constants/colors';
-import { useThemeMeta, useThemeVars } from '@/lib/theme';
+import { useTheme, useThemeMeta, useThemeVars } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 configurarNotificaciones();
@@ -34,6 +33,7 @@ export default function RootLayout() {
     'Archivo-Bold': Archivo_700Bold,
   });
 
+  const c = useTheme();
   const themeVars = useThemeVars();
   const themeMeta = useThemeMeta();
 
@@ -44,7 +44,7 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.background }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: c.background }}>
       {/* La capa de variables del tema: todas las clases de color heredan de acá */}
       <View style={[{ flex: 1 }, vars(themeVars)]}>
       <SafeAreaProvider>
@@ -53,7 +53,7 @@ export default function RootLayout() {
           <Stack
             screenOptions={{
               headerShown: false,
-              contentStyle: { backgroundColor: Colors.background },
+              contentStyle: { backgroundColor: c.background },
               animation: 'fade',
             }}>
             <Stack.Screen name="index" />

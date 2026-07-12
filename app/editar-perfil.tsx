@@ -11,14 +11,15 @@ import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { NIVELES, POSICIONES, type Nivel, type Posicion } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { elegirImagen } from '@/lib/images';
+import { useTheme } from '@/lib/theme';
 
 export default function EditarPerfil() {
   const router = useRouter();
   const { profile, updateProfile } = useAuth();
+  const c = useTheme();
 
   const [nombre, setNombre] = useState(profile?.nombre ?? '');
   const [ciudad, setCiudad] = useState(profile?.ciudad ?? 'Pereira');
@@ -58,14 +59,14 @@ export default function EditarPerfil() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <FadeIn delay={50} className="mb-5 items-center">
-            <Pressable onPress={cambiarFoto} className="rounded-full" style={{ padding: 3, borderWidth: 2, borderColor: Colors.primary }}>
+            <Pressable onPress={cambiarFoto} className="rounded-full" style={{ padding: 3, borderWidth: 2, borderColor: c.primary }}>
               <Avatar nombre={nombre || '?'} uri={avatar} size={84} />
               <View className="absolute bottom-0 right-0 h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-accent">
-                <Ionicons name="camera" size={13} color={Colors.ink} />
+                <Ionicons name="camera" size={13} color={c.ink} />
               </View>
             </Pressable>
             <Pressable onPress={cambiarFoto} className="mt-3 flex-row items-center gap-1.5 rounded-full bg-card px-3 py-2">
-              <Ionicons name="camera-outline" size={16} color={Colors.primary} />
+              <Ionicons name="camera-outline" size={16} color={c.primary} />
               <Text className="font-body-semibold text-xs text-primary">Cambiar foto</Text>
             </Pressable>
           </FadeIn>

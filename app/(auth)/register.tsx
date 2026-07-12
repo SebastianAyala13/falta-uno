@@ -10,13 +10,14 @@ import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { APP, NIVELES, POSICIONES, URL_PRIVACIDAD, URL_TERMINOS, type Nivel, type Posicion } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
+import { useTheme } from '@/lib/theme';
 
 export default function Register() {
   const router = useRouter();
   const { signUp, demo } = useAuth();
+  const c = useTheme();
 
   const [tipoCuenta, setTipoCuenta] = useState<'jugador' | 'cancha'>('jugador');
   const [nombre, setNombre] = useState('');
@@ -100,11 +101,11 @@ export default function Register() {
                     onPress={() => setTipoCuenta(t.key)}
                     className="flex-1 rounded-2xl border p-3"
                     style={{
-                      backgroundColor: activo ? Colors.primary + '1A' : Colors.card,
-                      borderColor: activo ? Colors.primary : Colors.border,
+                      backgroundColor: activo ? c.primary + '1A' : c.card,
+                      borderColor: activo ? c.primary : c.border,
                     }}>
-                    <Ionicons name={t.icon} size={22} color={activo ? Colors.primary : Colors.muted} />
-                    <Text className="mt-1.5 font-body-bold text-sm" style={{ color: activo ? Colors.primary : Colors.cream }}>
+                    <Ionicons name={t.icon} size={22} color={activo ? c.primary : c.muted} />
+                    <Text className="mt-1.5 font-body-bold text-sm" style={{ color: activo ? c.primary : c.cream }}>
                       {t.label}
                     </Text>
                     <Text className="font-body text-xs text-muted">{t.hint}</Text>
@@ -161,10 +162,10 @@ export default function Register() {
               <View
                 className="mt-0.5 h-6 w-6 items-center justify-center rounded-md border-2"
                 style={{
-                  borderColor: acepta ? Colors.primary : Colors.border,
-                  backgroundColor: acepta ? Colors.primary : 'transparent',
+                  borderColor: acepta ? c.primary : c.border,
+                  backgroundColor: acepta ? c.primary : 'transparent',
                 }}>
-                {acepta ? <Ionicons name="checkmark" size={16} color={Colors.ink} /> : null}
+                {acepta ? <Ionicons name="checkmark" size={16} color={c.ink} /> : null}
               </View>
               <Text className="flex-1 font-body text-sm text-cream">
                 Acepto los{' '}

@@ -9,12 +9,13 @@ import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
+import { useTheme } from '@/lib/theme';
 
 export default function Recuperar() {
   const router = useRouter();
   const { resetPassword, demo } = useAuth();
+  const c = useTheme();
 
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +62,7 @@ export default function Recuperar() {
           {enviado ? (
             <FadeIn delay={40}>
               <View className="items-center rounded-md border border-primary/40 bg-primary/10 px-5 py-8">
-                <Ionicons name="mail-open-outline" size={40} color={Colors.primary} />
+                <Ionicons name="mail-open-outline" size={40} color={c.primary} />
                 <Text className="mt-3 text-center font-body-bold text-base text-cream">
                   ¡Revisá tu correo!
                 </Text>

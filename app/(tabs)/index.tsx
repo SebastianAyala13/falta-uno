@@ -14,7 +14,7 @@ import UrgencyPill from '@/components/UrgencyPill';
 import { precioCOP } from '@/lib/format';
 import { useAuth } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
-import { useTheme } from '@/lib/theme';
+import { useTheme, useThemeMeta } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import type { PartidoConOrganizador } from '@/types/database';
 
@@ -27,6 +27,9 @@ export default function Home() {
   const partidos = useStore((s) => s.partidos);
   const hidratado = useStore((s) => s.hidratado);
   const hidratar = useStore((s) => s.hidratar);
+  // Hero: moody (marca oscura -> fondo) en temas oscuros; emerald vivo con texto ink
+  // en el tema claro (Blanco), donde el texto cream oscuro no contrastaba con el verde.
+  const heroDark = useThemeMeta().dark;
 
   const nombre = profile?.nombre ?? 'crack';
   const [refreshing, setRefreshing] = useState(false);
@@ -88,10 +91,10 @@ export default function Home() {
         {/* Hero CTA */}
         <FadeIn delay={110}>
           <Pressable onPress={() => { haptics.tap(); router.push('/(tabs)/crear'); }} className="mx-[22px] mb-5 overflow-hidden rounded-lg">
-            <LinearGradient colors={[c.secondary, c.background]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18 }}>
+            <LinearGradient colors={heroDark ? [c.secondary, c.background] : [c.primary, c.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18 }}>
               <View className="absolute rounded-full" style={{ right: -40, top: -40, width: 150, height: 150, backgroundColor: c.accent, opacity: 0.12, pointerEvents: 'none' }} />
-              <Text className="font-display text-2xl uppercase text-cream" style={{ lineHeight: 32, paddingTop: 4 }}>¿Te falta llave{'\n'}pa la pichanga?</Text>
-              <Text className="mt-1.5 font-body text-sm text-cream/70">Armá tu partido y que la gente se cuadre sola.</Text>
+              <Text className={`font-display text-2xl uppercase ${heroDark ? 'text-cream' : 'text-ink'}`} style={{ lineHeight: 32, paddingTop: 4 }}>¿Te falta llave{'\n'}pa la pichanga?</Text>
+              <Text className={`mt-1.5 font-body text-sm ${heroDark ? 'text-cream/70' : 'text-ink/70'}`}>Armá tu partido y que la gente se cuadre sola.</Text>
               <View className="mt-4 flex-row items-center gap-2 self-start rounded-sm bg-accent px-4 py-2.5">
                 <Ionicons name="add-circle" size={18} color={c.ink} />
                 <Text className="font-body-bold text-sm uppercase text-ink">Crear partido</Text>

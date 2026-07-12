@@ -39,4 +39,19 @@ export function GameCardSkeleton() {
   );
 }
 
+/** Lista de tarjetas skeleton para la carga inicial de pantallas con listas. */
+export function CardListSkeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, i) => (
+        <View key={i} className="mb-3 rounded-md border border-border bg-card p-4">
+          <SkeletonBlock height={18} width={'60%'} />
+          <View style={{ height: 10 }} />
+          <SkeletonBlock height={12} width={'40%'} />
+        </View>
+      ))}
+    </>
+  );
+}
+
 export default SkeletonBlock;

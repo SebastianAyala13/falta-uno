@@ -110,7 +110,7 @@ export default function Checkout() {
         <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
           {/* Resumen */}
           <FadeIn delay={40}>
-            <View className="mb-5 rounded-3xl border border-border bg-card p-4">
+            <View className="mb-5 rounded-lg border border-border bg-card p-4">
               <Text className="font-body text-xs uppercase tracking-wide text-muted">Estás pagando</Text>
               <Text className="mt-0.5 font-display text-2xl uppercase text-cream">{partido.cancha}</Text>
               <View className="mt-3 h-px bg-border" />
@@ -133,7 +133,7 @@ export default function Checkout() {
                     className="flex-row items-center rounded-2xl border bg-card p-4"
                     style={{ borderColor: sel ? c.primary : c.border }}>
                     <View
-                      className="h-11 w-11 items-center justify-center rounded-xl"
+                      className="h-11 w-11 items-center justify-center rounded-sm"
                       style={{ backgroundColor: sel ? c.primary + '22' : c.background }}>
                       <Ionicons name={m.icon as keyof typeof Ionicons.glyphMap} size={22} color={sel ? c.primary : c.muted} />
                     </View>
@@ -153,7 +153,7 @@ export default function Checkout() {
           </FadeIn>
 
           <FadeIn delay={200}>
-            <View className="mt-4 flex-row items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2.5">
+            <View className="mt-4 flex-row items-center gap-2 rounded-sm border border-border bg-card/60 px-3 py-2.5">
               <Ionicons name="information-circle" size={16} color={c.primary} />
               <Text className="flex-1 font-body text-xs text-muted">
                 Falta Uno no custodia tu dinero: el pago es un acuerdo con el organizador del partido.
@@ -237,7 +237,7 @@ function Comprobante({
       </FadeIn>
 
       <FadeIn delay={140}>
-        <View className="mt-6 rounded-3xl border border-border bg-card p-4">
+        <View className="mt-6 rounded-lg border border-border bg-card p-4">
           <Dato label="Referencia" valor={pago.referencia} mono />
           <Dato label="Medio de pago" valor={medio.nombre} />
           <Dato label="Estado" valor={aprobado ? 'Aprobado' : 'Pendiente'} tone={aprobado ? 'ok' : 'warn'} />

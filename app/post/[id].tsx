@@ -86,7 +86,7 @@ export default function PostDetalle() {
           contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            <View className="mb-2 rounded-3xl border bg-card p-4" style={{ borderColor: esRecap ? c.accent + '66' : c.border }}>
+            <View className="mb-2 rounded-lg border bg-card p-4" style={{ borderColor: esRecap ? c.accent + '66' : c.border }}>
               <View className="flex-row items-center gap-3">
                 {esRecap ? (
                   <View className="h-11 w-11 items-center justify-center rounded-full bg-accent/15">
@@ -117,7 +117,7 @@ export default function PostDetalle() {
               {esRecap && post.partido_id ? (
                 <Pressable
                   onPress={() => router.push({ pathname: '/calificar/[id]', params: { id: post.partido_id! } })}
-                  className="mt-3 flex-row items-center justify-center gap-2 rounded-xl bg-accent py-2.5 active:opacity-80">
+                  className="mt-3 flex-row items-center justify-center gap-2 rounded-sm bg-accent py-2.5 active:opacity-80">
                   <Ionicons name="star" size={16} color={c.ink} />
                   <Text className="font-body-bold text-sm uppercase text-ink">Calificar el partido</Text>
                 </Pressable>

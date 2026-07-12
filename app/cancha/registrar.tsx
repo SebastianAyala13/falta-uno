@@ -432,7 +432,7 @@ export default function RegistrarCancha() {
                   })}
                 </View>
                 {yaTienePartidos === true ? (
-                  <View className="mt-4 flex-row items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5">
+                  <View className="mt-4 flex-row items-center gap-2 rounded-sm border border-border bg-card px-3 py-2.5">
                     <Ionicons name="information-circle-outline" size={16} color={c.primary} />
                     <Text className="flex-1 font-body text-sm text-muted">
                       Al terminar te llevamos a la agenda para cargarlos.

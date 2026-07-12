@@ -224,7 +224,7 @@ export default function PanelCancha() {
                 key={item.ruta}
                 onPress={() => router.push(item.ruta)}
                 className={`flex-1 items-center rounded-2xl border border-border bg-card py-5 ${i < NAV_ITEMS.length - 1 ? 'mr-3' : ''}`}>
-                <View className="h-11 w-11 items-center justify-center rounded-xl" style={{ backgroundColor: c.primary + '1F' }}>
+                <View className="h-11 w-11 items-center justify-center rounded-sm" style={{ backgroundColor: c.primary + '1F' }}>
                   <Ionicons name={item.icon} size={22} color={c.primary} />
                 </View>
                 <Text className="mt-2 font-body-bold text-xs text-cream">{item.label}</Text>

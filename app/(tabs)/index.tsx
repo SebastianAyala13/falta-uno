@@ -108,7 +108,7 @@ export default function Home() {
           <Pressable
             onPress={() => { haptics.tap(); router.push('/canchas'); }}
             className="mx-[22px] mb-5 flex-row items-center rounded-lg border border-border bg-card p-4 active:opacity-80">
-            <View className="h-11 w-11 items-center justify-center rounded-xl bg-primary/15">
+            <View className="h-11 w-11 items-center justify-center rounded-sm bg-primary/15">
               <Ionicons name="business" size={22} color={c.primary} />
             </View>
             <View className="ml-3 flex-1">

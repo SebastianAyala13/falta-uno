@@ -95,7 +95,7 @@ export default function PerfilCancha() {
                     <View className="flex-row flex-wrap">
                       {activas.map((a) => (
                         <View key={a.id} className="mb-2 w-1/2 flex-row items-center pr-2">
-                          <View className="h-9 w-9 items-center justify-center rounded-xl bg-card">
+                          <View className="h-9 w-9 items-center justify-center rounded-sm bg-card">
                             <Ionicons name={a.icon as keyof typeof Ionicons.glyphMap} size={18} color={c.primary} />
                           </View>
                           <Text className="ml-2 flex-1 font-body text-sm text-cream">{a.label}</Text>

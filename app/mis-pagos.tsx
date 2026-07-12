@@ -39,7 +39,7 @@ export default function MisPagos() {
               <FadeIn key={p.id} delay={60 + i * 50}>
                 <View className="mb-3 flex-row items-center rounded-2xl border border-border bg-card p-4">
                   <View
-                    className="h-11 w-11 items-center justify-center rounded-xl"
+                    className="h-11 w-11 items-center justify-center rounded-sm"
                     style={{ backgroundColor: aprobado ? c.primary + '22' : c.warning + '22' }}>
                     <Ionicons name={aprobado ? 'checkmark-circle' : 'time'} size={22} color={aprobado ? c.primary : c.warning} />
                   </View>

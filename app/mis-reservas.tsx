@@ -138,7 +138,7 @@ export default function MisReservas() {
                   {cancelable ? (
                     <Pressable
                       onPress={() => confirmarCancelacion(r)}
-                      className="mt-3 flex-row items-center justify-center rounded-xl border border-border py-2.5 active:opacity-70">
+                      className="mt-3 flex-row items-center justify-center rounded-sm border border-border py-2.5 active:opacity-70">
                       <Ionicons name="close-circle-outline" size={16} color={c.danger} />
                       <Text className="ml-1.5 font-body-semibold text-sm" style={{ color: c.danger }}>
                         Cancelar

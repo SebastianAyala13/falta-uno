@@ -210,7 +210,7 @@ export default function Finanzas() {
           }>
           {/* Saldo disponible */}
           <FadeIn delay={40}>
-            <View className="rounded-3xl border border-borderStrong bg-card p-6">
+            <View className="rounded-lg border border-borderStrong bg-card p-6">
               <Text className="font-body text-xs uppercase tracking-wider text-muted">Saldo disponible</Text>
               <Text className="mt-2 font-display text-4xl text-cream" style={{ lineHeight: 46, paddingTop: 2 }}>
                 {precioCOP(saldo)}
@@ -235,10 +235,10 @@ export default function Finanzas() {
 
           {/* Membresía */}
           <FadeIn delay={100}>
-            <View className="mt-4 rounded-3xl border border-border bg-card p-5">
+            <View className="mt-4 rounded-lg border border-border bg-card p-5">
               <View className="flex-row items-center">
                 <View
-                  className="h-11 w-11 items-center justify-center rounded-xl"
+                  className="h-11 w-11 items-center justify-center rounded-sm"
                   style={{ backgroundColor: c.accent + '22' }}>
                   <Ionicons name="star" size={22} color={c.accentText} />
                 </View>
@@ -269,10 +269,10 @@ export default function Finanzas() {
 
           {/* Datos de desembolso (cuenta del dueño) */}
           <FadeIn delay={130}>
-            <View className="mt-4 rounded-3xl border border-border bg-card p-5">
+            <View className="mt-4 rounded-lg border border-border bg-card p-5">
               <View className="flex-row items-center">
                 <View
-                  className="h-11 w-11 items-center justify-center rounded-xl"
+                  className="h-11 w-11 items-center justify-center rounded-sm"
                   style={{ backgroundColor: c.primary + '22' }}>
                   <Ionicons name="card-outline" size={22} color={c.primary} />
                 </View>
@@ -333,7 +333,7 @@ export default function Finanzas() {
                     key={m.id}
                     className="mb-3 flex-row items-center rounded-2xl border border-border bg-card p-4">
                     <View
-                      className="h-10 w-10 items-center justify-center rounded-xl"
+                      className="h-10 w-10 items-center justify-center rounded-sm"
                       style={{ backgroundColor: color + '22' }}>
                       <Ionicons
                         name={positivo ? 'arrow-down-circle' : 'arrow-up-circle'}
@@ -398,7 +398,7 @@ export default function Finanzas() {
       {/* Modal de retiro */}
       <Modal visible={modalRetiro} transparent animationType="fade" onRequestClose={() => setModalRetiro(false)}>
         <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
-          <View className="w-full rounded-3xl border border-borderStrong bg-background p-6">
+          <View className="w-full rounded-lg border border-borderStrong bg-background p-6">
             <View className="flex-row items-center justify-between">
               <Text className="font-display text-2xl uppercase text-cream" style={{ lineHeight: 30, paddingTop: 2 }}>
                 Solicitar retiro
@@ -436,7 +436,7 @@ export default function Finanzas() {
             contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
-            <View className="w-full rounded-3xl border border-borderStrong bg-background p-6">
+            <View className="w-full rounded-lg border border-borderStrong bg-background p-6">
               <View className="mb-3 flex-row items-center justify-between">
                 <Text className="font-display text-2xl uppercase text-cream" style={{ lineHeight: 30, paddingTop: 2 }}>
                   Tu cuenta

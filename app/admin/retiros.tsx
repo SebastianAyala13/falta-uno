@@ -290,7 +290,7 @@ export default function RetirosAdmin() {
           animationType="fade"
           onRequestClose={() => setRechazo(null)}>
           <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
-            <View className="w-full rounded-3xl border border-borderStrong bg-background p-6" style={{ maxWidth: 480 }}>
+            <View className="w-full rounded-lg border border-borderStrong bg-background p-6" style={{ maxWidth: 480 }}>
               <View className="flex-row items-center justify-between">
                 <Text className="font-display text-2xl uppercase text-cream" style={{ lineHeight: 30, paddingTop: 2 }}>
                   Rechazar retiro

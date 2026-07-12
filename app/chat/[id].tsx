@@ -53,7 +53,7 @@ export default function Chat() {
       {/* Header */}
       <View className="flex-row items-center border-b border-border px-4 pb-3 pt-1">
         <BackButton className="mr-2" />
-        <View className="h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
+        <View className="h-10 w-10 items-center justify-center rounded-sm bg-primary/15">
           <Ionicons name="football" size={20} color={c.primary} />
         </View>
         <View className="ml-3 flex-1">

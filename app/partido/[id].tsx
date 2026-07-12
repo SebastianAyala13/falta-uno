@@ -188,7 +188,7 @@ export default function PartidoDetalle() {
 
           {/* Organizador */}
           <FadeIn delay={180}>
-            <View className="mb-4 flex-row items-center rounded-3xl border border-border bg-card p-4">
+            <View className="mb-4 flex-row items-center rounded-lg border border-border bg-card p-4">
               <Avatar nombre={partido.organizador?.nombre ?? '?'} size={48} />
               <View className="ml-3 flex-1">
                 <Text className="font-body text-xs uppercase tracking-wide text-muted">Organiza</Text>
@@ -205,8 +205,8 @@ export default function PartidoDetalle() {
           <FadeIn delay={200}>
             <Pressable
               onPress={irAlChat}
-              className="mb-4 flex-row items-center rounded-3xl border border-border bg-card p-4 active:bg-border/40">
-              <View className="h-11 w-11 items-center justify-center rounded-xl bg-accent/15">
+              className="mb-4 flex-row items-center rounded-lg border border-border bg-card p-4 active:bg-border/40">
+              <View className="h-11 w-11 items-center justify-center rounded-sm bg-accent/15">
                 <Ionicons name="chatbubbles" size={22} color={c.accentText} />
               </View>
               <View className="ml-3 flex-1">
@@ -230,7 +230,7 @@ export default function PartidoDetalle() {
           {/* Descripción */}
           {partido.descripcion ? (
             <FadeIn delay={220}>
-              <View className="mb-4 rounded-3xl border border-border bg-card p-4">
+              <View className="mb-4 rounded-lg border border-border bg-card p-4">
                 <Text className="mb-1 font-body-semibold text-sm text-cream">Sobre el parche</Text>
                 <Text className="font-body text-sm leading-5 text-muted">{partido.descripcion}</Text>
               </View>
@@ -239,7 +239,7 @@ export default function PartidoDetalle() {
 
           {/* Desglose de precio */}
           <FadeIn delay={260}>
-            <View className="rounded-3xl border border-border bg-card p-4">
+            <View className="rounded-lg border border-border bg-card p-4">
               <Linea label="Cupo" valor={precioCOP(partido.precio)} />
               <Linea label="Servicio Falta Uno" valor={precioCOP(comision)} />
               <View className="my-2 h-px bg-border" />

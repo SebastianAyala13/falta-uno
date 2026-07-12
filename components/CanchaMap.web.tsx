@@ -15,7 +15,7 @@ export default function CanchaMap({ coords, cancha, onComoLlegar }: Props) {
   const c = useTheme();
   const src = `https://www.google.com/maps?q=${coords.latitude},${coords.longitude}&z=15&output=embed`;
   return (
-    <View className="mb-4 overflow-hidden rounded-3xl border border-border bg-card">
+    <View className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
       <iframe
         title={`Mapa de ${cancha}`}
         src={src}

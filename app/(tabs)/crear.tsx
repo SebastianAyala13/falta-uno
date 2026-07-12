@@ -156,7 +156,7 @@ export default function Crear() {
                       {cch.foto_portada ? (
                         <Image source={{ uri: cch.foto_portada }} style={{ width: '100%', height: 64, borderRadius: 10 }} contentFit="cover" />
                       ) : (
-                        <View className="h-16 items-center justify-center rounded-xl bg-background">
+                        <View className="h-16 items-center justify-center rounded-sm bg-background">
                           <Ionicons name="business" size={24} color={c.muted} />
                         </View>
                       )}

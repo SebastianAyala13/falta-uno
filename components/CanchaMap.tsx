@@ -15,7 +15,7 @@ type Props = {
 export default function CanchaMap({ coords, cancha, zona, onComoLlegar }: Props) {
   const c = useTheme();
   return (
-    <View className="mb-4 overflow-hidden rounded-3xl border border-border bg-card">
+    <View className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
       <MapView
         style={{ height: 160 }}
         pointerEvents="none"

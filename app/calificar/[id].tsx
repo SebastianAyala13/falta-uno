@@ -59,7 +59,7 @@ export default function Calificar() {
 
           {/* Experiencia */}
           <FadeIn delay={120}>
-            <View className="mb-4 items-center rounded-3xl border border-border bg-card p-5">
+            <View className="mb-4 items-center rounded-lg border border-border bg-card p-5">
               <Text className="mb-3 font-body-semibold text-sm text-cream">Tu experiencia</Text>
               <StarRating value={estrellas} onChange={setEstrellas} size={40} />
             </View>
@@ -67,7 +67,7 @@ export default function Calificar() {
 
           {/* Organizador */}
           <FadeIn delay={180}>
-            <View className="mb-4 flex-row items-center rounded-3xl border border-border bg-card p-4">
+            <View className="mb-4 flex-row items-center rounded-lg border border-border bg-card p-4">
               <Avatar nombre={partido?.organizador?.nombre ?? '?'} size={44} />
               <View className="ml-3 flex-1">
                 <Text className="font-body text-xs uppercase tracking-wide text-muted">Organizador</Text>
@@ -79,8 +79,8 @@ export default function Calificar() {
 
           {/* No-show */}
           <FadeIn delay={230}>
-            <View className="mb-4 flex-row items-center rounded-3xl border border-border bg-card p-4">
-              <View className="h-10 w-10 items-center justify-center rounded-xl bg-danger/15">
+            <View className="mb-4 flex-row items-center rounded-lg border border-border bg-card p-4">
+              <View className="h-10 w-10 items-center justify-center rounded-sm bg-danger/15">
                 <Ionicons name="alert-circle-outline" size={20} color={c.danger} />
               </View>
               <Text className="ml-3 flex-1 font-body-semibold text-sm text-cream">¿Faltó alguien sin avisar?</Text>

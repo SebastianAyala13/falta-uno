@@ -86,7 +86,7 @@ export default function DateTimeField({ label, mode, value, onChange, icon, minT
             minimumDate={minToday && mode === 'date' ? new Date() : undefined}
             onChange={onPicked}
           />
-          <Pressable onPress={() => setShow(false)} className="mx-2 mb-1 items-center rounded-xl bg-primary py-2.5">
+          <Pressable onPress={() => setShow(false)} className="mx-2 mb-1 items-center rounded-sm bg-primary py-2.5">
             <Text className="font-body-bold text-sm uppercase text-background">Listo</Text>
           </Pressable>
         </View>

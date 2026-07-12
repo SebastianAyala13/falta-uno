@@ -157,7 +157,7 @@ export default function AdminReportes() {
                         </View>
 
                         {/* Contenido reportado */}
-                        <View className="mt-3 rounded-xl border border-borderStrong bg-background p-3">
+                        <View className="mt-3 rounded-sm border border-borderStrong bg-background p-3">
                           <Text className="font-body text-sm text-cream">{r.texto}</Text>
                         </View>
 

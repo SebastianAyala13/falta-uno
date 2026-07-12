@@ -44,7 +44,7 @@ export default function PostCard({ post, comentarios = 0 }: PostCardProps) {
   return (
     <Pressable
       onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
-      className="mb-4 overflow-hidden rounded-3xl border bg-card"
+      className="mb-4 overflow-hidden rounded-lg border bg-card"
       style={{ borderColor: esRecap ? c.accent + '66' : c.border }}>
       {/* Header */}
       <View className="flex-row items-center gap-3 px-4 pt-4">
@@ -96,7 +96,7 @@ export default function PostCard({ post, comentarios = 0 }: PostCardProps) {
       {esRecap && post.partido_id ? (
         <Pressable
           onPress={() => router.push({ pathname: '/calificar/[id]', params: { id: post.partido_id! } })}
-          className="mx-4 mt-3 flex-row items-center justify-center gap-2 rounded-xl bg-accent py-2.5 active:opacity-80">
+          className="mx-4 mt-3 flex-row items-center justify-center gap-2 rounded-sm bg-accent py-2.5 active:opacity-80">
           <Ionicons name="star" size={16} color={c.ink} />
           <Text className="font-body-bold text-sm uppercase text-ink">Calificar el partido</Text>
         </Pressable>

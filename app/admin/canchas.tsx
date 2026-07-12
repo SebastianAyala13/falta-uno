@@ -191,7 +191,7 @@ export default function CanchasAdmin() {
           <Pressable
             onPress={() => void toggleEstado(cancha)}
             disabled={toggleId !== null}
-            className="flex-row items-center rounded-xl border border-border bg-background px-3 py-2"
+            className="flex-row items-center rounded-sm border border-border bg-background px-3 py-2"
             style={{ opacity: toggleId !== null && !cambiando ? 0.5 : 1 }}>
             {cambiando ? (
               <ActivityIndicator size="small" color={activa ? c.warning : c.primary} />
@@ -209,14 +209,14 @@ export default function CanchasAdmin() {
 
           <Pressable
             onPress={() => abrirAjuste(cancha)}
-            className="flex-row items-center rounded-xl border border-border bg-background px-3 py-2">
+            className="flex-row items-center rounded-sm border border-border bg-background px-3 py-2">
             <Ionicons name="create-outline" size={16} color={c.accentText} />
             <Text className="ml-1.5 font-body-semibold text-xs text-cream">Ajuste de saldo</Text>
           </Pressable>
 
           <Pressable
             onPress={() => void verSaldo(cancha)}
-            className="flex-row items-center rounded-xl border border-border bg-background px-3 py-2">
+            className="flex-row items-center rounded-sm border border-border bg-background px-3 py-2">
             <Ionicons name="wallet-outline" size={16} color={c.primary} />
             <Text className="ml-1.5 font-body-semibold text-xs text-cream">Ver saldo</Text>
           </Pressable>
@@ -284,7 +284,7 @@ export default function CanchasAdmin() {
           animationType="fade"
           onRequestClose={() => setAjuste(null)}>
           <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
-            <View className="w-full rounded-3xl border border-borderStrong bg-background p-6" style={{ maxWidth: 480 }}>
+            <View className="w-full rounded-lg border border-borderStrong bg-background p-6" style={{ maxWidth: 480 }}>
               <View className="flex-row items-center justify-between">
                 <Text className="font-display text-2xl uppercase text-cream" style={{ lineHeight: 30, paddingTop: 2 }}>
                   Ajuste de saldo
@@ -359,7 +359,7 @@ export default function CanchasAdmin() {
           onRequestClose={() => setSaldoDe(null)}>
           <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
             <View
-              className="w-full rounded-3xl border border-borderStrong bg-background p-6"
+              className="w-full rounded-lg border border-borderStrong bg-background p-6"
               style={{ maxWidth: 520, maxHeight: '85%' }}>
               <View className="flex-row items-center justify-between">
                 <Text className="font-display text-2xl uppercase text-cream" style={{ lineHeight: 30, paddingTop: 2 }}>
@@ -396,7 +396,7 @@ export default function CanchasAdmin() {
                         return (
                           <View
                             key={m.id}
-                            className="mb-2 flex-row items-center rounded-xl border border-border bg-card px-3 py-2.5">
+                            className="mb-2 flex-row items-center rounded-sm border border-border bg-card px-3 py-2.5">
                             <View className="flex-1 pr-2">
                               <Text className="font-body-semibold text-xs text-cream">
                                 {TIPO_MOVIMIENTO[m.tipo]}

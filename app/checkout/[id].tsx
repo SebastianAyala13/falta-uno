@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
@@ -14,6 +13,7 @@ import { COMISION_SERVICIO, MEDIOS_PAGO_ACTIVOS, type MedioPago } from '@/consta
 import { Duration, MotionEasing } from '@/constants/motion';
 import { useAuth } from '@/lib/auth';
 import { precioCOP } from '@/lib/format';
+import { haptics } from '@/lib/haptics';
 import { programarRecordatorio } from '@/lib/notifications';
 import { crearCheckoutOnline, procesarPago } from '@/lib/payments';
 import { genRef, useStore } from '@/lib/store';
@@ -74,7 +74,7 @@ export default function Checkout() {
       setPago(nuevoPago);
       const rec = await programarRecordatorio(partido);
       setRecordatorio(rec.ok);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       setPaso('listo');
     } catch (e) {
       setPaso('metodo');

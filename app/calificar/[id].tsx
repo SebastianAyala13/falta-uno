@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
@@ -12,6 +11,7 @@ import Screen from '@/components/Screen';
 import StarRating from '@/components/StarRating';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
+import { haptics } from '@/lib/haptics';
 import { useStore } from '@/lib/store';
 
 export default function Calificar() {
@@ -38,7 +38,7 @@ export default function Calificar() {
       hubo_no_show: noShow,
       comentario,
     });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    haptics.success();
     Alert.alert('¡Gracias, parce! 🙌', 'Tu calificación ayuda a que la comunidad juegue mejor.', [
       { text: 'Listo', onPress: () => router.back() },
     ]);

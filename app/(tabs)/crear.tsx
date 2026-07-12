@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -15,6 +14,7 @@ import { Colors } from '@/constants/colors';
 import { CUPOS_POR_FORMATO, FORMATOS, NIVELES, ZONAS, type Formato, type Nivel, type Zona } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { listarCanchas } from '@/lib/canchas';
+import { haptics } from '@/lib/haptics';
 import { elegirImagen } from '@/lib/images';
 import { useStore } from '@/lib/store';
 import type { Cancha } from '@/types/database';
@@ -81,7 +81,7 @@ export default function Crear() {
         },
         { id: profile?.id ?? 'demo', nombre: profile?.nombre ?? 'Vos' },
       );
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       router.push({ pathname: '/partido/[id]', params: { id } });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos publicar el partido. Probá de nuevo.');

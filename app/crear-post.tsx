@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -9,6 +8,7 @@ import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
+import { haptics } from '@/lib/haptics';
 import { elegirImagen } from '@/lib/images';
 import { MENSAJE_BLOQUEO_FILTRO, contieneContenidoObjetable } from '@/lib/moderation';
 import { useStore } from '@/lib/store';
@@ -47,7 +47,7 @@ export default function CrearPost() {
         { tipo, texto, foto_url: foto },
         { id: profile?.id ?? 'demo', nombre: profile?.nombre ?? 'Vos', avatar_url: profile?.avatar_url },
       );
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       router.back();
     } catch (e) {
       Alert.alert('No se pudo publicar', e instanceof Error ? e.message : 'Probá de nuevo, parce.');

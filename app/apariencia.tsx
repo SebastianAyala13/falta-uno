@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import { THEMES } from '@/constants/themes';
+import { haptics } from '@/lib/haptics';
 import { useTheme, useThemeMeta } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 
@@ -16,7 +16,7 @@ export default function Apariencia() {
   const setTema = useStore((s) => s.setTema);
 
   const elegir = (id: string) => {
-    Haptics.selectionAsync();
+    haptics.select();
     setTema(id);
   };
 

@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
@@ -9,6 +8,7 @@ import ModeracionBoton from '@/components/ModeracionBoton';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { tiempoRelativo } from '@/lib/format';
+import { haptics } from '@/lib/haptics';
 import { useStore } from '@/lib/store';
 import type { Post } from '@/types/database';
 
@@ -36,7 +36,7 @@ export default function PostCard({ post, comentarios = 0 }: PostCardProps) {
   const meta = TIPO_META[post.tipo];
 
   const onLike = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    haptics.light();
     toggleLike(post.id, uid);
   };
 

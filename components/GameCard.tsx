@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -9,6 +8,7 @@ import ProgressBar from '@/components/ProgressBar';
 import { Colors } from '@/constants/colors';
 import { Duration } from '@/constants/motion';
 import { fechaCorta, precioCOP } from '@/lib/format';
+import { haptics } from '@/lib/haptics';
 import type { PartidoConOrganizador } from '@/types/database';
 
 interface GameCardProps {
@@ -33,7 +33,7 @@ export default function GameCard({ partido, destacado = false }: GameCardProps) 
       onPressIn={() => (scale.value = withTiming(0.975, { duration: Duration.instant }))}
       onPressOut={() => (scale.value = withTiming(1, { duration: Duration.fastCard }))}
       onPress={() => {
-        Haptics.selectionAsync();
+        haptics.select();
         router.push({ pathname: '/partido/[id]', params: { id: partido.id } });
       }}
       style={{ marginBottom: 16 }}>

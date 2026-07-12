@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -13,6 +12,7 @@ import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { tiempoRelativo } from '@/lib/format';
+import { haptics } from '@/lib/haptics';
 import { MENSAJE_BLOQUEO_FILTRO, contieneContenidoObjetable } from '@/lib/moderation';
 import { useStore } from '@/lib/store';
 import type { Comentario } from '@/types/database';
@@ -61,7 +61,7 @@ export default function PostDetalle() {
   };
 
   const onLike = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    haptics.light();
     toggleLike(post.id, uid);
   };
 

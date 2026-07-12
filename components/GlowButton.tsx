@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { Duration } from '@/constants/motion';
+import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
 
 type Variant = 'primary' | 'accent' | 'outline' | 'dark';
@@ -51,7 +51,7 @@ export default function GlowButton({
       onPressIn={() => (scale.value = withTiming(0.96, { duration: Duration.instant }))}
       onPressOut={() => (scale.value = withTiming(1, { duration: Duration.fast }))}
       onPress={() => {
-        if (haptic) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        if (haptic) haptics.tap();
         onPress?.();
       }}
       style={[

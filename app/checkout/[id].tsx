@@ -4,13 +4,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
 import { COMISION_SERVICIO, MEDIOS_PAGO_ACTIVOS, type MedioPago } from '@/constants/config';
+import { Duration, MotionEasing } from '@/constants/motion';
 import { useAuth } from '@/lib/auth';
 import { precioCOP } from '@/lib/format';
 import { programarRecordatorio } from '@/lib/notifications';
@@ -170,7 +171,7 @@ export default function Checkout() {
 function Procesando({ medio }: { medio: MedioPago }) {
   const rot = useSharedValue(0);
   useEffect(() => {
-    rot.value = withRepeat(withTiming(1, { duration: 900, easing: Easing.linear }), -1);
+    rot.value = withRepeat(withTiming(1, { duration: Duration.spin, easing: MotionEasing.linear }), -1);
   }, [rot]);
   const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${rot.value * 360}deg` }] }));
 

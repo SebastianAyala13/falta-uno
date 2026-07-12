@@ -3,12 +3,12 @@ import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
 
+import { Duration, MotionEasing } from '@/constants/motion';
 import { useAuth } from '@/lib/auth';
 
 const LOGO = require('../assets/brand/logo.png');
@@ -26,9 +26,9 @@ export default function Index() {
   const scale = useSharedValue(1.08);
 
   useEffect(() => {
-    opacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
-    scale.value = withTiming(1, { duration: 1100, easing: Easing.out(Easing.cubic) });
-    const t = setTimeout(() => setDone(true), 1150);
+    opacity.value = withTiming(1, { duration: Duration.slow, easing: MotionEasing.entrance });
+    scale.value = withTiming(1, { duration: Duration.grand, easing: MotionEasing.entrance });
+    const t = setTimeout(() => setDone(true), 1150); // Duration.grand + 50
     return () => clearTimeout(t);
   }, [opacity, scale]);
 

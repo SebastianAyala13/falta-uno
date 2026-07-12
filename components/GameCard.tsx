@@ -7,6 +7,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 import Avatar from '@/components/Avatar';
 import ProgressBar from '@/components/ProgressBar';
 import { Colors } from '@/constants/colors';
+import { Duration } from '@/constants/motion';
 import { fechaCorta, precioCOP } from '@/lib/format';
 import type { PartidoConOrganizador } from '@/types/database';
 
@@ -29,8 +30,8 @@ export default function GameCard({ partido, destacado = false }: GameCardProps) 
 
   return (
     <Pressable
-      onPressIn={() => (scale.value = withTiming(0.975, { duration: 90 }))}
-      onPressOut={() => (scale.value = withTiming(1, { duration: 130 }))}
+      onPressIn={() => (scale.value = withTiming(0.975, { duration: Duration.instant }))}
+      onPressOut={() => (scale.value = withTiming(1, { duration: Duration.fastCard }))}
       onPress={() => {
         Haptics.selectionAsync();
         router.push({ pathname: '/partido/[id]', params: { id: partido.id } });

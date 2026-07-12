@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, Easing } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
+import { Duration, MotionEasing } from '@/constants/motion';
 import { useTheme } from '@/lib/theme';
 
 /** Bloque con efecto shimmer para estados de carga. */
@@ -9,7 +10,7 @@ export function SkeletonBlock({ height = 16, width = '100%', radius = 8, style }
   const t = useTheme();
   const o = useSharedValue(0.4);
   useEffect(() => {
-    o.value = withRepeat(withTiming(1, { duration: 800, easing: Easing.inOut(Easing.quad) }), -1, true);
+    o.value = withRepeat(withTiming(1, { duration: Duration.shimmer, easing: MotionEasing.pulse }), -1, true);
   }, [o]);
   const anim = useAnimatedStyle(() => ({ opacity: o.value }));
   return (

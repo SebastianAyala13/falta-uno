@@ -111,7 +111,7 @@ export default function PostDetalle() {
               <Text className="mt-3 font-body text-[15px] leading-5 text-cream">{post.texto}</Text>
 
               {post.foto_url ? (
-                <Image source={{ uri: post.foto_url }} style={{ width: '100%', height: 200, marginTop: 12, borderRadius: 16 }} contentFit="cover" />
+                <Image source={{ uri: post.foto_url }} style={{ width: '100%', height: 200, marginTop: 12, borderRadius: 18 }} contentFit="cover" />
               ) : null}
 
               {esRecap && post.partido_id ? (

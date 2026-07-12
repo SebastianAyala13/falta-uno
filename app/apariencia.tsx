@@ -64,7 +64,7 @@ export default function Apariencia() {
                   style={{ borderColor: sel ? t.palette.primary : theme.border, borderWidth: sel ? 2 : 1 }}>
                   {/* muestras de color */}
                   <View className="mb-3 flex-row gap-1.5">
-                    <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: t.palette.primary }} />
+                    <View style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: t.palette.primary }} />
                     <View style={{ width: 20, height: 34, borderRadius: 8, backgroundColor: t.palette.accent }} />
                     <View style={{ width: 14, height: 34, borderRadius: 7, backgroundColor: t.palette.secondary }} />
                   </View>

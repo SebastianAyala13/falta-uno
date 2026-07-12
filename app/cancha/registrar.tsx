@@ -363,7 +363,7 @@ export default function RegistrarCancha() {
                           <View key={url}>
                             <Image
                               source={{ uri: url }}
-                              style={{ width: 104, height: 58, borderRadius: 10 }}
+                              style={{ width: 104, height: 58, borderRadius: 12 }}
                               contentFit="cover"
                             />
                             <Pressable

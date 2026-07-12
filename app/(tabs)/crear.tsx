@@ -154,7 +154,7 @@ export default function Crear() {
                       style={{ width: 170, borderColor: sel ? c.primary : c.border }}
                       className="overflow-hidden rounded-md border bg-card p-3">
                       {cch.foto_portada ? (
-                        <Image source={{ uri: cch.foto_portada }} style={{ width: '100%', height: 64, borderRadius: 10 }} contentFit="cover" />
+                        <Image source={{ uri: cch.foto_portada }} style={{ width: '100%', height: 64, borderRadius: 12 }} contentFit="cover" />
                       ) : (
                         <View className="h-16 items-center justify-center rounded-sm bg-background">
                           <Ionicons name="business" size={24} color={c.muted} />

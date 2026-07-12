@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Modal,
   Pressable,
@@ -14,10 +13,12 @@ import {
 import AdminGate from '@/components/AdminGate';
 import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
+import { CardListSkeleton } from '@/components/Skeleton';
 import type { Palette } from '@/constants/themes';
 import { procesarRetiro, retirosTodos } from '@/lib/admin';
 import { precioCOP, tiempoRelativo } from '@/lib/format';
@@ -37,6 +38,7 @@ export default function RetirosAdmin() {
   const estadoRetiro = ESTADO_RETIRO(c);
   const [retiros, setRetiros] = useState<Retiro[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   /** id del retiro que se está procesando (deshabilita las acciones de la fila). */
   const [procesandoId, setProcesandoId] = useState<string | null>(null);
@@ -46,8 +48,18 @@ export default function RetirosAdmin() {
   const [motivo, setMotivo] = useState('');
   const [enviandoRechazo, setEnviandoRechazo] = useState(false);
 
-  const cargar = useCallback(async () => {
-    setRetiros(await retirosTodos());
+  const cargar = useCallback(async (conSkeleton = true) => {
+    if (conSkeleton) setLoading(true);
+    setError(null);
+    try {
+      setRetiros(await retirosTodos());
+      return true;
+    } catch {
+      setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
+      return false;
+    } finally {
+      if (conSkeleton) setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -56,6 +68,8 @@ export default function RetirosAdmin() {
       try {
         const filas = await retirosTodos();
         if (activo) setRetiros(filas);
+      } catch {
+        if (activo) setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
       } finally {
         if (activo) setLoading(false);
       }
@@ -68,7 +82,7 @@ export default function RetirosAdmin() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await cargar();
+      await cargar(false);
     } finally {
       setRefreshing(false);
     }
@@ -79,8 +93,13 @@ export default function RetirosAdmin() {
       setProcesandoId(id);
       try {
         await procesarRetiro(id, 'pagado');
-        await cargar();
-        Alert.alert('¡Listo!', 'Retiro marcado como pagado. El saldo de la cancha se descontó.');
+        const refrescado = await cargar(false);
+        Alert.alert(
+          '¡Listo!',
+          refrescado
+            ? 'Retiro marcado como pagado. El saldo de la cancha se descontó.'
+            : 'Retiro marcado como pagado. No se pudo refrescar la lista, deslizá para actualizar.',
+        );
       } catch (e) {
         Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
       } finally {
@@ -112,8 +131,13 @@ export default function RetirosAdmin() {
       await procesarRetiro(rechazo.id, 'rechazado', motivo.trim());
       setRechazo(null);
       setMotivo('');
-      await cargar();
-      Alert.alert('Retiro rechazado', 'La cancha va a ver el motivo en sus finanzas.');
+      const refrescado = await cargar(false);
+      Alert.alert(
+        'Retiro rechazado',
+        refrescado
+          ? 'La cancha va a ver el motivo en sus finanzas.'
+          : 'Retiro rechazado. No se pudo refrescar la lista, deslizá para actualizar.',
+      );
     } catch (e) {
       Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
     } finally {
@@ -187,79 +211,77 @@ export default function RetirosAdmin() {
         {/* Header */}
         <ScreenHeader title="Retiros" className="px-6 pb-2 pt-2" />
 
-        {loading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color={c.primary} />
-          </View>
-        ) : (
-          <ScrollView
-            contentContainerStyle={{
-              paddingHorizontal: 24,
-              paddingTop: 12,
-              paddingBottom: 40,
-              width: '100%',
-              maxWidth: 760,
-              alignSelf: 'center',
-            }}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
-            }>
-            {/* Nota operativa */}
-            <FadeIn delay={40}>
-              <View className="mb-4 flex-row items-start rounded-2xl border border-border bg-card p-4">
-                <Ionicons
-                  name="information-circle-outline"
-                  size={20}
-                  color={c.warning}
-                  style={{ marginTop: 1 }}
-                />
-                <Text className="ml-2 flex-1 font-body text-xs text-muted">
-                  Aprobá el retiro DESPUÉS de haber hecho la transferencia a la cancha. Al aprobar, se
-                  descuenta del saldo (ledger).
-                </Text>
-              </View>
-            </FadeIn>
-
-            {retiros.length === 0 ? (
-              <EmptyState
-                icon="cash-outline"
-                titulo="Sin retiros"
-                texto="Cuando una cancha solicite un retiro, aparece acá para que lo proceses."
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: 24,
+            paddingTop: 12,
+            paddingBottom: 40,
+            width: '100%',
+            maxWidth: 760,
+            alignSelf: 'center',
+          }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
+          }>
+          {/* Nota operativa */}
+          <FadeIn delay={40}>
+            <View className="mb-4 flex-row items-start rounded-2xl border border-border bg-card p-4">
+              <Ionicons
+                name="information-circle-outline"
+                size={20}
+                color={c.warning}
+                style={{ marginTop: 1 }}
               />
-            ) : (
-              <>
-                {/* Pendientes de acción */}
-                <FadeIn delay={100}>
-                  <Text
-                    className="mb-3 font-display text-xl uppercase text-cream"
-                    style={{ lineHeight: 26, paddingTop: 2 }}>
-                    Pendientes ({pendientes.length})
-                  </Text>
-                  {pendientes.length === 0 ? (
-                    <Text className="mb-2 font-body text-sm text-muted">
-                      No hay retiros esperando acción. Todo al día.
-                    </Text>
-                  ) : (
-                    pendientes.map((r) => renderRetiro(r, true))
-                  )}
-                </FadeIn>
+              <Text className="ml-2 flex-1 font-body text-xs text-muted">
+                Aprobá el retiro DESPUÉS de haber hecho la transferencia a la cancha. Al aprobar, se
+                descuenta del saldo (ledger).
+              </Text>
+            </View>
+          </FadeIn>
 
-                {/* Historial */}
-                {historial.length > 0 ? (
-                  <FadeIn delay={160}>
-                    <Text
-                      className="mb-3 mt-6 font-display text-xl uppercase text-cream"
-                      style={{ lineHeight: 26, paddingTop: 2 }}>
-                      Historial
-                    </Text>
-                    {historial.map((r) => renderRetiro(r, false))}
-                  </FadeIn>
-                ) : null}
-              </>
-            )}
-          </ScrollView>
-        )}
+          {loading ? (
+            <CardListSkeleton rows={4} />
+          ) : error && retiros.length === 0 ? (
+            <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: () => cargar() }} />
+          ) : retiros.length === 0 ? (
+            <EmptyState
+              icon="cash-outline"
+              titulo="Sin retiros"
+              texto="Cuando una cancha solicite un retiro, aparece acá para que lo proceses."
+            />
+          ) : (
+            <>
+              {/* Pendientes de acción */}
+              <FadeIn delay={100}>
+                <Text
+                  className="mb-3 font-display text-xl uppercase text-cream"
+                  style={{ lineHeight: 26, paddingTop: 2 }}>
+                  Pendientes ({pendientes.length})
+                </Text>
+                {pendientes.length === 0 ? (
+                  <Text className="mb-2 font-body text-sm text-muted">
+                    No hay retiros esperando acción. Todo al día.
+                  </Text>
+                ) : (
+                  pendientes.map((r) => renderRetiro(r, true))
+                )}
+              </FadeIn>
+
+              {/* Historial */}
+              {historial.length > 0 ? (
+                <FadeIn delay={160}>
+                  <Text
+                    className="mb-3 mt-6 font-display text-xl uppercase text-cream"
+                    style={{ lineHeight: 26, paddingTop: 2 }}>
+                    Historial
+                  </Text>
+                  {historial.map((r) => renderRetiro(r, false))}
+                </FadeIn>
+              ) : null}
+            </>
+          )}
+        </ScrollView>
 
         {/* Modal: motivo del rechazo */}
         <Modal

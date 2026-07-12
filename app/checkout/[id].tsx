@@ -3,9 +3,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { ScreenHeader } from '@/components/BackButton';
+import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
@@ -39,9 +40,13 @@ export default function Checkout() {
   if (!partido) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <View className="flex-1 items-center justify-center">
-          <Text className="font-body text-muted">Partido no encontrado.</Text>
-        </View>
+        <ScreenHeader title="Pagar cupo" titleSize="2xl" backIcon="chevron-down" className="px-6 pb-2 pt-2" />
+        <EmptyState
+          icon="alert-circle-outline"
+          titulo="Partido no encontrado"
+          texto="Este partido ya no está disponible o cerró la inscripción."
+          cta={{ label: 'Volver', onPress: () => router.back() }}
+        />
       </Screen>
     );
   }
@@ -124,7 +129,7 @@ export default function Checkout() {
                 return (
                   <Pressable
                     key={m.id}
-                    onPress={() => setMedio(m)}
+                    onPress={() => { haptics.select(); setMedio(m); }}
                     className="flex-row items-center rounded-2xl border bg-card p-4"
                     style={{ borderColor: sel ? c.primary : c.border }}>
                     <View
@@ -167,10 +172,12 @@ export default function Checkout() {
 
 function Procesando({ medio }: { medio: MedioPago }) {
   const c = useTheme();
+  const reducedMotion = useReducedMotion();
   const rot = useSharedValue(0);
   useEffect(() => {
+    if (reducedMotion) return;
     rot.value = withRepeat(withTiming(1, { duration: Duration.spin, easing: MotionEasing.linear }), -1);
-  }, [rot]);
+  }, [rot, reducedMotion]);
   const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${rot.value * 360}deg` }] }));
 
   return (

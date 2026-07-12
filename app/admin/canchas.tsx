@@ -14,10 +14,12 @@ import {
 import AdminGate from '@/components/AdminGate';
 import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
+import { CardListSkeleton } from '@/components/Skeleton';
 import StatCard from '@/components/StatCard';
 import { ajusteSaldo, listarCanchasAdmin, movimientosCancha, setEstadoCancha } from '@/lib/admin';
 import { precioCOP, tiempoRelativo } from '@/lib/format';
@@ -37,6 +39,7 @@ export default function CanchasAdmin() {
   const [canchas, setCanchas] = useState<Cancha[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState('');
   /** id de la cancha cuyo estado se está cambiando. */
   const [toggleId, setToggleId] = useState<string | null>(null);
@@ -53,8 +56,16 @@ export default function CanchasAdmin() {
   const [movs, setMovs] = useState<MovimientoCancha[]>([]);
   const [loadingMovs, setLoadingMovs] = useState(false);
 
-  const cargar = useCallback(async () => {
-    setCanchas(await listarCanchasAdmin());
+  const cargar = useCallback(async (conSkeleton = true) => {
+    if (conSkeleton) setLoading(true);
+    setError(null);
+    try {
+      setCanchas(await listarCanchasAdmin());
+    } catch {
+      setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
+    } finally {
+      if (conSkeleton) setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -63,6 +74,8 @@ export default function CanchasAdmin() {
       try {
         const filas = await listarCanchasAdmin();
         if (activo) setCanchas(filas);
+      } catch {
+        if (activo) setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
       } finally {
         if (activo) setLoading(false);
       }
@@ -75,7 +88,7 @@ export default function CanchasAdmin() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await cargar();
+      await cargar(false);
     } finally {
       setRefreshing(false);
     }
@@ -86,7 +99,7 @@ export default function CanchasAdmin() {
     setToggleId(cancha.id);
     try {
       await setEstadoCancha(cancha.id, nuevo);
-      await cargar();
+      await cargar(false);
     } catch (e) {
       Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
     } finally {
@@ -218,53 +231,51 @@ export default function CanchasAdmin() {
         {/* Header */}
         <ScreenHeader title="Canchas" className="px-6 pb-2 pt-2" />
 
-        {loading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color={c.primary} />
-          </View>
-        ) : (
-          <ScrollView
-            contentContainerStyle={{
-              paddingHorizontal: 24,
-              paddingTop: 12,
-              paddingBottom: 40,
-              width: '100%',
-              maxWidth: 760,
-              alignSelf: 'center',
-            }}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
-            }>
-            <FadeIn delay={40}>
-              <Field
-                icon="search"
-                placeholder="Buscar por nombre, ciudad o zona"
-                value={q}
-                onChangeText={setQ}
-              />
-            </FadeIn>
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: 24,
+            paddingTop: 12,
+            paddingBottom: 40,
+            width: '100%',
+            maxWidth: 760,
+            alignSelf: 'center',
+          }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
+          }>
+          <FadeIn delay={40}>
+            <Field
+              icon="search"
+              placeholder="Buscar por nombre, ciudad o zona"
+              value={q}
+              onChangeText={setQ}
+            />
+          </FadeIn>
 
-            {canchas.length === 0 ? (
-              <EmptyState
-                icon="business-outline"
-                titulo="Sin canchas"
-                texto="Todavía no hay canchas registradas en la plataforma."
-              />
-            ) : filtradas.length === 0 ? (
-              <Text className="mt-2 font-body text-sm text-muted">
-                No hay canchas que coincidan con tu búsqueda.
+          {loading ? (
+            <CardListSkeleton rows={4} />
+          ) : error && canchas.length === 0 ? (
+            <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: () => cargar() }} />
+          ) : canchas.length === 0 ? (
+            <EmptyState
+              icon="business-outline"
+              titulo="Sin canchas"
+              texto="Todavía no hay canchas registradas en la plataforma."
+            />
+          ) : filtradas.length === 0 ? (
+            <Text className="mt-2 font-body text-sm text-muted">
+              No hay canchas que coincidan con tu búsqueda.
+            </Text>
+          ) : (
+            <FadeIn delay={100}>
+              <Text className="mb-3 font-body text-xs uppercase tracking-wider text-muted">
+                {filtradas.length} {filtradas.length === 1 ? 'cancha' : 'canchas'}
               </Text>
-            ) : (
-              <FadeIn delay={100}>
-                <Text className="mb-3 font-body text-xs uppercase tracking-wider text-muted">
-                  {filtradas.length} {filtradas.length === 1 ? 'cancha' : 'canchas'}
-                </Text>
-                {filtradas.map(renderCancha)}
-              </FadeIn>
-            )}
-          </ScrollView>
-        )}
+              {filtradas.map(renderCancha)}
+            </FadeIn>
+          )}
+        </ScrollView>
 
         {/* Modal: ajuste de saldo */}
         <Modal

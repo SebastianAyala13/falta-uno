@@ -11,6 +11,7 @@ import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
+import { SkeletonBlock } from '@/components/Skeleton';
 import { CUPOS_POR_FORMATO, FORMATOS, NIVELES, ZONAS, type Formato, type Nivel, type Zona } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { listarCanchas } from '@/lib/canchas';
@@ -27,6 +28,7 @@ export default function Crear() {
   const c = useTheme();
 
   const [canchasDisponibles, setCanchasDisponibles] = useState<Cancha[]>([]);
+  const [cargandoCanchas, setCargandoCanchas] = useState(true);
   const [canchaSelId, setCanchaSelId] = useState<string | null>(null);
   const [otraCancha, setOtraCancha] = useState(false);
 
@@ -43,7 +45,10 @@ export default function Crear() {
 
   // Canchas registradas: al crear un partido se elige una de las disponibles.
   useEffect(() => {
-    listarCanchas().then(setCanchasDisponibles).catch(() => {});
+    listarCanchas()
+      .then(setCanchasDisponibles)
+      .catch(() => {})
+      .finally(() => setCargandoCanchas(false));
   }, []);
 
   const elegirCancha = (cch: Cancha) => {
@@ -133,7 +138,12 @@ export default function Crear() {
 
             {/* Elegí una cancha registrada (o escribí otra) */}
             <Text className="mb-2 font-body-semibold text-sm text-cream">Cancha</Text>
-            {canchasDisponibles.length > 0 ? (
+            {cargandoCanchas ? (
+              <View className="mb-3 flex-row gap-2.5">
+                <SkeletonBlock width={170} height={110} radius={18} />
+                <SkeletonBlock width={170} height={110} radius={18} />
+              </View>
+            ) : canchasDisponibles.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 8 }} className="mb-3">
                 {canchasDisponibles.map((cch) => {
                   const sel = canchaSelId === cch.id && !otraCancha;
@@ -175,7 +185,7 @@ export default function Crear() {
               </Text>
             )}
 
-            {(otraCancha || canchasDisponibles.length === 0) ? (
+            {(otraCancha || (!cargandoCanchas && canchasDisponibles.length === 0)) ? (
               <Field label="Nombre de la cancha" icon="football-outline" placeholder="Ej. Cancha La Bombonera" value={cancha} onChangeText={setCancha} autoCapitalize="words" />
             ) : null}
 

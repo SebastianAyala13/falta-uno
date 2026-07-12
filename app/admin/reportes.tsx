@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   RefreshControl,
   ScrollView,
   Text,
@@ -11,8 +10,10 @@ import {
 import AdminGate from '@/components/AdminGate';
 import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import { CardListSkeleton } from '@/components/Skeleton';
 import type { Palette } from '@/constants/themes';
 import { reportesAdmin } from '@/lib/admin';
 import { tiempoRelativo } from '@/lib/format';
@@ -42,12 +43,21 @@ export default function AdminReportes() {
   const c = useTheme();
   const motivoChip = MOTIVO_CHIP(c);
   const [reportes, setReportes] = useState<Reporte[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const cargar = useCallback(async () => {
-    const filas = await reportesAdmin();
-    setReportes(filas);
+  const cargar = useCallback(async (conSkeleton = true) => {
+    if (conSkeleton) setCargando(true);
+    setError(null);
+    try {
+      const filas = await reportesAdmin();
+      setReportes(filas);
+    } catch {
+      setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
+    } finally {
+      if (conSkeleton) setCargando(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -56,8 +66,10 @@ export default function AdminReportes() {
       try {
         const filas = await reportesAdmin();
         if (activo) setReportes(filas);
+      } catch {
+        if (activo) setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
       } finally {
-        if (activo) setLoading(false);
+        if (activo) setCargando(false);
       }
     })();
     return () => {
@@ -68,7 +80,7 @@ export default function AdminReportes() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await cargar();
+      await cargar(false);
     } finally {
       setRefreshing(false);
     }
@@ -80,41 +92,40 @@ export default function AdminReportes() {
         {/* Header */}
         <ScreenHeader title="Reportes" className="px-6 pb-2 pt-2" />
 
-        {loading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color={c.primary} />
-          </View>
-        ) : (
-          <ScrollView
-            contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
-            }>
-            {/* Nota de moderación */}
-            <FadeIn delay={40}>
-              <View className="mb-4 flex-row items-start rounded-2xl border border-border bg-card p-4">
-                <Ionicons
-                  name="shield-half-outline"
-                  size={20}
-                  color={c.muted}
-                  style={{ marginTop: 1 }}
-                />
-                <Text className="ml-2 flex-1 font-body text-xs text-muted">
-                  Revisá el contenido reportado y tomá acción con el dueño de la cancha/usuario si
-                  corresponde.
-                </Text>
-              </View>
-            </FadeIn>
-
-            {reportes.length === 0 ? (
-              <EmptyState
-                icon="shield-checkmark-outline"
-                titulo="Sin reportes"
-                texto="No hay contenido reportado por revisar. Todo tranquilo por acá."
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
+          }>
+          {/* Nota de moderación */}
+          <FadeIn delay={40}>
+            <View className="mb-4 flex-row items-start rounded-2xl border border-border bg-card p-4">
+              <Ionicons
+                name="shield-half-outline"
+                size={20}
+                color={c.muted}
+                style={{ marginTop: 1 }}
               />
-            ) : (
-              <>
+              <Text className="ml-2 flex-1 font-body text-xs text-muted">
+                Revisá el contenido reportado y tomá acción con el dueño de la cancha/usuario si
+                corresponde.
+              </Text>
+            </View>
+          </FadeIn>
+
+          {cargando ? (
+            <CardListSkeleton rows={4} />
+          ) : error && reportes.length === 0 ? (
+            <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: () => cargar() }} />
+          ) : reportes.length === 0 ? (
+            <EmptyState
+              icon="shield-checkmark-outline"
+              titulo="Sin reportes"
+              texto="No hay contenido reportado por revisar. Todo tranquilo por acá."
+            />
+          ) : (
+            <>
                 <Text className="mb-3 font-body text-xs uppercase tracking-wider text-muted">
                   {reportes.length} {reportes.length === 1 ? 'reporte' : 'reportes'}
                 </Text>
@@ -171,8 +182,7 @@ export default function AdminReportes() {
                 })}
               </>
             )}
-          </ScrollView>
-        )}
+        </ScrollView>
       </Screen>
     </AdminGate>
   );

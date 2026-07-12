@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import Avatar from '@/components/Avatar';
@@ -9,9 +9,11 @@ import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import GameCard from '@/components/GameCard';
 import Screen from '@/components/Screen';
+import { GameCardSkeleton } from '@/components/Skeleton';
 import UrgencyPill from '@/components/UrgencyPill';
 import { precioCOP } from '@/lib/format';
 import { useAuth } from '@/lib/auth';
+import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 import type { PartidoConOrganizador } from '@/types/database';
@@ -23,10 +25,22 @@ export default function Home() {
   const { profile } = useAuth();
   const c = useTheme();
   const partidos = useStore((s) => s.partidos);
+  const hidratado = useStore((s) => s.hidratado);
   const hidratar = useStore((s) => s.hidratar);
 
   const nombre = profile?.nombre ?? 'crack';
   const [refreshing, setRefreshing] = useState(false);
+
+  // Skeletons hasta que la primera hidratación desde Supabase termine (igual que buscar)
+  const [cargando, setCargando] = useState(!hidratado);
+  useEffect(() => {
+    if (hidratado) {
+      setCargando(false);
+      return;
+    }
+    const t = setTimeout(() => setCargando(false), 650);
+    return () => clearTimeout(t);
+  }, [hidratado]);
   const onRefresh = async () => {
     setRefreshing(true);
     if (profile?.id) await hidratar(profile.id);
@@ -58,7 +72,7 @@ export default function Home() {
         {/* Header */}
         <FadeIn delay={40}>
           <View className="flex-row items-center justify-between px-[22px] pb-4 pt-2">
-            <Pressable onPress={() => router.push('/(tabs)/perfil')} className="flex-row items-center">
+            <Pressable onPress={() => { haptics.tap(); router.push('/(tabs)/perfil'); }} className="flex-row items-center">
               <Avatar nombre={nombre} uri={profile?.avatar_url} size={48} />
               <View className="ml-3">
                 <Text className="font-body text-xs uppercase tracking-wider text-muted">Hola, parce</Text>
@@ -73,7 +87,7 @@ export default function Home() {
 
         {/* Hero CTA */}
         <FadeIn delay={110}>
-          <Pressable onPress={() => router.push('/(tabs)/crear')} className="mx-[22px] mb-5 overflow-hidden rounded-lg">
+          <Pressable onPress={() => { haptics.tap(); router.push('/(tabs)/crear'); }} className="mx-[22px] mb-5 overflow-hidden rounded-lg">
             <LinearGradient colors={[c.secondary, c.background]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18 }}>
               <View className="absolute rounded-full" style={{ right: -40, top: -40, width: 150, height: 150, backgroundColor: c.accent, opacity: 0.12, pointerEvents: 'none' }} />
               <Text className="font-display text-2xl uppercase text-cream" style={{ lineHeight: 32, paddingTop: 4 }}>¿Te falta llave{'\n'}pa la pichanga?</Text>
@@ -89,7 +103,7 @@ export default function Home() {
         {/* Acceso rápido a canchas */}
         <FadeIn delay={140}>
           <Pressable
-            onPress={() => router.push('/canchas')}
+            onPress={() => { haptics.tap(); router.push('/canchas'); }}
             className="mx-[22px] mb-5 flex-row items-center rounded-lg border border-border bg-card p-4 active:opacity-80">
             <View className="h-11 w-11 items-center justify-center rounded-xl bg-primary/15">
               <Ionicons name="business" size={22} color={c.primary} />
@@ -125,7 +139,7 @@ export default function Home() {
               <Text className="font-display text-2xl uppercase text-cream">Cerca de vos</Text>
               <Text className="font-body text-xs text-muted">Pereira · Risaralda</Text>
             </View>
-            <Pressable onPress={() => router.push('/(tabs)/buscar')} className="flex-row items-center gap-1">
+            <Pressable onPress={() => { haptics.tap(); router.push('/(tabs)/buscar'); }} className="flex-row items-center gap-1">
               <Text className="font-body-semibold text-sm text-primary">Ver todos</Text>
               <Ionicons name="arrow-forward" size={15} color={c.primary} />
             </Pressable>
@@ -133,7 +147,13 @@ export default function Home() {
         </FadeIn>
 
         <View className="px-[22px]">
-          {ordenados.length === 0 ? (
+          {cargando ? (
+            <>
+              <GameCardSkeleton />
+              <GameCardSkeleton />
+              <GameCardSkeleton />
+            </>
+          ) : ordenados.length === 0 ? (
             <EmptyState
               titulo="Tu zona está quieta"
               texto="Nadie ha armado pichanga por acá todavía. Sé el primero 👟"
@@ -156,7 +176,7 @@ export default function Home() {
 function UrgentCard({ partido, onPress }: { partido: PartidoConOrganizador; onPress: () => void }) {
   const faltan = faltanDe(partido);
   return (
-    <Pressable onPress={onPress} style={{ width: 170 }} className="overflow-hidden rounded-md border border-borderStrong bg-card">
+    <Pressable onPress={() => { haptics.tap(); onPress(); }} style={{ width: 170 }} className="overflow-hidden rounded-md border border-borderStrong bg-card">
       <UrgencyPill faltan={faltan} tone="solid" shape="strip" size="sm" fill showFull={false} />
       <View className="p-3">
         <Text className="font-display text-base uppercase leading-5 text-cream" numberOfLines={1}>{partido.cancha}</Text>

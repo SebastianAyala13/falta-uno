@@ -5,8 +5,10 @@ import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-
 
 import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import { CardListSkeleton } from '@/components/Skeleton';
 import type { Palette } from '@/constants/themes';
 import { useAuth } from '@/lib/auth';
 import { cancelarReserva, listarCanchas, misReservas } from '@/lib/canchas';
@@ -29,19 +31,32 @@ const colorEstado = (estado: EstadoReserva, c: Palette) => {
 
 export default function MisReservas() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, loading: authCargando } = useAuth();
   const c = useTheme();
 
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [nombres, setNombres] = useState<Record<string, string>>({});
   const [refreshing, setRefreshing] = useState(false);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const cargar = useCallback(async () => {
-    if (!profile?.id) return;
-    const [filas, canchas] = await Promise.all([misReservas(profile.id), listarCanchas()]);
-    setReservas(filas);
-    setNombres(Object.fromEntries(canchas.map((cch) => [cch.id, cch.nombre])));
-  }, [profile?.id]);
+  const cargar = useCallback(async (conSkeleton = true) => {
+    if (!profile?.id) {
+      if (!authCargando) setCargando(false);
+      return;
+    }
+    if (conSkeleton) setCargando(true);
+    setError(null);
+    try {
+      const [filas, canchas] = await Promise.all([misReservas(profile.id), listarCanchas()]);
+      setReservas(filas);
+      setNombres(Object.fromEntries(canchas.map((cch) => [cch.id, cch.nombre])));
+    } catch {
+      setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
+    } finally {
+      if (conSkeleton) setCargando(false);
+    }
+  }, [profile?.id, authCargando]);
 
   useEffect(() => {
     cargar();
@@ -49,7 +64,7 @@ export default function MisReservas() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await cargar();
+    await cargar(false);
     setRefreshing(false);
   };
 
@@ -62,7 +77,7 @@ export default function MisReservas() {
         onPress: async () => {
           try {
             await cancelarReserva(reserva.id);
-            await cargar();
+            await cargar(false);
           } catch (e) {
             Alert.alert('No se pudo cancelar', e instanceof Error ? e.message : 'Probá de nuevo.');
           }
@@ -83,7 +98,11 @@ export default function MisReservas() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} />
         }>
-        {reservas.length === 0 ? (
+        {cargando ? (
+          <CardListSkeleton rows={4} />
+        ) : error && reservas.length === 0 ? (
+          <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: () => cargar() }} />
+        ) : reservas.length === 0 ? (
           <EmptyState
             icon="calendar-outline"
             titulo="Sin reservas aún"

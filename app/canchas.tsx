@@ -7,8 +7,10 @@ import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 're
 import { ScreenHeader } from '@/components/BackButton';
 import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import { CardListSkeleton } from '@/components/Skeleton';
 import { FORMATOS, ZONAS, type Formato } from '@/constants/config';
 import { listarCanchas } from '@/lib/canchas';
 import { useTheme } from '@/lib/theme';
@@ -23,10 +25,20 @@ export default function Canchas() {
   const [zona, setZona] = useState<string | null>(null);
   const [formato, setFormato] = useState<Formato | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const cargar = useCallback(async () => {
-    const filas = await listarCanchas({ zona, formato });
-    setCanchas(filas);
+  const cargar = useCallback(async (conSkeleton = true) => {
+    if (conSkeleton) setCargando(true);
+    setError(null);
+    try {
+      const filas = await listarCanchas({ zona, formato });
+      setCanchas(filas);
+    } catch {
+      setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
+    } finally {
+      if (conSkeleton) setCargando(false);
+    }
   }, [zona, formato]);
 
   useEffect(() => {
@@ -35,7 +47,7 @@ export default function Canchas() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await cargar();
+    await cargar(false);
     setRefreshing(false);
   };
 
@@ -91,7 +103,11 @@ export default function Canchas() {
         </FadeIn>
 
         <View className="px-6 pt-1">
-          {resultados.length === 0 ? (
+          {cargando ? (
+            <CardListSkeleton rows={4} />
+          ) : error && resultados.length === 0 ? (
+            <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: () => cargar() }} />
+          ) : resultados.length === 0 ? (
             <EmptyState
               icon="business-outline"
               titulo="Sin canchas por acá"

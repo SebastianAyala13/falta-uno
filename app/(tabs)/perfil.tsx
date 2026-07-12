@@ -72,8 +72,8 @@ export default function Perfil() {
 
         {/* Tarjeta de perfil */}
         <FadeIn delay={60}>
-          <View className="mx-6 mt-2 overflow-hidden rounded-lg border border-border">
-            <LinearGradient colors={[c.card, c.background]} style={{ padding: 24, alignItems: 'center' }}>
+          <View className="mx-6 mt-2 overflow-hidden rounded-lg border border-border bg-card">
+            <LinearGradient colors={[c.primary + '26', c.primary + '0D']} style={{ padding: 24, alignItems: 'center' }}>
               <View
                 className="rounded-full"
                 style={{ padding: 3, borderWidth: 2, borderColor: c.primary }}>
@@ -121,7 +121,6 @@ export default function Perfil() {
               align="center"
               labelPosition="bottom"
               icon="star"
-              tint={c.accent}
               value={(u?.rating ?? 5).toFixed(1)}
               label="Rating"
             />

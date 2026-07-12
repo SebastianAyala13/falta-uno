@@ -9,7 +9,7 @@ interface BadgeProps {
 
 const toneStyles: Record<Tone, { box: string; text: string }> = {
   primary: { box: 'bg-primary/15 border border-primary/40', text: 'text-primary' },
-  accent: { box: 'bg-accent/15 border border-accent/40', text: 'text-accent' },
+  accent: { box: 'bg-accent border border-accent', text: 'text-ink' },
   neutral: { box: 'bg-card border border-border', text: 'text-muted' },
   danger: { box: 'bg-danger/15 border border-danger/40', text: 'text-danger' },
 };

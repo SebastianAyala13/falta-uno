@@ -11,7 +11,7 @@ const toneStyles: Record<Tone, { box: string; text: string }> = {
   primary: { box: 'bg-primary/15 border border-primary/40', text: 'text-primary' },
   accent: { box: 'bg-accent/15 border border-accent/40', text: 'text-accent' },
   neutral: { box: 'bg-card border border-border', text: 'text-muted' },
-  danger: { box: 'bg-red-500/15 border border-red-500/40', text: 'text-red-400' },
+  danger: { box: 'bg-danger/15 border border-danger/40', text: 'text-danger' },
 };
 
 /** Etiqueta compacta para posición, nivel, formato, etc. */

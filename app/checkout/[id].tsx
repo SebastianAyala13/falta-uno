@@ -1,21 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
+import { ScreenHeader } from '@/components/BackButton';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { COMISION_SERVICIO, MEDIOS_PAGO_ACTIVOS, type MedioPago } from '@/constants/config';
+import { Duration, MotionEasing } from '@/constants/motion';
 import { useAuth } from '@/lib/auth';
 import { precioCOP } from '@/lib/format';
+import { haptics } from '@/lib/haptics';
 import { programarRecordatorio } from '@/lib/notifications';
 import { crearCheckoutOnline, procesarPago } from '@/lib/payments';
 import { genRef, useStore } from '@/lib/store';
+import { useTheme } from '@/lib/theme';
 import type { Pago } from '@/types/database';
 
 type Paso = 'metodo' | 'procesando' | 'listo';
@@ -24,6 +26,7 @@ export default function Checkout() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile } = useAuth();
+  const c = useTheme();
 
   const partido = useStore((s) => s.getPartido(id));
   const inscribirse = useStore((s) => s.inscribirse);
@@ -73,7 +76,7 @@ export default function Checkout() {
       setPago(nuevoPago);
       const rec = await programarRecordatorio(partido);
       setRecordatorio(rec.ok);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       setPaso('listo');
     } catch (e) {
       setPaso('metodo');
@@ -87,18 +90,13 @@ export default function Checkout() {
   return (
     <Screen edges={['top', 'bottom']}>
       {/* Header */}
-      <View className="flex-row items-center px-6 pb-2 pt-2">
-        {paso === 'metodo' ? (
-          <Pressable onPress={() => router.back()} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-card">
-            <Ionicons name="chevron-down" size={22} color={Colors.cream} />
-          </Pressable>
-        ) : (
-          <View className="h-10 w-10" />
-        )}
-        <Text className="ml-3 font-display text-2xl uppercase text-cream">
-          {paso === 'listo' ? 'Comprobante' : 'Pagar cupo'}
-        </Text>
-      </View>
+      <ScreenHeader
+        title={paso === 'listo' ? 'Comprobante' : 'Pagar cupo'}
+        titleSize="2xl"
+        backIcon="chevron-down"
+        showBack={paso === 'metodo'}
+        className="px-6 pb-2 pt-2"
+      />
 
       {paso === 'procesando' ? <Procesando medio={medio} /> : null}
       {paso === 'listo' && pago ? <Comprobante pago={pago} medio={medio} cancha={partido.cancha} recordatorio={recordatorio} onClose={() => router.replace({ pathname: '/partido/[id]', params: { id } })} /> : null}
@@ -128,11 +126,11 @@ export default function Checkout() {
                     key={m.id}
                     onPress={() => setMedio(m)}
                     className="flex-row items-center rounded-2xl border bg-card p-4"
-                    style={{ borderColor: sel ? Colors.primary : Colors.border }}>
+                    style={{ borderColor: sel ? c.primary : c.border }}>
                     <View
                       className="h-11 w-11 items-center justify-center rounded-xl"
-                      style={{ backgroundColor: sel ? Colors.primary + '22' : Colors.background }}>
-                      <Ionicons name={m.icon as keyof typeof Ionicons.glyphMap} size={22} color={sel ? Colors.primary : Colors.muted} />
+                      style={{ backgroundColor: sel ? c.primary + '22' : c.background }}>
+                      <Ionicons name={m.icon as keyof typeof Ionicons.glyphMap} size={22} color={sel ? c.primary : c.muted} />
                     </View>
                     <View className="ml-3 flex-1">
                       <Text className="font-body-bold text-base text-cream">{m.nombre}</Text>
@@ -140,7 +138,7 @@ export default function Checkout() {
                     </View>
                     <View
                       className="h-6 w-6 items-center justify-center rounded-full border-2"
-                      style={{ borderColor: sel ? Colors.primary : Colors.border }}>
+                      style={{ borderColor: sel ? c.primary : c.border }}>
                       {sel ? <View className="h-3 w-3 rounded-full bg-primary" /> : null}
                     </View>
                   </Pressable>
@@ -151,7 +149,7 @@ export default function Checkout() {
 
           <FadeIn delay={200}>
             <View className="mt-4 flex-row items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2.5">
-              <Ionicons name="information-circle" size={16} color={Colors.primary} />
+              <Ionicons name="information-circle" size={16} color={c.primary} />
               <Text className="flex-1 font-body text-xs text-muted">
                 Falta Uno no custodia tu dinero: el pago es un acuerdo con el organizador del partido.
               </Text>
@@ -168,16 +166,17 @@ export default function Checkout() {
 }
 
 function Procesando({ medio }: { medio: MedioPago }) {
+  const c = useTheme();
   const rot = useSharedValue(0);
   useEffect(() => {
-    rot.value = withRepeat(withTiming(1, { duration: 900, easing: Easing.linear }), -1);
+    rot.value = withRepeat(withTiming(1, { duration: Duration.spin, easing: MotionEasing.linear }), -1);
   }, [rot]);
   const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${rot.value * 360}deg` }] }));
 
   return (
     <View className="flex-1 items-center justify-center px-10">
       <Animated.View style={style}>
-        <Ionicons name="football" size={68} color={Colors.primary} />
+        <Ionicons name="football" size={68} color={c.primary} />
       </Animated.View>
       <Text className="mt-6 font-display text-2xl uppercase text-cream">Procesando…</Text>
       <Text className="mt-2 text-center font-body text-sm text-muted">
@@ -202,6 +201,7 @@ function Comprobante({
   recordatorio: boolean;
   onClose: () => void;
 }) {
+  const c = useTheme();
   const aprobado = pago.estado === 'aprobado';
   return (
     <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
@@ -209,13 +209,13 @@ function Comprobante({
         <View
           className="mt-4 h-24 w-24 items-center justify-center rounded-full"
           style={{
-            backgroundColor: aprobado ? Colors.primary : Colors.warning,
-            shadowColor: aprobado ? Colors.primary : Colors.warning,
+            backgroundColor: aprobado ? c.primary : c.warning,
+            shadowColor: aprobado ? c.primary : c.warning,
             shadowOpacity: 0.6,
             shadowRadius: 24,
             shadowOffset: { width: 0, height: 0 },
           }}>
-          <Ionicons name={aprobado ? 'checkmark' : 'time'} size={56} color={Colors.ink} />
+          <Ionicons name={aprobado ? 'checkmark' : 'time'} size={56} color={c.ink} />
         </View>
         <Text className="mt-5 font-display text-4xl uppercase text-cream" style={{ lineHeight: 44, paddingTop: 2 }}>
           {aprobado ? '¡Listo, parce!' : 'Cupo reservado'}
@@ -242,7 +242,7 @@ function Comprobante({
       {recordatorio ? (
         <FadeIn delay={180}>
           <View className="mt-4 flex-row items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-3 py-3">
-            <Ionicons name="notifications" size={18} color={Colors.primary} />
+            <Ionicons name="notifications" size={18} color={c.primary} />
             <Text className="flex-1 font-body text-sm text-cream">
               Te avisamos <Text className="text-primary">2 horas antes</Text> del partido. 🔔
             </Text>
@@ -281,7 +281,8 @@ function Dato({
   total?: boolean;
   tone?: 'ok' | 'warn';
 }) {
-  const color = tone === 'ok' ? Colors.primary : tone === 'warn' ? Colors.warning : Colors.cream;
+  const c = useTheme();
+  const color = tone === 'ok' ? c.primary : tone === 'warn' ? c.warning : c.cream;
   return (
     <View className="flex-row items-center justify-between py-1.5">
       <Text className="font-body text-sm text-muted">{label}</Text>

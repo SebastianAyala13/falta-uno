@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { Pressable, View } from 'react-native';
 
-import { Colors } from '@/constants/colors';
+import { haptics } from '@/lib/haptics';
+import { useTheme } from '@/lib/theme';
 
 interface StarRatingProps {
   value: number;
@@ -13,6 +13,7 @@ interface StarRatingProps {
 
 /** Selector de estrellas (1-5) para el sistema de reputación. */
 export default function StarRating({ value, onChange, size = 36, readOnly = false }: StarRatingProps) {
+  const c = useTheme();
   return (
     <View className="flex-row gap-2">
       {[1, 2, 3, 4, 5].map((n) => (
@@ -21,10 +22,10 @@ export default function StarRating({ value, onChange, size = 36, readOnly = fals
           disabled={readOnly}
           hitSlop={6}
           onPress={() => {
-            Haptics.selectionAsync();
+            haptics.select();
             onChange?.(n);
           }}>
-          <Ionicons name={n <= value ? 'star' : 'star-outline'} size={size} color={n <= value ? Colors.accent : Colors.muted} />
+          <Ionicons name={n <= value ? 'star' : 'star-outline'} size={size} color={n <= value ? c.accent : c.muted} />
         </Pressable>
       ))}
     </View>

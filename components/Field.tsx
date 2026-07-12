@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View, type TextInputProps } from 'react-native';
 
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/lib/theme';
 
 interface FieldProps extends TextInputProps {
   label?: string;
@@ -14,6 +14,7 @@ interface FieldProps extends TextInputProps {
 
 /** Campo de formulario premium: ícono, glow al enfocar y tema oscuro. */
 export default function Field({ label, hint, icon, toggleSecure, style, ...props }: FieldProps) {
+  const c = useTheme();
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(true);
 
@@ -28,11 +29,11 @@ export default function Field({ label, hint, icon, toggleSecure, style, ...props
       <View
         className="flex-row items-center rounded-2xl border bg-card px-4"
         style={{
-          borderColor: focused ? Colors.primary : Colors.border,
+          borderColor: focused ? c.primary : c.border,
           minHeight: multiline ? 100 : 56,
           alignItems: multiline ? 'flex-start' : 'center',
           paddingVertical: multiline ? 14 : 0,
-          shadowColor: Colors.primary,
+          shadowColor: c.primary,
           shadowOpacity: focused ? 0.25 : 0,
           shadowRadius: 12,
           shadowOffset: { width: 0, height: 0 },
@@ -41,13 +42,13 @@ export default function Field({ label, hint, icon, toggleSecure, style, ...props
           <Ionicons
             name={icon}
             size={20}
-            color={focused ? Colors.primary : Colors.muted}
+            color={focused ? c.primary : c.muted}
             style={{ marginRight: 10, marginTop: multiline ? 2 : 0 }}
           />
         ) : null}
 
         <TextInput
-          placeholderTextColor={Colors.muted}
+          placeholderTextColor={c.muted}
           secureTextEntry={toggleSecure ? hidden : props.secureTextEntry}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
@@ -58,7 +59,7 @@ export default function Field({ label, hint, icon, toggleSecure, style, ...props
 
         {toggleSecure ? (
           <Pressable onPress={() => setHidden((h) => !h)} hitSlop={10} className="pl-2">
-            <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={20} color={Colors.muted} />
+            <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={20} color={c.muted} />
           </Pressable>
         ) : null}
       </View>

@@ -1,15 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import AdminGate from '@/components/AdminGate';
+import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
+import type { Palette } from '@/constants/themes';
 import { listarReservasAdmin } from '@/lib/admin';
 import { fechaLarga, precioCOP } from '@/lib/format';
+import { useTheme } from '@/lib/theme';
 import type { EstadoReserva, Reserva } from '@/types/database';
 
 const FILTROS: { label: string; valor?: EstadoReserva }[] = [
@@ -27,16 +28,15 @@ const ESTADO_LABEL: Record<EstadoReserva, string> = {
   completada: 'Completada',
 };
 
-const colorEstado = (estado: EstadoReserva) => {
-  if (estado === 'confirmada') return Colors.primary;
-  if (estado === 'pendiente') return Colors.warning;
-  return Colors.muted;
+const colorEstado = (estado: EstadoReserva, c: Palette) => {
+  if (estado === 'confirmada') return c.primary;
+  if (estado === 'pendiente') return c.warning;
+  return c.muted;
 };
 
 /** Plataforma Madre — listado global de reservas con filtro por estado. */
 export default function ReservasAdmin() {
-  const router = useRouter();
-
+  const c = useTheme();
   const [filtro, setFiltro] = useState<EstadoReserva | undefined>(undefined);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,17 +63,7 @@ export default function ReservasAdmin() {
       <Screen edges={['top']}>
         {/* Contenedor web-first: centrado y con ancho máximo en desktop */}
         <View className="flex-1 self-center" style={{ width: '100%', maxWidth: 1040 }}>
-          <View className="flex-row items-center px-6 pb-2 pt-2">
-            <Pressable
-              onPress={() => router.back()}
-              hitSlop={12}
-              className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-              <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-            </Pressable>
-            <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-              Reservas
-            </Text>
-          </View>
+          <ScreenHeader title="Reservas" className="px-6 pb-2 pt-2" />
 
           <ScrollView
             horizontal
@@ -88,12 +78,12 @@ export default function ReservasAdmin() {
                   onPress={() => setFiltro(f.valor)}
                   className="rounded-full border px-4 py-2 active:opacity-80"
                   style={{
-                    backgroundColor: activo ? Colors.primary : Colors.card,
-                    borderColor: activo ? Colors.primary : Colors.border,
+                    backgroundColor: activo ? c.primary : c.card,
+                    borderColor: activo ? c.primary : c.border,
                   }}>
                   <Text
                     className="font-body-semibold text-xs uppercase tracking-wide"
-                    style={{ color: activo ? Colors.ink : Colors.muted }}>
+                    style={{ color: activo ? c.ink : c.muted }}>
                     {f.label}
                   </Text>
                 </Pressable>
@@ -103,7 +93,7 @@ export default function ReservasAdmin() {
 
           {loading ? (
             <View className="flex-1 items-center justify-center">
-              <ActivityIndicator size="large" color={Colors.primary} />
+              <ActivityIndicator size="large" color={c.primary} />
             </View>
           ) : (
             <ScrollView
@@ -113,8 +103,8 @@ export default function ReservasAdmin() {
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={onRefresh}
-                  tintColor={Colors.primary}
-                  colors={[Colors.primary]}
+                  tintColor={c.primary}
+                  colors={[c.primary]}
                 />
               }>
               {reservas.length === 0 ? (
@@ -130,7 +120,7 @@ export default function ReservasAdmin() {
                   </Text>
 
                   {reservas.map((r, i) => {
-                    const color = colorEstado(r.estado);
+                    const color = colorEstado(r.estado, c);
                     return (
                       <FadeIn key={r.id} delay={40 + Math.min(i, 10) * 40}>
                         <View className="mb-3 rounded-2xl border border-border bg-card p-4">
@@ -160,7 +150,7 @@ export default function ReservasAdmin() {
                               <Ionicons
                                 name={r.medio === 'efectivo' ? 'cash-outline' : 'card-outline'}
                                 size={13}
-                                color={Colors.muted}
+                                color={c.muted}
                               />
                               <Text className="ml-1.5 font-body text-xs uppercase text-muted">{r.medio}</Text>
                             </View>

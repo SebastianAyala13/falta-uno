@@ -7,9 +7,9 @@ import Avatar from '@/components/Avatar';
 import FadeIn from '@/components/FadeIn';
 import PostCard from '@/components/PostCard';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { useStore } from '@/lib/store';
+import { useTheme } from '@/lib/theme';
 import type { Post } from '@/types/database';
 
 type Filtro = 'todos' | 'encuentro' | 'pregunta';
@@ -28,6 +28,7 @@ export default function Muro() {
   const comentarios = useStore((s) => s.comentarios);
   const bloqueados = useStore((s) => s.bloqueados);
   const generarRecaps = useStore((s) => s.generarRecapsPendientes);
+  const c = useTheme();
 
   const [filtro, setFiltro] = useState<Filtro>('todos');
 
@@ -63,7 +64,7 @@ export default function Muro() {
           <Avatar nombre={profile?.nombre ?? 'Vos'} uri={profile?.avatar_url} size={36} />
           <Text className="flex-1 font-body text-sm text-muted">¿Qué se cuenta, parce?</Text>
           <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">
-            <Ionicons name="add" size={20} color={Colors.ink} />
+            <Ionicons name="add" size={20} color={c.ink} />
           </View>
         </Pressable>
       </FadeIn>
@@ -78,12 +79,12 @@ export default function Muro() {
               onPress={() => setFiltro(f.key)}
               className="rounded-full border px-4 py-1.5"
               style={{
-                backgroundColor: activo ? Colors.primary : Colors.card,
-                borderColor: activo ? Colors.primary : Colors.border,
+                backgroundColor: activo ? c.primary : c.card,
+                borderColor: activo ? c.primary : c.border,
               }}>
               <Text
                 className="font-body-semibold text-sm"
-                style={{ color: activo ? Colors.ink : Colors.cream }}>
+                style={{ color: activo ? c.ink : c.cream }}>
                 {f.label}
               </Text>
             </Pressable>
@@ -101,7 +102,7 @@ export default function Muro() {
         )}
         ListEmptyComponent={
           <View className="mt-24 items-center">
-            <Ionicons name="newspaper-outline" size={40} color={Colors.muted} />
+            <Ionicons name="newspaper-outline" size={40} color={c.muted} />
             <Text className="mt-3 text-center font-body text-sm text-muted">
               Todavía no hay nada por acá.{'\n'}¡Estrená el muro, parce! ⚽
             </Text>

@@ -1,13 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { BackButton } from '@/components/BackButton';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 
 export default function Login() {
@@ -35,12 +35,7 @@ export default function Login() {
   return (
     <Screen edges={['top', 'bottom']}>
       <View className="flex-row items-center px-6 pb-2 pt-2">
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          className="h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
+        <BackButton />
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
@@ -77,12 +72,7 @@ export default function Login() {
               toggleSecure
             />
 
-            {error ? (
-              <View className="mb-4 flex-row items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5">
-                <Ionicons name="alert-circle" size={16} color={Colors.danger} />
-                <Text className="flex-1 font-body text-sm text-red-300">{error}</Text>
-              </View>
-            ) : null}
+            <ErrorBanner message={error} />
 
             {demo ? (
               <Text className="mb-4 font-body text-xs text-muted">

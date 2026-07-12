@@ -1,22 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { BackButton } from '@/components/BackButton';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import { THEMES } from '@/constants/themes';
+import { haptics } from '@/lib/haptics';
+import { urgencyLabel } from '@/lib/format';
 import { useTheme, useThemeMeta } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 
 export default function Apariencia() {
-  const router = useRouter();
   const theme = useTheme();
   const activo = useThemeMeta();
   const setTema = useStore((s) => s.setTema);
 
   const elegir = (id: string) => {
-    Haptics.selectionAsync();
+    haptics.select();
     setTema(id);
   };
 
@@ -24,9 +24,7 @@ export default function Apariencia() {
     <Screen edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center px-5 pb-2 pt-1">
-        <Pressable onPress={() => router.back()} hitSlop={12} className="mr-3 h-10 w-10 items-center justify-center rounded-sm bg-card">
-          <Ionicons name="chevron-back" size={22} color={theme.cream} />
-        </Pressable>
+        <BackButton className="mr-3" />
         <View>
           <Text className="font-display text-3xl uppercase text-cream">Apariencia</Text>
           <Text className="font-body text-sm text-muted">Elegí el color de tu Falta Uno</Text>
@@ -38,7 +36,7 @@ export default function Apariencia() {
         <FadeIn delay={40}>
           <View className="mb-6 overflow-hidden rounded-lg border border-borderStrong bg-card p-5">
             <Text className="font-body text-xs uppercase tracking-widest text-muted">Vista previa</Text>
-            <Text className="mt-1 font-display text-3xl uppercase text-cream">¡Falta 1, parce! 🔥</Text>
+            <Text className="mt-1 font-display text-3xl uppercase text-cream">{`${urgencyLabel(1, { urgentLabel: '¡Falta 1, parce!' })} 🔥`}</Text>
             <View className="mt-4 flex-row gap-3">
               <View className="rounded-sm bg-primary px-4 py-2.5">
                 <Text className="font-body-bold text-sm uppercase text-ink">Unirme</Text>

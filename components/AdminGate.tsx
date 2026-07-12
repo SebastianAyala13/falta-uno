@@ -4,9 +4,9 @@ import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { esAdmin } from '@/lib/admin';
 import { useAuth } from '@/lib/auth';
+import { useTheme } from '@/lib/theme';
 
 /**
  * Envuelve las pantallas de la Plataforma Madre. Solo renderiza el contenido si
@@ -15,13 +15,14 @@ import { useAuth } from '@/lib/auth';
  */
 export default function AdminGate({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const c = useTheme();
   const { profile } = useAuth();
 
   if (!esAdmin(profile)) {
     return (
       <Screen edges={['top', 'bottom']}>
         <View className="flex-1 items-center justify-center px-8">
-          <Ionicons name="lock-closed" size={44} color={Colors.muted} />
+          <Ionicons name="lock-closed" size={44} color={c.muted} />
           <Text className="mt-4 text-center font-display text-2xl uppercase text-cream" style={{ lineHeight: 30, paddingTop: 2 }}>
             Sin acceso
           </Text>

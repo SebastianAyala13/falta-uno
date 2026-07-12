@@ -1,23 +1,25 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Switch, Text, View } from 'react-native';
 
 import Avatar from '@/components/Avatar';
+import { ScreenHeader } from '@/components/BackButton';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import StarRating from '@/components/StarRating';
-import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
+import { haptics } from '@/lib/haptics';
 import { useStore } from '@/lib/store';
+import { useTheme } from '@/lib/theme';
 
 export default function Calificar() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile } = useAuth();
+  const c = useTheme();
 
   const partido = useStore((s) => s.getPartido(id));
   const calificarPartido = useStore((s) => s.calificarPartido);
@@ -38,7 +40,7 @@ export default function Calificar() {
       hubo_no_show: noShow,
       comentario,
     });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    haptics.success();
     Alert.alert('¡Gracias, parce! 🙌', 'Tu calificación ayuda a que la comunidad juegue mejor.', [
       { text: 'Listo', onPress: () => router.back() },
     ]);
@@ -46,12 +48,7 @@ export default function Calificar() {
 
   return (
     <Screen edges={['top']}>
-      <View className="flex-row items-center px-6 pb-2 pt-2">
-        <Pressable onPress={() => router.back()} hitSlop={12} className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
-        <Text className="font-display text-3xl uppercase text-cream">Calificar</Text>
-      </View>
+      <ScreenHeader title="Calificar" className="px-6 pb-2 pt-2" />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -83,15 +80,15 @@ export default function Calificar() {
           {/* No-show */}
           <FadeIn delay={230}>
             <View className="mb-4 flex-row items-center rounded-3xl border border-border bg-card p-4">
-              <View className="h-10 w-10 items-center justify-center rounded-xl bg-red-500/15">
-                <Ionicons name="alert-circle-outline" size={20} color={Colors.danger} />
+              <View className="h-10 w-10 items-center justify-center rounded-xl bg-danger/15">
+                <Ionicons name="alert-circle-outline" size={20} color={c.danger} />
               </View>
               <Text className="ml-3 flex-1 font-body-semibold text-sm text-cream">¿Faltó alguien sin avisar?</Text>
               <Switch
                 value={noShow}
                 onValueChange={setNoShow}
-                trackColor={{ false: Colors.border, true: Colors.danger }}
-                thumbColor={Colors.cream}
+                trackColor={{ false: c.border, true: c.danger }}
+                thumbColor={c.cream}
               />
             </View>
           </FadeIn>

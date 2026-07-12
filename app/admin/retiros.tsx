@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,27 +12,29 @@ import {
 } from 'react-native';
 
 import AdminGate from '@/components/AdminGate';
+import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
+import type { Palette } from '@/constants/themes';
 import { procesarRetiro, retirosTodos } from '@/lib/admin';
 import { precioCOP, tiempoRelativo } from '@/lib/format';
+import { useTheme } from '@/lib/theme';
 import type { Retiro } from '@/types/database';
 
-const ESTADO_RETIRO: Record<Retiro['estado'], { label: string; color: string }> = {
-  solicitado: { label: 'Solicitado', color: Colors.warning },
-  procesando: { label: 'Procesando', color: Colors.warning },
-  pagado: { label: 'Pagado', color: Colors.primary },
-  rechazado: { label: 'Rechazado', color: Colors.danger },
-};
+const ESTADO_RETIRO = (c: Palette): Record<Retiro['estado'], { label: string; color: string }> => ({
+  solicitado: { label: 'Solicitado', color: c.warning },
+  procesando: { label: 'Procesando', color: c.warning },
+  pagado: { label: 'Pagado', color: c.primary },
+  rechazado: { label: 'Rechazado', color: c.danger },
+});
 
 /** Cola de retiros de la Plataforma Madre: aprobar (pagado) o rechazar desembolsos. */
 export default function RetirosAdmin() {
-  const router = useRouter();
-
+  const c = useTheme();
+  const estadoRetiro = ESTADO_RETIRO(c);
   const [retiros, setRetiros] = useState<Retiro[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -124,7 +125,7 @@ export default function RetirosAdmin() {
   const historial = retiros.filter((r) => r.estado !== 'solicitado');
 
   const renderRetiro = (r: Retiro, pendiente: boolean) => {
-    const estado = ESTADO_RETIRO[r.estado];
+    const estado = estadoRetiro[r.estado];
     const ocupado = procesandoId !== null;
     return (
       <View key={r.id} className="mb-3 rounded-2xl border border-border bg-card p-4">
@@ -184,21 +185,11 @@ export default function RetirosAdmin() {
     <AdminGate>
       <Screen edges={['top']}>
         {/* Header */}
-        <View className="flex-row items-center px-6 pb-2 pt-2">
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={12}
-            className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-            <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-          </Pressable>
-          <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-            Retiros
-          </Text>
-        </View>
+        <ScreenHeader title="Retiros" className="px-6 pb-2 pt-2" />
 
         {loading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color={Colors.primary} />
+            <ActivityIndicator color={c.primary} />
           </View>
         ) : (
           <ScrollView
@@ -212,7 +203,7 @@ export default function RetirosAdmin() {
             }}
             showsVerticalScrollIndicator={false}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
             }>
             {/* Nota operativa */}
             <FadeIn delay={40}>
@@ -220,7 +211,7 @@ export default function RetirosAdmin() {
                 <Ionicons
                   name="information-circle-outline"
                   size={20}
-                  color={Colors.warning}
+                  color={c.warning}
                   style={{ marginTop: 1 }}
                 />
                 <Text className="ml-2 flex-1 font-body text-xs text-muted">
@@ -283,7 +274,7 @@ export default function RetirosAdmin() {
                   Rechazar retiro
                 </Text>
                 <Pressable onPress={() => setRechazo(null)} hitSlop={12}>
-                  <Ionicons name="close" size={24} color={Colors.muted} />
+                  <Ionicons name="close" size={24} color={c.muted} />
                 </Pressable>
               </View>
               <Text className="mb-4 mt-1 font-body text-sm text-muted">

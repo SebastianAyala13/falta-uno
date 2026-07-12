@@ -8,16 +8,17 @@ import FadeIn from '@/components/FadeIn';
 import GameCard from '@/components/GameCard';
 import Screen from '@/components/Screen';
 import { GameCardSkeleton } from '@/components/Skeleton';
-import { Colors } from '@/constants/colors';
 import { FORMATOS, NIVELES, ZONAS } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { useStore } from '@/lib/store';
+import { useTheme } from '@/lib/theme';
 
 export default function Buscar() {
   const { profile } = useAuth();
   const partidos = useStore((s) => s.partidos);
   const hidratado = useStore((s) => s.hidratado);
   const hidratar = useStore((s) => s.hidratar);
+  const c = useTheme();
 
   // Mostramos skeletons hasta que la primera hidratación desde Supabase termine
   const [cargando, setCargando] = useState(!hidratado);
@@ -65,16 +66,16 @@ export default function Buscar() {
         <View className="px-6 pb-3 pt-2">
           <Text className="mb-4 font-display text-4xl uppercase text-cream" style={{ lineHeight: 44, paddingTop: 2 }}>Buscar partido</Text>
           <View className="h-14 flex-row items-center rounded-2xl border border-border bg-card px-4">
-            <Ionicons name="search" size={20} color={Colors.muted} />
+            <Ionicons name="search" size={20} color={c.muted} />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder="Cancha, zona, parche..."
-              placeholderTextColor={Colors.muted}
+              placeholderTextColor={c.muted}
               className="ml-3 flex-1 font-body text-base text-cream"
             />
             {query ? (
-              <Ionicons name="close-circle" size={20} color={Colors.muted} onPress={() => setQuery('')} />
+              <Ionicons name="close-circle" size={20} color={c.muted} onPress={() => setQuery('')} />
             ) : null}
           </View>
         </View>
@@ -84,7 +85,7 @@ export default function Buscar() {
         contentContainerStyle={{ paddingBottom: 110 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} colors={[Colors.primary]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} />
         }>
         <FadeIn delay={120}>
           <View className="px-6">

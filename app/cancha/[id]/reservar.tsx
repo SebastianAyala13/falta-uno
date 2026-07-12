@@ -4,17 +4,18 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
+import { ScreenHeader } from '@/components/BackButton';
 import DateTimeField from '@/components/DateTimeField';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { COMISION_CANCHA_DEFAULT, WOMPI_CONFIGURADO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { crearReserva, getCancha, slotsDelDia, type Slot } from '@/lib/canchas';
 import { fechaLarga, precioCOP } from '@/lib/format';
 import { crearCheckoutReserva } from '@/lib/payments';
 import { useStore } from '@/lib/store';
+import { useTheme } from '@/lib/theme';
 import type { Cancha } from '@/types/database';
 
 const hoy = () => new Date().toISOString().slice(0, 10);
@@ -24,6 +25,7 @@ export default function Reservar() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useAuth();
   const crearPartido = useStore((s) => s.crearPartido);
+  const c = useTheme();
 
   const [cancha, setCancha] = useState<Cancha | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -118,7 +120,7 @@ export default function Reservar() {
 
   // Comprobante (estado "listo"). Online → pendiente hasta que Wompi confirme.
   if (referencia && cancha && slot) {
-    const tint = online ? Colors.warning : Colors.primary;
+    const tint = online ? c.warning : c.primary;
     return (
       <Screen edges={['top']}>
         <FadeIn delay={40} className="flex-1 items-center justify-center px-8">
@@ -147,25 +149,15 @@ export default function Reservar() {
 
   return (
     <Screen edges={['top']}>
-      <View className="flex-row items-center px-6 pb-2 pt-2">
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
-        <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-          Reservar
-        </Text>
-      </View>
+      <ScreenHeader title="Reservar" className="px-6 pb-2 pt-2" />
 
       {cargando ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={c.primary} />
         </View>
       ) : !cancha ? (
         <View className="flex-1 items-center justify-center px-8">
-          <Ionicons name="alert-circle-outline" size={42} color={Colors.muted} />
+          <Ionicons name="alert-circle-outline" size={42} color={c.muted} />
           <Text className="mt-3 text-center font-body text-base text-muted">Esta cancha ya no existe</Text>
         </View>
       ) : (
@@ -177,7 +169,7 @@ export default function Reservar() {
             <Text className="mb-2 font-body-semibold text-sm text-cream">Horarios</Text>
             {cargandoSlots ? (
               <View className="items-center py-8">
-                <ActivityIndicator color={Colors.primary} />
+                <ActivityIndicator color={c.primary} />
               </View>
             ) : slots.length === 0 ? (
               <Text className="py-4 font-body text-sm text-muted">
@@ -195,8 +187,8 @@ export default function Reservar() {
                         className="items-center rounded-2xl border px-2 py-3"
                         style={{
                           opacity: s.ocupado ? 0.4 : 1,
-                          borderColor: elegido ? Colors.primary : Colors.border,
-                          backgroundColor: elegido ? Colors.primary : Colors.card,
+                          borderColor: elegido ? c.primary : c.border,
+                          backgroundColor: elegido ? c.primary : c.card,
                         }}>
                         <Text className={`font-body-bold text-sm ${elegido ? 'text-ink' : 'text-cream'}`}>
                           {s.hora_inicio}
@@ -219,8 +211,8 @@ export default function Reservar() {
               <Switch
                 value={abrirPartido}
                 onValueChange={setAbrirPartido}
-                trackColor={{ false: Colors.border, true: Colors.primary }}
-                thumbColor={Colors.cream}
+                trackColor={{ false: c.border, true: c.primary }}
+                thumbColor={c.cream}
               />
             </View>
 
@@ -239,9 +231,9 @@ export default function Reservar() {
                         key={m.key}
                         onPress={() => setMedio(m.key)}
                         className="flex-1 rounded-2xl border p-3"
-                        style={{ backgroundColor: sel ? Colors.primary + '1A' : Colors.card, borderColor: sel ? Colors.primary : Colors.border }}>
-                        <Ionicons name={m.icon} size={20} color={sel ? Colors.primary : Colors.muted} />
-                        <Text className="mt-1.5 font-body-bold text-sm" style={{ color: sel ? Colors.primary : Colors.cream }}>{m.label}</Text>
+                        style={{ backgroundColor: sel ? c.primary + '1A' : c.card, borderColor: sel ? c.primary : c.border }}>
+                        <Ionicons name={m.icon} size={20} color={sel ? c.primary : c.muted} />
+                        <Text className="mt-1.5 font-body-bold text-sm" style={{ color: sel ? c.primary : c.cream }}>{m.label}</Text>
                         <Text className="font-body text-xs text-muted">{m.hint}</Text>
                       </Pressable>
                     );

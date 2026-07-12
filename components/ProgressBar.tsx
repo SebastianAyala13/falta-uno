@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/lib/theme';
 
 interface ProgressBarProps {
   value: number; // 0 - 1
@@ -10,6 +10,7 @@ interface ProgressBarProps {
 
 /** Barra de progreso de cupos del partido. */
 export default function ProgressBar({ value, urgente = false }: ProgressBarProps) {
+  const c = useTheme();
   const pct = Math.max(0, Math.min(1, value));
   return (
     <View className="h-2 w-full overflow-hidden rounded-full bg-border">
@@ -18,7 +19,7 @@ export default function ProgressBar({ value, urgente = false }: ProgressBarProps
           width: `${pct * 100}%`,
           height: '100%',
           borderRadius: 999,
-          backgroundColor: urgente ? Colors.accent : Colors.primary,
+          backgroundColor: urgente ? c.accent : c.primary,
         }}
       />
     </View>

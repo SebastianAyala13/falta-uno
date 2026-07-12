@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -8,24 +7,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import Avatar from '@/components/Avatar';
+import { BackButton, ScreenHeader } from '@/components/BackButton';
 import ModeracionBoton from '@/components/ModeracionBoton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import { tiempoRelativo } from '@/lib/format';
+import { haptics } from '@/lib/haptics';
 import { MENSAJE_BLOQUEO_FILTRO, contieneContenidoObjetable } from '@/lib/moderation';
 import { useStore } from '@/lib/store';
+import { useTheme } from '@/lib/theme';
 import type { Comentario } from '@/types/database';
 
 export default function PostDetalle() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile } = useAuth();
+  const c = useTheme();
 
   const post = useStore((s) => s.posts.find((p) => p.id === id));
   const comentariosRaw = useStore(useShallow((s) => s.getComentarios(id)));
   const bloqueados = useStore((s) => s.bloqueados);
-  const comentarios = comentariosRaw.filter((c) => !bloqueados.includes(c.autor_id));
+  const comentarios = comentariosRaw.filter((com) => !bloqueados.includes(com.autor_id));
   const toggleLike = useStore((s) => s.toggleLike);
   const comentar = useStore((s) => s.comentar);
 
@@ -36,9 +38,7 @@ export default function PostDetalle() {
     return (
       <Screen edges={['top']}>
         <View className="flex-row items-center px-4 pt-1">
-          <Pressable onPress={() => router.back()} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-card">
-            <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-          </Pressable>
+          <BackButton />
         </View>
         <View className="flex-1 items-center justify-center">
           <Text className="font-body text-sm text-muted">Este post ya no existe, parce.</Text>
@@ -61,19 +61,20 @@ export default function PostDetalle() {
   };
 
   const onLike = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    haptics.light();
     toggleLike(post.id, uid);
   };
 
   return (
     <Screen edges={['top']} glow={false}>
       {/* Header */}
-      <View className="flex-row items-center border-b border-border px-4 pb-3 pt-1">
-        <Pressable onPress={() => router.back()} hitSlop={12} className="mr-2 h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
-        <Text className="font-display text-xl uppercase text-cream">Publicación</Text>
-      </View>
+      <ScreenHeader
+        title="Publicación"
+        titleSize="xl"
+        borderBottom
+        backClassName="mr-2"
+        className="px-4 pb-3 pt-1"
+      />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -81,15 +82,15 @@ export default function PostDetalle() {
         className="flex-1">
         <FlatList
           data={comentarios}
-          keyExtractor={(c: Comentario) => c.id}
+          keyExtractor={(com: Comentario) => com.id}
           contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            <View className="mb-2 rounded-3xl border bg-card p-4" style={{ borderColor: esRecap ? Colors.accent + '66' : Colors.border }}>
+            <View className="mb-2 rounded-3xl border bg-card p-4" style={{ borderColor: esRecap ? c.accent + '66' : c.border }}>
               <View className="flex-row items-center gap-3">
                 {esRecap ? (
                   <View className="h-11 w-11 items-center justify-center rounded-full bg-accent/15">
-                    <Ionicons name="football" size={22} color={Colors.accent} />
+                    <Ionicons name="football" size={22} color={c.accent} />
                   </View>
                 ) : (
                   <Avatar nombre={post.autor_nombre} uri={post.autor_avatar} size={44} />
@@ -117,20 +118,20 @@ export default function PostDetalle() {
                 <Pressable
                   onPress={() => router.push({ pathname: '/calificar/[id]', params: { id: post.partido_id! } })}
                   className="mt-3 flex-row items-center justify-center gap-2 rounded-xl bg-accent py-2.5 active:opacity-80">
-                  <Ionicons name="star" size={16} color={Colors.ink} />
+                  <Ionicons name="star" size={16} color={c.ink} />
                   <Text className="font-body-bold text-sm uppercase text-ink">Calificar el partido</Text>
                 </Pressable>
               ) : null}
 
               <View className="mt-3 flex-row items-center gap-5 border-t border-border pt-3">
                 <Pressable onPress={onLike} hitSlop={8} className="flex-row items-center gap-1.5">
-                  <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? Colors.danger : Colors.muted} />
-                  <Text className="font-body-semibold text-sm" style={{ color: liked ? Colors.danger : Colors.muted }}>
+                  <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? c.danger : c.muted} />
+                  <Text className="font-body-semibold text-sm" style={{ color: liked ? c.danger : c.muted }}>
                     {post.likes.length}
                   </Text>
                 </Pressable>
                 <View className="flex-row items-center gap-1.5">
-                  <Ionicons name="chatbubble-outline" size={18} color={Colors.muted} />
+                  <Ionicons name="chatbubble-outline" size={18} color={c.muted} />
                   <Text className="font-body-semibold text-sm text-muted">{comentarios.length}</Text>
                 </View>
               </View>
@@ -174,7 +175,7 @@ export default function PostDetalle() {
               value={texto}
               onChangeText={setTexto}
               placeholder="Escribí un comentario…"
-              placeholderTextColor={Colors.muted}
+              placeholderTextColor={c.muted}
               multiline
               className="max-h-28 flex-1 rounded-2xl border border-border bg-background px-4 py-3 font-body text-base text-cream"
             />
@@ -182,8 +183,8 @@ export default function PostDetalle() {
               onPress={enviar}
               disabled={!texto.trim()}
               className="h-12 w-12 items-center justify-center rounded-full"
-              style={{ backgroundColor: texto.trim() ? Colors.primary : Colors.border }}>
-              <Ionicons name="send" size={18} color={texto.trim() ? Colors.ink : Colors.muted} />
+              style={{ backgroundColor: texto.trim() ? c.primary : c.border }}>
+              <Ionicons name="send" size={18} color={texto.trim() ? c.ink : c.muted} />
             </Pressable>
           </View>
         </SafeAreaView>

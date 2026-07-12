@@ -4,8 +4,8 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import CanchaMap from '@/components/CanchaMap';
 import Field from '@/components/Field';
-import { Colors } from '@/constants/colors';
 import { reverseGeocode } from '@/lib/geo';
+import { useTheme } from '@/lib/theme';
 
 export interface Ubicacion {
   lat: number | null;
@@ -25,6 +25,7 @@ interface Props {
  * mapa (iframe). En web no usamos react-native-maps (es solo nativo).
  */
 export default function UbicacionPicker({ value, onChange }: Props) {
+  const c = useTheme();
   const [buscando, setBuscando] = useState(false);
 
   const usarMiUbicacion = () => {
@@ -49,9 +50,9 @@ export default function UbicacionPicker({ value, onChange }: Props) {
         onPress={usarMiUbicacion}
         className="mb-3 flex-row items-center justify-center gap-2 rounded-2xl border border-primary/40 bg-primary/10 py-3 active:opacity-80">
         {buscando ? (
-          <ActivityIndicator size="small" color={Colors.primary} />
+          <ActivityIndicator size="small" color={c.primary} />
         ) : (
-          <Ionicons name="navigate" size={18} color={Colors.primary} />
+          <Ionicons name="navigate" size={18} color={c.primary} />
         )}
         <Text className="font-body-bold text-sm text-primary">Usar mi ubicación</Text>
       </Pressable>

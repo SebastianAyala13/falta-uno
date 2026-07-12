@@ -9,6 +9,7 @@ import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import GameCard from '@/components/GameCard';
 import Screen from '@/components/Screen';
+import UrgencyPill from '@/components/UrgencyPill';
 import { precioCOP } from '@/lib/format';
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
@@ -153,18 +154,10 @@ export default function Home() {
 
 /** Mini-tarjeta de urgencia para el strip horizontal. */
 function UrgentCard({ partido, onPress }: { partido: PartidoConOrganizador; onPress: () => void }) {
-  const c = useTheme();
   const faltan = faltanDe(partido);
-  const urgente = faltan === 1;
-  const stripColor = urgente ? c.accent : c.primary;
   return (
     <Pressable onPress={onPress} style={{ width: 170 }} className="overflow-hidden rounded-md border border-borderStrong bg-card">
-      <View style={{ backgroundColor: stripColor }} className="flex-row items-center gap-1 px-3 py-1.5">
-        <Ionicons name="flame" size={12} color={c.ink} />
-        <Text className="font-body-bold text-[11px] uppercase tracking-wide text-ink">
-          {urgente ? '¡Falta 1!' : `Faltan ${faltan}`}
-        </Text>
-      </View>
+      <UrgencyPill faltan={faltan} tone="solid" shape="strip" size="sm" fill showFull={false} />
       <View className="p-3">
         <Text className="font-display text-base uppercase leading-5 text-cream" numberOfLines={1}>{partido.cancha}</Text>
         <Text className="mt-0.5 font-body text-xs text-muted" numberOfLines={1}>{partido.zona} · {partido.hora}</Text>

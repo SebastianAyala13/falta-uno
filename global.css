@@ -16,4 +16,6 @@
   --c-border: 31 42 36;
   --c-border-strong: 36 58 47;
   --c-ink: 11 15 13;
+  --c-danger: 239 68 68;   /* #EF4444 */
+  --c-warning: 245 158 11; /* #F59E0B */
 }

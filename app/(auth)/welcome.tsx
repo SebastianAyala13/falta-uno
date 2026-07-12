@@ -7,12 +7,13 @@ import { Pressable, Text, View } from 'react-native';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
+import { useTheme } from '@/lib/theme';
 
 export default function Welcome() {
   const router = useRouter();
   const { signInAsGuest } = useAuth();
+  const c = useTheme();
 
   const entrarComoInvitado = async () => {
     await signInAsGuest();
@@ -28,7 +29,7 @@ export default function Welcome() {
             className="self-center overflow-hidden rounded-3xl border border-border"
             style={{
               backgroundColor: '#0B0F0D',
-              shadowColor: Colors.primary,
+              shadowColor: c.primary,
               shadowOpacity: 0.4,
               shadowRadius: 30,
               shadowOffset: { width: 0, height: 0 },
@@ -81,10 +82,11 @@ export default function Welcome() {
 }
 
 function Feature({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
+  const c = useTheme();
   return (
     <View className="flex-row items-center gap-3">
       <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
-        <Ionicons name={icon} size={18} color={Colors.primary} />
+        <Ionicons name={icon} size={18} color={c.primary} />
       </View>
       <Text className="font-body text-sm text-cream">{text}</Text>
     </View>

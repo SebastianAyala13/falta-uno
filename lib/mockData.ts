@@ -3,6 +3,7 @@
  * Se usan mientras no haya backend conectado. Cuando integres Supabase,
  * reemplazá estas constantes por queries reales a `supabase.from(...)`.
  */
+import { urgencyLabel } from '@/lib/format';
 import type { PartidoConOrganizador, Post, Profile } from '@/types/database';
 
 export const usuarioActual: Profile = {
@@ -153,10 +154,7 @@ export function formatearPrecio(valor: number): string {
   return '$' + valor.toLocaleString('es-CO');
 }
 
-/** Cupos que faltan, en copy de la app: "Falta 1", "Faltan 2", "Lleno". */
+/** Cupos que faltan, en copy de la app: "¡Falta 1!", "Faltan 2", "Cupo lleno". */
 export function cuposFaltantes(p: { cupos_totales: number; cupos_ocupados: number }): string {
-  const faltan = p.cupos_totales - p.cupos_ocupados;
-  if (faltan <= 0) return 'Lleno';
-  if (faltan === 1) return 'Falta 1';
-  return `Faltan ${faltan}`;
+  return urgencyLabel(p.cupos_totales - p.cupos_ocupados);
 }

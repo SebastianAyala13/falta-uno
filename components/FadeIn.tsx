@@ -5,8 +5,9 @@ import Animated, {
   useSharedValue,
   withDelay,
   withTiming,
-  Easing,
 } from 'react-native-reanimated';
+
+import { Duration, MotionEasing } from '@/constants/motion';
 
 interface FadeInProps extends ViewProps {
   /** Retraso en ms para encadenar entradas (efecto staggered). */
@@ -23,7 +24,7 @@ export default function FadeIn({ delay = 0, offset = 16, style, children, ...res
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    progress.value = withDelay(delay, withTiming(1, { duration: 460, easing: Easing.out(Easing.cubic) }));
+    progress.value = withDelay(delay, withTiming(1, { duration: Duration.base, easing: MotionEasing.entrance }));
   }, [delay, progress]);
 
   const animated = useAnimatedStyle(() => ({

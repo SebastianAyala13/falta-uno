@@ -4,12 +4,13 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
 import { supabase, supabaseConfigurado } from '@/lib/supabase';
+import { useTheme } from '@/lib/theme';
 
 /**
  * Pantalla de restablecimiento de contraseña. Se abre desde el enlace del correo
@@ -22,6 +23,7 @@ import { supabase, supabaseConfigurado } from '@/lib/supabase';
 export default function Reset() {
   const router = useRouter();
   const url = useURL();
+  const c = useTheme();
 
   const [listo, setListo] = useState(false); // sesión de recuperación cargada
   const [password, setPassword] = useState('');
@@ -75,7 +77,7 @@ export default function Reset() {
           {ok ? (
             <FadeIn delay={40}>
               <View className="mt-6 items-center rounded-md border border-primary/40 bg-primary/10 px-5 py-8">
-                <Ionicons name="checkmark-circle" size={44} color={Colors.primary} />
+                <Ionicons name="checkmark-circle" size={44} color={c.primary} />
                 <Text className="mt-3 text-center font-body-bold text-base text-cream">¡Contraseña actualizada!</Text>
                 <View className="mt-5 w-full">
                   <GlowButton label="Entrar a la app" icon="log-in" onPress={() => router.replace('/(tabs)')} />
@@ -101,12 +103,7 @@ export default function Reset() {
               <Field label="Nueva contraseña" icon="lock-closed-outline" placeholder="Mínimo 6 caracteres" value={password} onChangeText={setPassword} toggleSecure />
               <Field label="Repetí la contraseña" icon="lock-closed-outline" placeholder="Otra vez" value={password2} onChangeText={setPassword2} toggleSecure />
 
-              {error ? (
-                <View className="mb-4 flex-row items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5">
-                  <Ionicons name="alert-circle" size={16} color={Colors.danger} />
-                  <Text className="flex-1 font-body text-sm text-red-300">{error}</Text>
-                </View>
-              ) : null}
+              <ErrorBanner message={error} />
 
               <GlowButton label="Guardar contraseña" icon="save" loading={loading} onPress={guardar} disabled={!listo} />
             </FadeIn>

@@ -6,24 +6,28 @@ import { Alert, Linking, Platform, Pressable, ScrollView, Share, Text, View } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Avatar from '@/components/Avatar';
+import { BackButton } from '@/components/BackButton';
 import Badge from '@/components/Badge';
 import CanchaMap from '@/components/CanchaMap';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import ProgressBar from '@/components/ProgressBar';
 import Screen from '@/components/Screen';
-import { Colors } from '@/constants/colors';
+import StatCard from '@/components/StatCard';
+import UrgencyPill from '@/components/UrgencyPill';
 import { COMISION_SERVICIO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
-import { fechaLarga, precioCOP } from '@/lib/format';
+import { fechaLarga, precioCOP, urgencyLabel } from '@/lib/format';
 import { coordsDePartido } from '@/lib/geo';
 import { cancelarRecordatorio } from '@/lib/notifications';
 import { useStore } from '@/lib/store';
+import { useTheme } from '@/lib/theme';
 
 export default function PartidoDetalle() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile } = useAuth();
+  const c = useTheme();
 
   const partido = useStore((s) => s.getPartido(id));
   const inscrito = useStore((s) => s.estaInscrito(id));
@@ -33,7 +37,7 @@ export default function PartidoDetalle() {
     return (
       <Screen edges={['top', 'bottom']}>
         <View className="flex-1 items-center justify-center px-6">
-          <Ionicons name="alert-circle-outline" size={48} color={Colors.muted} />
+          <Ionicons name="alert-circle-outline" size={48} color={c.muted} />
           <Text className="mt-3 font-body text-base text-muted">Este partido ya no existe.</Text>
           <Pressable onPress={() => router.back()} className="mt-4">
             <Text className="font-body-semibold text-primary">Volver</Text>
@@ -66,7 +70,7 @@ export default function PartidoDetalle() {
       message:
         `⚽ ${partido.cancha} (${partido.formato}) · ${partido.zona}, Pereira\n` +
         `${fechaLarga(partido.fecha)} a las ${partido.hora}\n` +
-        `${faltan === 1 ? '¡Falta 1!' : `Faltan ${faltan}`} · ${precioCOP(partido.precio)} por jugador\n\n` +
+        `${urgencyLabel(faltan)} · ${precioCOP(partido.precio)} por jugador\n\n` +
         `Cuadrate conmigo en Falta Uno 👟🔥`,
     });
   };
@@ -95,20 +99,18 @@ export default function PartidoDetalle() {
             <Image source={{ uri: partido.foto_url }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" />
           ) : null}
           <LinearGradient
-            colors={partido.foto_url ? ['rgba(11,15,13,0.30)', 'rgba(11,15,13,0.94)'] : [Colors.secondary, '#0C1712']}
+            colors={partido.foto_url ? ['rgba(11,15,13,0.30)', 'rgba(11,15,13,0.94)'] : [c.secondary, '#0C1712']}
             style={{ paddingBottom: 24 }}>
             <View
               pointerEvents="none"
               className="absolute rounded-full"
-              style={{ right: -60, top: -40, width: 220, height: 220, backgroundColor: Colors.accent, opacity: 0.1 }}
+              style={{ right: -60, top: -40, width: 220, height: 220, backgroundColor: c.accent, opacity: 0.1 }}
             />
             <SafeAreaView edges={['top']}>
               <View className="flex-row items-center justify-between px-5 pt-2">
-                <Pressable onPress={() => router.back()} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-black/30">
-                  <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-                </Pressable>
+                <BackButton variant="overlay" />
                 <Pressable onPress={compartir} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-black/30">
-                  <Ionicons name="share-social-outline" size={20} color={Colors.cream} />
+                  <Ionicons name="share-social-outline" size={20} color={c.cream} />
                 </Pressable>
               </View>
 
@@ -121,7 +123,7 @@ export default function PartidoDetalle() {
                   {partido.cancha}
                 </Text>
                 <View className="mt-2 flex-row items-center">
-                  <Ionicons name="location-sharp" size={15} color={Colors.cream} />
+                  <Ionicons name="location-sharp" size={15} color={c.cream} />
                   <Text className="ml-1 font-body text-base text-cream/80">{partido.zona} · Pereira</Text>
                 </View>
               </View>
@@ -133,8 +135,20 @@ export default function PartidoDetalle() {
           {/* Cuándo */}
           <FadeIn delay={60}>
             <View className="-mt-4 mb-4 flex-row gap-3">
-              <InfoCard icon="calendar" titulo="Fecha" valor={fechaLarga(partido.fecha)} />
-              <InfoCard icon="time" titulo="Hora" valor={partido.hora} />
+              <StatCard
+                className="flex-1"
+                variant="info"
+                icon="calendar"
+                label="Fecha"
+                value={fechaLarga(partido.fecha)}
+              />
+              <StatCard
+                className="flex-1"
+                variant="info"
+                icon="time"
+                label="Hora"
+                value={partido.hora}
+              />
             </View>
           </FadeIn>
 
@@ -143,12 +157,7 @@ export default function PartidoDetalle() {
             <View className="mb-4 rounded-lg border border-borderStrong bg-card p-4">
               <View className="mb-3 flex-row items-center justify-between">
                 <Text className="font-display text-xl uppercase text-cream">La llave</Text>
-                <View className="flex-row items-center gap-1 rounded-full px-2.5 py-1" style={{ backgroundColor: (lleno ? Colors.muted : faltan === 1 ? Colors.accent : Colors.primary) + '22' }}>
-                  <Ionicons name={lleno ? 'lock-closed' : 'flame'} size={12} color={lleno ? Colors.muted : faltan === 1 ? Colors.accent : Colors.primary} />
-                  <Text className="font-body-bold text-xs uppercase" style={{ color: lleno ? Colors.muted : faltan === 1 ? Colors.accent : Colors.primary }}>
-                    {lleno ? 'Cupo lleno' : faltan === 1 ? '¡Falta 1!' : `Faltan ${faltan}`}
-                  </Text>
-                </View>
+                <UrgencyPill faltan={faltan} tone="tint" shape="pill" size="sm" />
               </View>
               <ProgressBar value={partido.cupos_ocupados / partido.cupos_totales} urgente={faltan === 1} />
               <Text className="mb-3 mt-2 font-body text-xs text-muted">
@@ -168,8 +177,8 @@ export default function PartidoDetalle() {
                     className="mb-2 items-center">
                     <View
                       className="h-11 w-11 items-center justify-center rounded-full"
-                      style={{ borderWidth: 1.5, borderColor: Colors.accent, borderStyle: 'dashed' }}>
-                      <Ionicons name="add" size={20} color={Colors.accent} />
+                      style={{ borderWidth: 1.5, borderColor: c.accent, borderStyle: 'dashed' }}>
+                      <Ionicons name="add" size={20} color={c.accent} />
                     </View>
                     <Text className="mt-1 font-body-semibold text-[10px] text-accent" numberOfLines={1}>Vos</Text>
                   </Pressable>
@@ -187,7 +196,7 @@ export default function PartidoDetalle() {
                 <Text className="font-body-bold text-base text-cream">{partido.organizador?.nombre}</Text>
               </View>
               <View className="flex-row items-center gap-1 rounded-full bg-background px-3 py-1.5">
-                <Ionicons name="star" size={14} color={Colors.accent} />
+                <Ionicons name="star" size={14} color={c.accent} />
                 <Text className="font-body-semibold text-sm text-cream">{partido.organizador?.rating?.toFixed(1)}</Text>
               </View>
             </View>
@@ -199,13 +208,13 @@ export default function PartidoDetalle() {
               onPress={irAlChat}
               className="mb-4 flex-row items-center rounded-3xl border border-border bg-card p-4 active:bg-border/40">
               <View className="h-11 w-11 items-center justify-center rounded-xl bg-accent/15">
-                <Ionicons name="chatbubbles" size={22} color={Colors.accent} />
+                <Ionicons name="chatbubbles" size={22} color={c.accent} />
               </View>
               <View className="ml-3 flex-1">
                 <Text className="font-body-bold text-base text-cream">Chat del parche</Text>
                 <Text className="font-body text-xs text-muted">Cuadrá detalles con los demás</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={Colors.muted} />
+              <Ionicons name="chevron-forward" size={18} color={c.muted} />
             </Pressable>
           </FadeIn>
 
@@ -246,7 +255,7 @@ export default function PartidoDetalle() {
         {inscrito ? (
           <View className="gap-2">
             <View className="flex-row items-center justify-center gap-2 rounded-2xl bg-primary/15 py-3">
-              <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
+              <Ionicons name="checkmark-circle" size={20} color={c.primary} />
               <Text className="font-body-bold text-base text-primary">¡Ya estás cuadrado!</Text>
             </View>
             <Pressable onPress={confirmarSalida} className="py-1">
@@ -286,16 +295,6 @@ function rosterNombres(partido: { cupos_ocupados: number; organizador?: { nombre
   }
   if (inscrito && nombres.length) nombres[nombres.length - 1] = 'Vos';
   return nombres;
-}
-
-function InfoCard({ icon, titulo, valor }: { icon: keyof typeof Ionicons.glyphMap; titulo: string; valor: string }) {
-  return (
-    <View className="flex-1 rounded-2xl border border-border bg-card p-3">
-      <Ionicons name={icon} size={18} color={Colors.primary} />
-      <Text className="mt-2 font-body text-[10px] uppercase tracking-wide text-muted">{titulo}</Text>
-      <Text className="font-body-semibold text-sm text-cream">{valor}</Text>
-    </View>
-  );
 }
 
 function Linea({ label, valor, total = false }: { label: string; valor: string; total?: boolean }) {

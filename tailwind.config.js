@@ -25,9 +25,9 @@ module.exports = {
         borderStrong: 'rgb(var(--c-border-strong) / <alpha-value>)',
         // texto/ícono sobre superficies de color (CTA accent/primary)
         ink: 'rgb(var(--c-ink) / <alpha-value>)',
-        // semánticos (constantes en todos los temas)
-        danger: '#EF4444',
-        warning: '#F59E0B',
+        // semánticos — leen del tema activo vía variables CSS (ver themes.ts)
+        danger: 'rgb(var(--c-danger) / <alpha-value>)',
+        warning: 'rgb(var(--c-warning) / <alpha-value>)',
       },
       borderRadius: {
         // Radios fijos del sistema de diseño

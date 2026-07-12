@@ -3,7 +3,7 @@ import DateTimePicker, { type DateTimePickerEvent } from '@react-native-communit
 import { useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 
-import { Colors } from '@/constants/colors';
+import { useTheme } from '@/lib/theme';
 
 interface DateTimeFieldProps {
   label: string;
@@ -41,6 +41,7 @@ const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'o
 
 /** Campo premium que abre el selector nativo de fecha u hora. */
 export default function DateTimeField({ label, mode, value, onChange, icon, minToday }: DateTimeFieldProps) {
+  const c = useTheme();
   const [show, setShow] = useState(false);
   const fecha = aFecha(value, mode);
 
@@ -62,15 +63,15 @@ export default function DateTimeField({ label, mode, value, onChange, icon, minT
       <Pressable
         onPress={() => setShow((s) => !s)}
         className="h-14 flex-row items-center rounded-2xl border bg-card px-4"
-        style={{ borderColor: show ? Colors.primary : Colors.border }}>
+        style={{ borderColor: show ? c.primary : c.border }}>
         <Ionicons
           name={icon ?? (mode === 'date' ? 'calendar-outline' : 'time-outline')}
           size={20}
-          color={show ? Colors.primary : Colors.muted}
+          color={show ? c.primary : c.muted}
           style={{ marginRight: 10 }}
         />
         <Text className={`flex-1 font-body text-base ${value ? 'text-cream' : 'text-muted'}`}>{display}</Text>
-        <Ionicons name="chevron-down" size={18} color={Colors.muted} />
+        <Ionicons name="chevron-down" size={18} color={c.muted} />
       </Pressable>
 
       {show && Platform.OS === 'ios' ? (

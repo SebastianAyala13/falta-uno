@@ -16,14 +16,15 @@ import {
 } from 'react-native';
 
 import AmenidadPicker from '@/components/AmenidadPicker';
+import { BackButton } from '@/components/BackButton';
 import Chip from '@/components/Chip';
 import DateTimeField from '@/components/DateTimeField';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import UbicacionPicker, { type Ubicacion } from '@/components/UbicacionPicker';
-import { Colors } from '@/constants/colors';
 import {
   DURACIONES_TURNO,
   FORMATOS,
@@ -37,6 +38,7 @@ import {
 import { useAuth } from '@/lib/auth';
 import { crearEstablecimiento, subirFotoCancha } from '@/lib/canchas';
 import { elegirImagen } from '@/lib/images';
+import { useTheme } from '@/lib/theme';
 import type { Amenidades } from '@/types/database';
 
 const CIUDADES = ['Pereira', 'Cali', 'Medellín', 'Bogotá', 'Manizales', 'Armenia'];
@@ -81,6 +83,7 @@ const nuevaCancha = (i: number): CanchaForm => ({
 export default function RegistrarCancha() {
   const router = useRouter();
   const { profile, updateProfile } = useAuth();
+  const c = useTheme();
   const scrollRef = useRef<ScrollView>(null);
 
   const [paso, setPaso] = useState(1);
@@ -103,7 +106,7 @@ export default function RegistrarCancha() {
   const [subiendo, setSubiendo] = useState<number | null>(null);
 
   const setCancha = (i: number, cambios: Partial<CanchaForm>) =>
-    setCanchas((prev) => prev.map((c, j) => (j === i ? { ...c, ...cambios } : c)));
+    setCanchas((prev) => prev.map((cancha, j) => (j === i ? { ...cancha, ...cambios } : cancha)));
 
   const setHorario = (dia: number, cambios: Partial<HorarioDia>) =>
     setHorarios((prev) => prev.map((h, j) => (j === dia ? { ...h, ...cambios } : h)));
@@ -126,7 +129,7 @@ export default function RegistrarCancha() {
     setSubiendo(i);
     try {
       const url = await subirFotoCancha(uri);
-      setCanchas((prev) => prev.map((c, j) => (j === i ? { ...c, fotos: [...c.fotos, url] } : c)));
+      setCanchas((prev) => prev.map((cancha, j) => (j === i ? { ...cancha, fotos: [...cancha.fotos, url] } : cancha)));
     } catch (e) {
       Alert.alert('Ups', e instanceof Error ? e.message : 'No pudimos subir la foto. Probá de nuevo.');
     } finally {
@@ -135,7 +138,7 @@ export default function RegistrarCancha() {
   };
 
   const quitarFoto = (i: number, url: string) =>
-    setCanchas((prev) => prev.map((c, j) => (j === i ? { ...c, fotos: c.fotos.filter((f) => f !== url) } : c)));
+    setCanchas((prev) => prev.map((cancha, j) => (j === i ? { ...cancha, fotos: cancha.fotos.filter((f) => f !== url) } : cancha)));
 
   const validarPaso = (): string | null => {
     switch (paso) {
@@ -144,7 +147,7 @@ export default function RegistrarCancha() {
         if (!zona) return 'Elegí la zona donde queda tu establecimiento.';
         return null;
       case 3: {
-        const falta = canchas.findIndex((c) => !((parseInt(c.precio, 10) || 0) > 0));
+        const falta = canchas.findIndex((cancha) => !((parseInt(cancha.precio, 10) || 0) > 0));
         if (falta >= 0) return `Poné el precio por turno de ${canchas[falta].nombre.trim() || `la cancha ${falta + 1}`}.`;
         return null;
       }
@@ -197,12 +200,12 @@ export default function RegistrarCancha() {
         lng: ubicacion.lng,
         telefono,
         amenidades,
-        canchas: canchas.map((c) => ({
-          nombre: c.nombre.trim(),
-          formato: c.formato,
-          precio: parseInt(c.precio, 10) || 0,
-          duracion: c.duracion,
-          fotos: c.fotos,
+        canchas: canchas.map((cancha) => ({
+          nombre: cancha.nombre.trim(),
+          formato: cancha.formato,
+          precio: parseInt(cancha.precio, 10) || 0,
+          duracion: cancha.duracion,
+          fotos: cancha.fotos,
         })),
         horarios: horariosActivos,
         legal_version: LEGAL_CANCHA_VERSION,
@@ -223,16 +226,11 @@ export default function RegistrarCancha() {
     <Screen edges={['top']}>
       {/* Header: back + barra de progreso */}
       <View className="flex-row items-center gap-3 px-6 pb-3 pt-2">
-        <Pressable
-          onPress={() => (paso > 1 ? atras() : router.back())}
-          hitSlop={12}
-          className="h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
-        <View className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ backgroundColor: Colors.border }}>
+        <BackButton onPress={() => (paso > 1 ? atras() : router.back())} />
+        <View className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ backgroundColor: c.border }}>
           <View
             className="h-full rounded-full"
-            style={{ width: `${(paso / TOTAL_PASOS) * 100}%`, backgroundColor: Colors.primary }}
+            style={{ width: `${(paso / TOTAL_PASOS) * 100}%`, backgroundColor: c.primary }}
           />
         </View>
         <Text className="font-body-semibold text-xs text-muted">
@@ -258,8 +256,8 @@ export default function RegistrarCancha() {
               <View>
                 <Text className="mb-2 font-body-semibold text-sm text-cream">Ciudad</Text>
                 <View className="mb-4 flex-row flex-wrap">
-                  {CIUDADES.map((c) => (
-                    <Chip key={c} label={c} selected={ciudad === c} onPress={() => setCiudad(c)} />
+                  {CIUDADES.map((ciu) => (
+                    <Chip key={ciu} label={ciu} selected={ciudad === ciu} onPress={() => setCiudad(ciu)} />
                   ))}
                 </View>
 
@@ -284,7 +282,7 @@ export default function RegistrarCancha() {
                     hitSlop={8}
                     className="h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card"
                     style={{ opacity: cantidad <= 1 ? 0.4 : 1 }}>
-                    <Ionicons name="remove" size={28} color={Colors.cream} />
+                    <Ionicons name="remove" size={28} color={c.cream} />
                   </Pressable>
                   <Text
                     className="font-display text-6xl text-primary"
@@ -297,7 +295,7 @@ export default function RegistrarCancha() {
                     hitSlop={8}
                     className="h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card"
                     style={{ opacity: cantidad >= 10 ? 0.4 : 1 }}>
-                    <Ionicons name="add" size={28} color={Colors.cream} />
+                    <Ionicons name="add" size={28} color={c.cream} />
                   </Pressable>
                 </View>
                 <Text className="text-center font-body text-sm text-muted">
@@ -308,27 +306,27 @@ export default function RegistrarCancha() {
 
             {/* Paso 3 — Detalle de cada cancha */}
             {paso === 3
-              ? canchas.map((c, i) => (
+              ? canchas.map((cancha, i) => (
                   <View key={i} className="mb-4 rounded-2xl border border-border p-4">
                     <Field
                       label={`Cancha ${i + 1}`}
                       icon="business-outline"
                       placeholder={`Cancha ${i + 1}`}
-                      value={c.nombre}
+                      value={cancha.nombre}
                       onChangeText={(t) => setCancha(i, { nombre: t })}
                       autoCapitalize="words"
                     />
                     <Text className="mb-2 font-body-semibold text-sm text-cream">Formato</Text>
                     <View className="mb-2 flex-row flex-wrap">
                       {FORMATOS.map((f) => (
-                        <Chip key={f} label={f} selected={c.formato === f} onPress={() => setCancha(i, { formato: f })} />
+                        <Chip key={f} label={f} selected={cancha.formato === f} onPress={() => setCancha(i, { formato: f })} />
                       ))}
                     </View>
                     <Field
                       label="Precio"
                       icon="cash-outline"
                       placeholder="80000"
-                      value={c.precio}
+                      value={cancha.precio}
                       onChangeText={(t) => setCancha(i, { precio: t.replace(/[^0-9]/g, '') })}
                       keyboardType="numeric"
                       hint="Precio por turno"
@@ -339,7 +337,7 @@ export default function RegistrarCancha() {
                         <Chip
                           key={d}
                           label={`${d} min`}
-                          selected={c.duracion === d}
+                          selected={cancha.duracion === d}
                           onPress={() => setCancha(i, { duracion: d })}
                         />
                       ))}
@@ -354,14 +352,14 @@ export default function RegistrarCancha() {
                 <Text className="mb-4 font-body text-sm text-muted">
                   Las canchas con fotos reciben más reservas. Podés agregarlas después si querés.
                 </Text>
-                {canchas.map((c, i) => (
+                {canchas.map((cancha, i) => (
                   <View key={i} className="mb-4 rounded-2xl border border-border p-4">
                     <Text className="mb-3 font-body-bold text-base text-cream">
-                      {c.nombre.trim() || `Cancha ${i + 1}`}
+                      {cancha.nombre.trim() || `Cancha ${i + 1}`}
                     </Text>
-                    {c.fotos.length ? (
+                    {cancha.fotos.length ? (
                       <View className="mb-3 flex-row flex-wrap gap-2">
-                        {c.fotos.map((url) => (
+                        {cancha.fotos.map((url) => (
                           <View key={url}>
                             <Image
                               source={{ uri: url }}
@@ -372,8 +370,8 @@ export default function RegistrarCancha() {
                               onPress={() => quitarFoto(i, url)}
                               hitSlop={8}
                               className="absolute -right-1.5 -top-1.5 h-6 w-6 items-center justify-center rounded-full"
-                              style={{ backgroundColor: Colors.danger }}>
-                              <Ionicons name="close" size={14} color={Colors.cream} />
+                              style={{ backgroundColor: c.danger }}>
+                              <Ionicons name="close" size={14} color={c.cream} />
                             </Pressable>
                           </View>
                         ))}
@@ -386,12 +384,12 @@ export default function RegistrarCancha() {
                       style={{ opacity: subiendo !== null && subiendo !== i ? 0.5 : 1 }}>
                       {subiendo === i ? (
                         <>
-                          <ActivityIndicator size="small" color={Colors.primary} />
+                          <ActivityIndicator size="small" color={c.primary} />
                           <Text className="font-body-semibold text-sm text-muted">Subiendo la foto…</Text>
                         </>
                       ) : (
                         <>
-                          <Ionicons name="image-outline" size={20} color={Colors.primary} />
+                          <Ionicons name="image-outline" size={20} color={c.primary} />
                           <Text className="font-body-semibold text-sm text-cream">Agregar foto</Text>
                         </>
                       )}
@@ -419,13 +417,13 @@ export default function RegistrarCancha() {
                         onPress={() => setYaTienePartidos(op.v)}
                         className="flex-1 items-center rounded-2xl border p-5"
                         style={{
-                          backgroundColor: activo ? Colors.primary + '1A' : Colors.card,
-                          borderColor: activo ? Colors.primary : Colors.border,
+                          backgroundColor: activo ? c.primary + '1A' : c.card,
+                          borderColor: activo ? c.primary : c.border,
                         }}>
-                        <Ionicons name={op.icon} size={28} color={activo ? Colors.primary : Colors.muted} />
+                        <Ionicons name={op.icon} size={28} color={activo ? c.primary : c.muted} />
                         <Text
                           className="mt-2 font-display text-2xl uppercase"
-                          style={{ lineHeight: 30, paddingTop: 2, color: activo ? Colors.primary : Colors.cream }}>
+                          style={{ lineHeight: 30, paddingTop: 2, color: activo ? c.primary : c.cream }}>
                           {op.label}
                         </Text>
                         <Text className="mt-1 text-center font-body text-xs text-muted">{op.hint}</Text>
@@ -435,7 +433,7 @@ export default function RegistrarCancha() {
                 </View>
                 {yaTienePartidos === true ? (
                   <View className="mt-4 flex-row items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5">
-                    <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
+                    <Ionicons name="information-circle-outline" size={16} color={c.primary} />
                     <Text className="flex-1 font-body text-sm text-muted">
                       Al terminar te llevamos a la agenda para cargarlos.
                     </Text>
@@ -473,8 +471,8 @@ export default function RegistrarCancha() {
                         <Switch
                           value={h.abierto}
                           onValueChange={(v) => setHorario(i, { abierto: v })}
-                          trackColor={{ false: Colors.border, true: Colors.primary }}
-                          thumbColor={Colors.cream}
+                          trackColor={{ false: c.border, true: c.primary }}
+                          thumbColor={c.cream}
                         />
                       </View>
                       {h.abierto ? (
@@ -528,10 +526,10 @@ export default function RegistrarCancha() {
                   <View
                     className="mt-0.5 h-6 w-6 items-center justify-center rounded-md border-2"
                     style={{
-                      borderColor: acepta ? Colors.primary : Colors.border,
-                      backgroundColor: acepta ? Colors.primary : 'transparent',
+                      borderColor: acepta ? c.primary : c.border,
+                      backgroundColor: acepta ? c.primary : 'transparent',
                     }}>
-                    {acepta ? <Ionicons name="checkmark" size={16} color={Colors.ink} /> : null}
+                    {acepta ? <Ionicons name="checkmark" size={16} color={c.ink} /> : null}
                   </View>
                   <Text className="flex-1 font-body text-sm text-cream">
                     Acepto el{' '}
@@ -551,12 +549,7 @@ export default function RegistrarCancha() {
             ) : null}
           </FadeIn>
 
-          {error ? (
-            <View className="mb-4 mt-2 flex-row items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5">
-              <Ionicons name="alert-circle" size={16} color={Colors.danger} />
-              <Text className="flex-1 font-body text-sm text-red-300">{error}</Text>
-            </View>
-          ) : null}
+          <ErrorBanner message={error} className="mb-4 mt-2" />
 
           {/* Botonera */}
           <View className="mt-4 flex-row gap-3">

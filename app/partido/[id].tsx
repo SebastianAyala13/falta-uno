@@ -253,7 +253,7 @@ export default function PartidoDetalle() {
       <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-card/95 px-6 pb-8 pt-4">
         {inscrito ? (
           <View className="gap-2">
-            <View className="flex-row items-center justify-center gap-2 rounded-2xl bg-primary/15 py-3">
+            <View className="flex-row items-center justify-center gap-2 rounded-md bg-primary/15 py-3">
               <Ionicons name="checkmark-circle" size={20} color={c.primary} />
               <Text className="font-body-bold text-base text-primary">¡Ya estás cuadrado!</Text>
             </View>

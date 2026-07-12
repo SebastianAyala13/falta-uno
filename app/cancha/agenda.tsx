@@ -112,7 +112,7 @@ export default function AgendaCancha() {
               <FadeIn delay={80}>
                 <Text className="mb-2 font-body-semibold text-xs uppercase tracking-wide text-muted">Horarios del día</Text>
                 {slots.length === 0 ? (
-                  <View className="items-center rounded-2xl border border-border bg-card p-5">
+                  <View className="items-center rounded-md border border-border bg-card p-5">
                     <Ionicons name="time-outline" size={22} color={c.muted} />
                     <Text className="mt-2 text-center font-body text-sm text-muted">
                       No hay horarios configurados para este día.
@@ -124,7 +124,7 @@ export default function AgendaCancha() {
                     return (
                       <View
                         key={`${s.hora_inicio}-${s.hora_fin}`}
-                        className="mb-2 flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3">
+                        className="mb-2 flex-row items-center justify-between rounded-md border border-border bg-card px-4 py-3">
                         <View className="flex-row items-center">
                           <Ionicons name="time-outline" size={16} color={c.muted} />
                           <Text className="ml-2 font-body-bold text-sm text-cream">
@@ -149,13 +149,13 @@ export default function AgendaCancha() {
               <FadeIn delay={140}>
                 <Text className="mb-2 mt-4 font-body-semibold text-xs uppercase tracking-wide text-muted">Reservas del día</Text>
                 {reservas.length === 0 ? (
-                  <View className="items-center rounded-2xl border border-border bg-card p-5">
+                  <View className="items-center rounded-md border border-border bg-card p-5">
                     <Ionicons name="calendar-outline" size={22} color={c.muted} />
                     <Text className="mt-2 font-body text-sm text-muted">Sin reservas para esta fecha.</Text>
                   </View>
                 ) : (
                   reservas.map((r) => (
-                    <View key={r.id} className="mb-2 flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3">
+                    <View key={r.id} className="mb-2 flex-row items-center justify-between rounded-md border border-border bg-card px-4 py-3">
                       <View className="flex-1 pr-3">
                         <Text className="font-body-bold text-sm text-cream">{r.hora_inicio}</Text>
                         <Text className="font-body text-xs text-muted" numberOfLines={1}>

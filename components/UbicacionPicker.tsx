@@ -41,7 +41,7 @@ export default function UbicacionPicker({ value, ciudad, onChange }: Props) {
 
   return (
     <View>
-      <View className="overflow-hidden rounded-2xl border border-border">
+      <View className="overflow-hidden rounded-lg border border-border">
         <MapView
           style={{ height: 220 }}
           initialRegion={{ ...base, latitudeDelta: 0.02, longitudeDelta: 0.02 }}

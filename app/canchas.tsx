@@ -63,7 +63,7 @@ export default function Canchas() {
         <View className="px-6 pb-3 pt-2">
           <ScreenHeader title="Canchas" />
 
-          <View className="mt-3 h-14 flex-row items-center rounded-2xl border border-border bg-card px-4">
+          <View className="mt-3 h-14 flex-row items-center rounded-sm border border-border bg-card px-4">
             <Ionicons name="search" size={20} color={c.muted} />
             <TextInput
               value={query}
@@ -124,7 +124,7 @@ export default function Canchas() {
                 <FadeIn key={cancha.id} delay={60 + i * 50}>
                   <Pressable
                     onPress={() => router.push({ pathname: '/cancha/[id]', params: { id: cancha.id } })}
-                    className="mb-4 overflow-hidden rounded-2xl border border-border bg-card active:opacity-80">
+                    className="mb-4 overflow-hidden rounded-md border border-border bg-card active:opacity-80">
                     {cancha.foto_portada ? (
                       <Image source={{ uri: cancha.foto_portada }} style={{ width: '100%', height: 150 }} contentFit="cover" />
                     ) : (

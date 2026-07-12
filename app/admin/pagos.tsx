@@ -137,7 +137,7 @@ export default function PagosAdmin() {
                   const color = colorEstado(p.estado, c);
                   return (
                     <FadeIn key={p.id} delay={40 + Math.min(i, 10) * 40}>
-                      <View className="mb-3 rounded-2xl border border-border bg-card p-4">
+                      <View className="mb-3 rounded-md border border-border bg-card p-4">
                         <View className="flex-row items-start justify-between">
                           <View className="mr-3 flex-1">
                             <Text className="font-display text-2xl text-cream">{precioCOP(p.monto)}</Text>

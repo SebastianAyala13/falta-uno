@@ -165,7 +165,7 @@ export default function CanchasAdmin() {
     const estadoColor = activa ? c.primary : c.muted;
     const cambiando = toggleId === cancha.id;
     return (
-      <View key={cancha.id} className="mb-3 rounded-2xl border border-border bg-card p-4">
+      <View key={cancha.id} className="mb-3 rounded-md border border-border bg-card p-4">
         <View className="flex-row items-start">
           <View className="flex-1 pr-3">
             <Text className="font-display text-lg text-cream" style={{ lineHeight: 24, paddingTop: 2 }}>
@@ -298,7 +298,7 @@ export default function CanchasAdmin() {
               <View className="mb-4 flex-row gap-2">
                 <Pressable
                   onPress={() => setCredito(true)}
-                  className="flex-1 items-center rounded-2xl border px-3 py-3"
+                  className="flex-1 items-center rounded-md border px-3 py-3"
                   style={{
                     borderColor: credito ? c.primary : c.border,
                     backgroundColor: credito ? c.primary + '22' : c.card,
@@ -311,7 +311,7 @@ export default function CanchasAdmin() {
                 </Pressable>
                 <Pressable
                   onPress={() => setCredito(false)}
-                  className="flex-1 items-center rounded-2xl border px-3 py-3"
+                  className="flex-1 items-center rounded-md border px-3 py-3"
                   style={{
                     borderColor: !credito ? c.danger : c.border,
                     backgroundColor: !credito ? c.danger + '22' : c.card,

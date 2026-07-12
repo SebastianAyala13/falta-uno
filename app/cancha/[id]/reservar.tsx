@@ -184,7 +184,7 @@ export default function Reservar() {
                       <Pressable
                         disabled={s.ocupado}
                         onPress={() => setSlot(s)}
-                        className="items-center rounded-2xl border px-2 py-3"
+                        className="items-center rounded-md border px-2 py-3"
                         style={{
                           opacity: s.ocupado ? 0.4 : 1,
                           borderColor: elegido ? c.primary : c.border,
@@ -203,7 +203,7 @@ export default function Reservar() {
               </View>
             )}
 
-            <View className="mt-4 flex-row items-center justify-between rounded-2xl border border-border bg-card p-4">
+            <View className="mt-4 flex-row items-center justify-between rounded-md border border-border bg-card p-4">
               <View className="mr-3 flex-1">
                 <Text className="font-body-semibold text-base text-cream">Abrir como partido</Text>
                 <Text className="mt-0.5 font-body text-xs text-muted">Otros jugadores se pueden sumar a tu reserva.</Text>
@@ -230,7 +230,7 @@ export default function Reservar() {
                       <Pressable
                         key={m.key}
                         onPress={() => setMedio(m.key)}
-                        className="flex-1 rounded-2xl border p-3"
+                        className="flex-1 rounded-md border p-3"
                         style={{ backgroundColor: sel ? c.primary + '1A' : c.card, borderColor: sel ? c.primary : c.border }}>
                         <Ionicons name={m.icon} size={20} color={sel ? c.primary : c.muted} />
                         <Text className="mt-1.5 font-body-bold text-sm" style={{ color: sel ? c.primary : c.cream }}>{m.label}</Text>
@@ -243,7 +243,7 @@ export default function Reservar() {
             ) : null}
 
             {slot ? (
-              <View className="mt-4 rounded-2xl border border-border bg-card p-4">
+              <View className="mt-4 rounded-md border border-border bg-card p-4">
                 <View className="flex-row items-center justify-between">
                   <Text className="font-body text-sm text-muted">Total</Text>
                   <Text className="font-display text-2xl text-cream">{precioCOP(slot.precio)}</Text>

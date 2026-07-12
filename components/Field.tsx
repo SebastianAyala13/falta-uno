@@ -27,7 +27,7 @@ export default function Field({ label, hint, icon, toggleSecure, style, ...props
       ) : null}
 
       <View
-        className="flex-row items-center rounded-2xl border bg-card px-4"
+        className="flex-row items-center rounded-sm border bg-card px-4"
         style={{
           borderColor: focused ? c.primary : c.border,
           minHeight: multiline ? 100 : 56,

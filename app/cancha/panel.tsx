@@ -151,7 +151,7 @@ export default function PanelCancha() {
 
         {/* Saldo */}
         <FadeIn delay={100}>
-          <View className="mt-4 rounded-2xl border border-border bg-card p-5">
+          <View className="mt-4 rounded-lg border border-border bg-card p-5">
             <View className="flex-row items-center">
               <Ionicons name="wallet" size={18} color={c.accentText} />
               <Text className="ml-2 font-body-semibold text-xs uppercase tracking-wide text-muted">Saldo disponible</Text>
@@ -191,14 +191,14 @@ export default function PanelCancha() {
         {/* Lista corta de reservas */}
         <FadeIn delay={220}>
           {reservasHoy.length === 0 ? (
-            <View className="mt-3 items-center rounded-2xl border border-border bg-card p-5">
+            <View className="mt-3 items-center rounded-md border border-border bg-card p-5">
               <Ionicons name="calendar-outline" size={22} color={c.muted} />
               <Text className="mt-2 font-body text-sm text-muted">Hoy no hay reservas todavía.</Text>
             </View>
           ) : (
             <View className="mt-3">
               {reservasHoy.slice(0, 4).map((r) => (
-                <View key={r.id} className="mb-2 flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3">
+                <View key={r.id} className="mb-2 flex-row items-center justify-between rounded-md border border-border bg-card px-4 py-3">
                   <View className="flex-row items-center">
                     <Ionicons name="time-outline" size={16} color={c.muted} />
                     <Text className="ml-2 font-body-bold text-sm text-cream">
@@ -223,7 +223,7 @@ export default function PanelCancha() {
               <Pressable
                 key={item.ruta}
                 onPress={() => router.push(item.ruta)}
-                className={`flex-1 items-center rounded-2xl border border-border bg-card py-5 ${i < NAV_ITEMS.length - 1 ? 'mr-3' : ''}`}>
+                className={`flex-1 items-center rounded-md border border-border bg-card py-5 ${i < NAV_ITEMS.length - 1 ? 'mr-3' : ''}`}>
                 <View className="h-11 w-11 items-center justify-center rounded-sm" style={{ backgroundColor: c.primary + '1F' }}>
                   <Ionicons name={item.icon} size={22} color={c.primary} />
                 </View>

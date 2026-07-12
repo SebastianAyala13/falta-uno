@@ -60,7 +60,7 @@ export default function Muro() {
       <FadeIn delay={100}>
         <Pressable
           onPress={() => router.push('/crear-post')}
-          className="mx-6 mb-3 mt-2 flex-row items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 active:border-primary/50">
+          className="mx-6 mb-3 mt-2 flex-row items-center gap-3 rounded-sm border border-border bg-card px-4 py-3 active:border-primary/50">
           <Avatar nombre={profile?.nombre ?? 'Vos'} uri={profile?.avatar_url} size={36} />
           <Text className="flex-1 font-body text-sm text-muted">¿Qué se cuenta, parce?</Text>
           <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">

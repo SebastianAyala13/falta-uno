@@ -63,7 +63,7 @@ export default function DateTimeField({ label, mode, value, onChange, icon, minT
 
       <Pressable
         onPress={() => setShow((s) => !s)}
-        className="h-14 flex-row items-center rounded-2xl border bg-card px-4"
+        className="h-14 flex-row items-center rounded-sm border bg-card px-4"
         style={{ borderColor: show ? c.primary : c.border }}>
         <Ionicons
           name={icon ?? (mode === 'date' ? 'calendar-outline' : 'time-outline')}
@@ -76,7 +76,7 @@ export default function DateTimeField({ label, mode, value, onChange, icon, minT
       </Pressable>
 
       {show && Platform.OS === 'ios' ? (
-        <View className="mt-2 rounded-2xl border border-border bg-card p-2">
+        <View className="mt-2 rounded-lg border border-border bg-card p-2">
           <DateTimePicker
             value={fecha}
             mode={mode}

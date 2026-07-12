@@ -48,7 +48,7 @@ export default function UbicacionPicker({ value, onChange }: Props) {
     <View>
       <Pressable
         onPress={usarMiUbicacion}
-        className="mb-3 flex-row items-center justify-center gap-2 rounded-2xl border border-primary/40 bg-primary/10 py-3 active:opacity-80">
+        className="mb-3 flex-row items-center justify-center gap-2 rounded-md border border-primary/40 bg-primary/10 py-3 active:opacity-80">
         {buscando ? (
           <ActivityIndicator size="small" color={c.primary} />
         ) : (

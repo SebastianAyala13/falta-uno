@@ -98,7 +98,7 @@ export default function Chat() {
               placeholder="Escribí algo…"
               placeholderTextColor={c.muted}
               multiline
-              className="max-h-28 flex-1 rounded-2xl border border-border bg-background px-4 py-3 font-body text-base text-cream"
+              className="max-h-28 flex-1 rounded-sm border border-border bg-background px-4 py-3 font-body text-base text-cream"
             />
             <Pressable
               onPress={enviar}
@@ -120,7 +120,7 @@ function Burbuja({ msg, mio }: { msg: Mensaje; mio: boolean }) {
     <View className={`max-w-[82%] ${mio ? 'self-end' : 'self-start'} flex-row items-end gap-2`}>
       {!mio ? <Avatar nombre={msg.autor_nombre} size={28} /> : null}
       <View
-        className="rounded-2xl px-3.5 py-2.5"
+        className="rounded-md px-3.5 py-2.5"
         style={{
           backgroundColor: mio ? c.primary : c.card,
           borderWidth: mio ? 0 : 1,

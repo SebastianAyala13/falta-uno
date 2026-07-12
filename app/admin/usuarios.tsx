@@ -75,7 +75,7 @@ export default function AdminUsuarios() {
 
         {/* Buscador */}
         <View className="px-6 pb-1 pt-1">
-          <View className="flex-row items-center rounded-2xl border border-border bg-card px-4">
+          <View className="flex-row items-center rounded-sm border border-border bg-card px-4">
             <Ionicons name="search" size={18} color={c.muted} />
             <TextInput
               className="ml-2 flex-1 py-3 font-body text-sm text-cream"
@@ -126,7 +126,7 @@ export default function AdminUsuarios() {
                   const roles = u.roles && u.roles.length > 0 ? u.roles : ['jugador'];
                   return (
                     <FadeIn key={u.id} delay={Math.min(i * 30, 300)}>
-                      <View className="mb-3 rounded-2xl border border-border bg-card p-4">
+                      <View className="mb-3 rounded-md border border-border bg-card p-4">
                         <View className="flex-row items-center">
                           <Avatar nombre={u.nombre} uri={u.avatar_url} size={40} />
                           <View className="ml-3 flex-1">

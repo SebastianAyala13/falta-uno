@@ -37,7 +37,7 @@ export default function MisPagos() {
             const aprobado = p.estado === 'aprobado';
             return (
               <FadeIn key={p.id} delay={60 + i * 50}>
-                <View className="mb-3 flex-row items-center rounded-2xl border border-border bg-card p-4">
+                <View className="mb-3 flex-row items-center rounded-md border border-border bg-card p-4">
                   <View
                     className="h-11 w-11 items-center justify-center rounded-sm"
                     style={{ backgroundColor: aprobado ? c.primary + '22' : c.warning + '22' }}>

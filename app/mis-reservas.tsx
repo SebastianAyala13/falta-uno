@@ -115,7 +115,7 @@ export default function MisReservas() {
             const cancelable = (r.estado === 'confirmada' || r.estado === 'pendiente') && r.fecha >= hoy;
             return (
               <FadeIn key={r.id} delay={60 + i * 50}>
-                <View className="mb-3 rounded-2xl border border-border bg-card p-4">
+                <View className="mb-3 rounded-md border border-border bg-card p-4">
                   <View className="flex-row items-start justify-between">
                     <View className="mr-3 flex-1">
                       <Text className="font-body-bold text-base text-cream" numberOfLines={1}>

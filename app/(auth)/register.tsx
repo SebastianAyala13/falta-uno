@@ -99,7 +99,7 @@ export default function Register() {
                   <Pressable
                     key={t.key}
                     onPress={() => setTipoCuenta(t.key)}
-                    className="flex-1 rounded-2xl border p-3"
+                    className="flex-1 rounded-md border p-3"
                     style={{
                       backgroundColor: activo ? c.primary + '1A' : c.card,
                       borderColor: activo ? c.primary : c.border,
@@ -158,7 +158,7 @@ export default function Register() {
             {/* Aceptación de Términos / EULA — requisito App Store 1.2 y Google Play */}
             <Pressable
               onPress={() => setAcepta((v) => !v)}
-              className="mb-2 flex-row items-start gap-3 rounded-2xl border border-border bg-card p-3.5 active:border-primary/50">
+              className="mb-2 flex-row items-start gap-3 rounded-md border border-border bg-card p-3.5 active:border-primary/50">
               <View
                 className="mt-0.5 h-6 w-6 items-center justify-center rounded-md border-2"
                 style={{

@@ -118,7 +118,7 @@ export default function Crear() {
             <Text className="mb-2 font-body-semibold text-sm text-cream">Foto de la cancha</Text>
             <Pressable
               onPress={agregarFoto}
-              className="mb-4 h-40 items-center justify-center overflow-hidden rounded-2xl border bg-card"
+              className="mb-4 h-40 items-center justify-center overflow-hidden rounded-lg border bg-card"
               style={{ borderColor: c.border, borderStyle: foto ? 'solid' : 'dashed' }}>
               {foto ? (
                 <>
@@ -152,7 +152,7 @@ export default function Crear() {
                       key={cch.id}
                       onPress={() => elegirCancha(cch)}
                       style={{ width: 170, borderColor: sel ? c.primary : c.border }}
-                      className="overflow-hidden rounded-2xl border bg-card p-3">
+                      className="overflow-hidden rounded-md border bg-card p-3">
                       {cch.foto_portada ? (
                         <Image source={{ uri: cch.foto_portada }} style={{ width: '100%', height: 64, borderRadius: 10 }} contentFit="cover" />
                       ) : (
@@ -174,7 +174,7 @@ export default function Crear() {
                 <Pressable
                   onPress={() => { setOtraCancha(true); setCanchaSelId(null); setCancha(''); }}
                   style={{ width: 120, borderColor: otraCancha ? c.primary : c.border, borderStyle: 'dashed' }}
-                  className="items-center justify-center rounded-2xl border bg-card p-3">
+                  className="items-center justify-center rounded-md border bg-card p-3">
                   <Ionicons name="add-circle-outline" size={22} color={otraCancha ? c.primary : c.muted} />
                   <Text className="mt-1 font-body-semibold text-xs" style={{ color: otraCancha ? c.primary : c.muted }}>Otra cancha</Text>
                 </Pressable>

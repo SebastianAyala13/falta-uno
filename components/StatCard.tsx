@@ -81,7 +81,7 @@ export default function StatCard({
   // Contenedor: solo el "look" de la tarjeta; flex/márgenes llegan por className.
   const padding = variant === 'info' ? 'p-3' : align === 'center' ? 'py-4' : 'p-4';
   const containerClass = cx(
-    'rounded-2xl border border-border bg-card',
+    'rounded-md border border-border bg-card',
     padding,
     align === 'center' && 'items-center',
     className,

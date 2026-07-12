@@ -45,7 +45,7 @@ export default function MisPartidos() {
                 <Pressable
                   onPress={() => !calificado && router.push({ pathname: '/calificar/[id]', params: { id: p.id } })}
                   disabled={calificado}
-                  className="-mt-2 mb-4 flex-row items-center justify-center gap-2 rounded-2xl border py-3"
+                  className="-mt-2 mb-4 flex-row items-center justify-center gap-2 rounded-md border py-3"
                   style={{ borderColor: calificado ? c.border : c.accent + '66', backgroundColor: calificado ? 'transparent' : c.accent + '12' }}>
                   <Ionicons name={calificado ? 'checkmark-circle' : 'star'} size={16} color={calificado ? c.muted : c.accent} />
                   <Text className="font-body-bold text-sm uppercase tracking-wide" style={{ color: calificado ? c.muted : c.accent }}>

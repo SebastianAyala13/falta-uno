@@ -29,7 +29,7 @@ export default function AdminGate({ children }: { children: ReactNode }) {
           <Text className="mt-2 text-center font-body text-sm text-muted">
             Esta sección es solo para el equipo de Falta Uno.
           </Text>
-          <Pressable onPress={() => router.back()} className="mt-6 rounded-2xl border border-border bg-card px-6 py-3">
+          <Pressable onPress={() => router.back()} className="mt-6 rounded-md border border-border bg-card px-6 py-3">
             <Text className="font-body-semibold text-sm text-primary">Volver</Text>
           </Pressable>
         </View>

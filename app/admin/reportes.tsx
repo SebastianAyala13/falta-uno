@@ -100,7 +100,7 @@ export default function AdminReportes() {
           }>
           {/* Nota de moderación */}
           <FadeIn delay={40}>
-            <View className="mb-4 flex-row items-start rounded-2xl border border-border bg-card p-4">
+            <View className="mb-4 flex-row items-start rounded-md border border-border bg-card p-4">
               <Ionicons
                 name="shield-half-outline"
                 size={20}
@@ -135,7 +135,7 @@ export default function AdminReportes() {
                   const tipo = TIPO_CONTENIDO[r.tipo];
                   return (
                     <FadeIn key={r.id} delay={Math.min(80 + i * 30, 380)}>
-                      <View className="mb-3 rounded-2xl border border-border bg-card p-4">
+                      <View className="mb-3 rounded-md border border-border bg-card p-4">
                         {/* Motivo + tipo + tiempo */}
                         <View className="flex-row flex-wrap items-center">
                           <View

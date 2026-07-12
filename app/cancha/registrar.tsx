@@ -280,7 +280,7 @@ export default function RegistrarCancha() {
                     onPress={() => cambiarCantidad(-1)}
                     disabled={cantidad <= 1}
                     hitSlop={8}
-                    className="h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card"
+                    className="h-16 w-16 items-center justify-center rounded-md border border-border bg-card"
                     style={{ opacity: cantidad <= 1 ? 0.4 : 1 }}>
                     <Ionicons name="remove" size={28} color={c.cream} />
                   </Pressable>
@@ -293,7 +293,7 @@ export default function RegistrarCancha() {
                     onPress={() => cambiarCantidad(1)}
                     disabled={cantidad >= 10}
                     hitSlop={8}
-                    className="h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card"
+                    className="h-16 w-16 items-center justify-center rounded-md border border-border bg-card"
                     style={{ opacity: cantidad >= 10 ? 0.4 : 1 }}>
                     <Ionicons name="add" size={28} color={c.cream} />
                   </Pressable>
@@ -307,7 +307,7 @@ export default function RegistrarCancha() {
             {/* Paso 3 — Detalle de cada cancha */}
             {paso === 3
               ? canchas.map((cancha, i) => (
-                  <View key={i} className="mb-4 rounded-2xl border border-border p-4">
+                  <View key={i} className="mb-4 rounded-md border border-border p-4">
                     <Field
                       label={`Cancha ${i + 1}`}
                       icon="business-outline"
@@ -353,7 +353,7 @@ export default function RegistrarCancha() {
                   Las canchas con fotos reciben más reservas. Podés agregarlas después si querés.
                 </Text>
                 {canchas.map((cancha, i) => (
-                  <View key={i} className="mb-4 rounded-2xl border border-border p-4">
+                  <View key={i} className="mb-4 rounded-md border border-border p-4">
                     <Text className="mb-3 font-body-bold text-base text-cream">
                       {cancha.nombre.trim() || `Cancha ${i + 1}`}
                     </Text>
@@ -380,7 +380,7 @@ export default function RegistrarCancha() {
                     <Pressable
                       onPress={() => agregarFoto(i)}
                       disabled={subiendo !== null}
-                      className="h-14 flex-row items-center justify-center gap-2 rounded-2xl border border-border bg-card active:border-primary/50"
+                      className="h-14 flex-row items-center justify-center gap-2 rounded-md border border-border bg-card active:border-primary/50"
                       style={{ opacity: subiendo !== null && subiendo !== i ? 0.5 : 1 }}>
                       {subiendo === i ? (
                         <>
@@ -415,7 +415,7 @@ export default function RegistrarCancha() {
                       <Pressable
                         key={op.label}
                         onPress={() => setYaTienePartidos(op.v)}
-                        className="flex-1 items-center rounded-2xl border p-5"
+                        className="flex-1 items-center rounded-md border p-5"
                         style={{
                           backgroundColor: activo ? c.primary + '1A' : c.card,
                           borderColor: activo ? c.primary : c.border,
@@ -465,7 +465,7 @@ export default function RegistrarCancha() {
                 {DIAS.map((d, i) => {
                   const h = horarios[i];
                   return (
-                    <View key={d} className="mb-3 rounded-2xl border border-border bg-card p-3.5">
+                    <View key={d} className="mb-3 rounded-md border border-border bg-card p-3.5">
                       <View className="flex-row items-center justify-between">
                         <Text className="font-body-bold text-base text-cream">{d}</Text>
                         <Switch
@@ -522,7 +522,7 @@ export default function RegistrarCancha() {
 
                 <Pressable
                   onPress={() => setAcepta((v) => !v)}
-                  className="mb-2 flex-row items-start gap-3 rounded-2xl border border-border bg-card p-3.5 active:border-primary/50">
+                  className="mb-2 flex-row items-start gap-3 rounded-md border border-border bg-card p-3.5 active:border-primary/50">
                   <View
                     className="mt-0.5 h-6 w-6 items-center justify-center rounded-md border-2"
                     style={{

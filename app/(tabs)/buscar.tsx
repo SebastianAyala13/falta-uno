@@ -65,7 +65,7 @@ export default function Buscar() {
       <FadeIn delay={40}>
         <View className="px-6 pb-3 pt-2">
           <Text className="mb-4 font-display text-4xl uppercase text-cream" style={{ lineHeight: 44, paddingTop: 2 }}>Buscar partido</Text>
-          <View className="h-14 flex-row items-center rounded-2xl border border-border bg-card px-4">
+          <View className="h-14 flex-row items-center rounded-sm border border-border bg-card px-4">
             <Ionicons name="search" size={20} color={c.muted} />
             <TextInput
               value={query}

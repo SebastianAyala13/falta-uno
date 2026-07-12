@@ -284,7 +284,7 @@ export default function Finanzas() {
                 </View>
               </View>
               {desembolso ? (
-                <View className="mt-3 rounded-2xl border border-border bg-background p-3">
+                <View className="mt-3 rounded-md border border-border bg-background p-3">
                   <Text className="font-body-semibold text-sm text-cream">
                     {desembolso.banco} · {TIPOS_CUENTA.find((t) => t.id === desembolso.tipo_cuenta)?.label}
                   </Text>
@@ -306,7 +306,7 @@ export default function Finanzas() {
 
           {/* Nota informativa */}
           <FadeIn delay={160}>
-            <View className="mt-4 flex-row items-start rounded-2xl border border-border bg-card p-4">
+            <View className="mt-4 flex-row items-start rounded-md border border-border bg-card p-4">
               <Ionicons name="information-circle-outline" size={20} color={c.muted} style={{ marginTop: 1 }} />
               <Text className="ml-2 flex-1 font-body text-xs text-muted">
                 Los ingresos por reservas pagadas en efectivo los cobrás directo en la cancha. El saldo acá
@@ -331,7 +331,7 @@ export default function Finanzas() {
                 return (
                   <View
                     key={m.id}
-                    className="mb-3 flex-row items-center rounded-2xl border border-border bg-card p-4">
+                    className="mb-3 flex-row items-center rounded-md border border-border bg-card p-4">
                     <View
                       className="h-10 w-10 items-center justify-center rounded-sm"
                       style={{ backgroundColor: color + '22' }}>
@@ -373,7 +373,7 @@ export default function Finanzas() {
                 return (
                   <View
                     key={r.id}
-                    className="mb-3 flex-row items-center rounded-2xl border border-border bg-card p-4">
+                    className="mb-3 flex-row items-center rounded-md border border-border bg-card p-4">
                     <View className="flex-1">
                       <Text className="font-display text-base text-cream">{precioCOP(r.monto)}</Text>
                       <Text className="font-body text-xs text-muted">{tiempoRelativo(r.solicitado_at)}</Text>

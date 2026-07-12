@@ -330,7 +330,7 @@ export default function EditarCancha() {
             <Pressable
               onPress={agregarFoto}
               disabled={subiendoFoto}
-              className="mb-4 h-14 flex-row items-center justify-center rounded-2xl border border-border bg-card active:border-primary/50">
+              className="mb-4 h-14 flex-row items-center justify-center rounded-md border border-border bg-card active:border-primary/50">
               {subiendoFoto ? (
                 <ActivityIndicator color={c.primary} />
               ) : (
@@ -352,7 +352,7 @@ export default function EditarCancha() {
             {DIAS.map((nombreDia, idx) => {
               const d = dias[idx];
               return (
-                <View key={nombreDia} className="mb-3 rounded-2xl border border-border bg-card p-3.5">
+                <View key={nombreDia} className="mb-3 rounded-md border border-border bg-card p-3.5">
                   <View className="flex-row items-center justify-between">
                     <Text className="font-body-bold text-sm text-cream">{nombreDia}</Text>
                     <Pressable
@@ -417,7 +417,7 @@ export default function EditarCancha() {
             {!esEdicion ? (
               <Pressable
                 onPress={() => setAcepta((v) => !v)}
-                className="mb-4 mt-2 flex-row items-start gap-3 rounded-2xl border border-border bg-card p-3.5 active:border-primary/50">
+                className="mb-4 mt-2 flex-row items-start gap-3 rounded-md border border-border bg-card p-3.5 active:border-primary/50">
                 <View
                   className="mt-0.5 h-6 w-6 items-center justify-center rounded-md border-2"
                   style={{

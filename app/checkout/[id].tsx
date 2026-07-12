@@ -130,7 +130,7 @@ export default function Checkout() {
                   <Pressable
                     key={m.id}
                     onPress={() => { haptics.select(); setMedio(m); }}
-                    className="flex-row items-center rounded-2xl border bg-card p-4"
+                    className="flex-row items-center rounded-md border bg-card p-4"
                     style={{ borderColor: sel ? c.primary : c.border }}>
                     <View
                       className="h-11 w-11 items-center justify-center rounded-sm"
@@ -248,7 +248,7 @@ function Comprobante({
 
       {recordatorio ? (
         <FadeIn delay={180}>
-          <View className="mt-4 flex-row items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-3 py-3">
+          <View className="mt-4 flex-row items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-3">
             <Ionicons name="notifications" size={18} color={c.primary} />
             <Text className="flex-1 font-body text-sm text-cream">
               Te avisamos <Text className="text-primary">2 horas antes</Text> del partido. 🔔

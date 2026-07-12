@@ -152,7 +152,7 @@ export default function RetirosAdmin() {
     const estado = estadoRetiro[r.estado];
     const ocupado = procesandoId !== null;
     return (
-      <View key={r.id} className="mb-3 rounded-2xl border border-border bg-card p-4">
+      <View key={r.id} className="mb-3 rounded-md border border-border bg-card p-4">
         <View className="flex-row items-center">
           <View className="flex-1">
             <Text className="font-display text-xl text-cream" style={{ lineHeight: 26, paddingTop: 2 }}>
@@ -226,7 +226,7 @@ export default function RetirosAdmin() {
           }>
           {/* Nota operativa */}
           <FadeIn delay={40}>
-            <View className="mb-4 flex-row items-start rounded-2xl border border-border bg-card p-4">
+            <View className="mb-4 flex-row items-start rounded-md border border-border bg-card p-4">
               <Ionicons
                 name="information-circle-outline"
                 size={20}

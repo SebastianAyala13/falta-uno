@@ -123,7 +123,7 @@ export default function ReservasAdmin() {
                     const color = colorEstado(r.estado, c);
                     return (
                       <FadeIn key={r.id} delay={40 + Math.min(i, 10) * 40}>
-                        <View className="mb-3 rounded-2xl border border-border bg-card p-4">
+                        <View className="mb-3 rounded-md border border-border bg-card p-4">
                           <View className="flex-row items-start justify-between">
                             <View className="mr-3 flex-1">
                               <Text className="font-body-bold text-base text-cream" numberOfLines={1}>

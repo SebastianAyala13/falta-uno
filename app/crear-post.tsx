@@ -82,7 +82,7 @@ export default function CrearPost() {
                 <Pressable
                   key={t.key}
                   onPress={() => setTipo(t.key)}
-                  className="flex-1 rounded-2xl border p-3"
+                  className="flex-1 rounded-md border p-3"
                   style={{
                     backgroundColor: activo ? c.primary + '1A' : c.card,
                     borderColor: activo ? c.primary : c.border,
@@ -105,13 +105,13 @@ export default function CrearPost() {
             placeholderTextColor={c.muted}
             multiline
             autoFocus
-            className="min-h-32 rounded-2xl border border-border bg-card p-4 font-body text-base text-cream"
+            className="min-h-32 rounded-sm border border-border bg-card p-4 font-body text-base text-cream"
             style={{ textAlignVertical: 'top' }}
           />
 
           {/* Foto */}
           {foto ? (
-            <View className="mt-3 overflow-hidden rounded-2xl">
+            <View className="mt-3 overflow-hidden rounded-lg">
               <Image source={{ uri: foto }} style={{ width: '100%', height: 200 }} contentFit="cover" />
               <Pressable
                 onPress={() => setFoto(null)}
@@ -122,7 +122,7 @@ export default function CrearPost() {
           ) : (
             <Pressable
               onPress={agregarFoto}
-              className="mt-3 flex-row items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card py-3.5 active:border-primary/50">
+              className="mt-3 flex-row items-center justify-center gap-2 rounded-md border border-dashed border-border bg-card py-3.5 active:border-primary/50">
               <Ionicons name="image-outline" size={20} color={c.muted} />
               <Text className="font-body text-sm text-muted">Agregar foto (opcional)</Text>
             </Pressable>

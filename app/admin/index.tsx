@@ -121,7 +121,7 @@ export default function AdminResumen() {
                 </Text>
                 {datos && datos.porCiudad.length > 0 ? (
                   datos.porCiudad.map((ciu) => (
-                    <View key={ciu.ciudad} className="mb-2 flex-row items-center rounded-2xl border border-border bg-card px-4 py-3">
+                    <View key={ciu.ciudad} className="mb-2 flex-row items-center rounded-md border border-border bg-card px-4 py-3">
                       <Text className="w-28 font-body-semibold text-sm text-cream" numberOfLines={1}>
                         {ciu.ciudad}
                       </Text>
@@ -150,7 +150,7 @@ export default function AdminResumen() {
                   <Pressable
                     key={s.ruta}
                     onPress={() => router.push(s.ruta)}
-                    className="mb-2 flex-row items-center rounded-2xl border border-border bg-card px-4 py-3.5 active:opacity-70">
+                    className="mb-2 flex-row items-center rounded-md border border-border bg-card px-4 py-3.5 active:opacity-70">
                     <View
                       className="h-9 w-9 items-center justify-center rounded-full"
                       style={{ backgroundColor: c.primary + '22' }}>

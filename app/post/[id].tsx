@@ -147,7 +147,7 @@ export default function PostDetalle() {
           renderItem={({ item }) => (
             <View className="mb-2 flex-row gap-2 px-1">
               <Avatar nombre={item.autor_nombre} size={32} />
-              <View className="flex-1 rounded-2xl border border-border bg-card px-3.5 py-2.5">
+              <View className="flex-1 rounded-md border border-border bg-card px-3.5 py-2.5">
                 <View className="flex-row items-center justify-between">
                   <Text className="font-body-semibold text-xs text-primary">{item.autor_nombre}</Text>
                   <View className="flex-row items-center gap-2">
@@ -177,7 +177,7 @@ export default function PostDetalle() {
               placeholder="Escribí un comentario…"
               placeholderTextColor={c.muted}
               multiline
-              className="max-h-28 flex-1 rounded-2xl border border-border bg-background px-4 py-3 font-body text-base text-cream"
+              className="max-h-28 flex-1 rounded-sm border border-border bg-background px-4 py-3 font-body text-base text-cream"
             />
             <Pressable
               onPress={enviar}

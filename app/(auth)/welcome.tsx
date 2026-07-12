@@ -8,6 +8,7 @@ import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { useAuth } from '@/lib/auth';
+import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
 
 export default function Welcome() {
@@ -16,6 +17,7 @@ export default function Welcome() {
   const c = useTheme();
 
   const entrarComoInvitado = async () => {
+    haptics.tap();
     await signInAsGuest();
     router.replace('/(tabs)');
   };
@@ -26,9 +28,9 @@ export default function Welcome() {
         {/* Marca */}
         <FadeIn delay={80} className="flex-1 justify-center">
           <View
-            className="self-center overflow-hidden rounded-3xl border border-border"
+            className="self-center overflow-hidden rounded-lg border border-border"
             style={{
-              backgroundColor: '#0B0F0D',
+              backgroundColor: c.background,
               shadowColor: c.primary,
               shadowOpacity: 0.4,
               shadowRadius: 30,
@@ -37,7 +39,7 @@ export default function Welcome() {
             <Image source={require('../../assets/brand/logo.png')} style={{ width: 260, height: 260 }} contentFit="contain" />
           </View>
           <View className="mt-4 self-center rounded-full bg-accent px-4 py-1.5">
-            <Text className="font-body-bold text-[11px] uppercase tracking-wider text-ink">
+            <Text className="font-body-bold text-xs uppercase tracking-wider text-ink">
               Pereira · Risaralda
             </Text>
           </View>
@@ -73,7 +75,7 @@ export default function Welcome() {
       </View>
 
       <LinearGradient
-        colors={['transparent', '#0B0F0D']}
+        colors={['transparent', c.background]}
         style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120 }}
         pointerEvents="none"
       />
@@ -85,7 +87,7 @@ function Feature({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: s
   const c = useTheme();
   return (
     <View className="flex-row items-center gap-3">
-      <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
+      <View className="h-9 w-9 items-center justify-center rounded-sm bg-primary/15">
         <Ionicons name={icon} size={18} color={c.primary} />
       </View>
       <Text className="font-body text-sm text-cream">{text}</Text>

@@ -10,6 +10,7 @@ import Screen from '@/components/Screen';
 import StatCard from '@/components/StatCard';
 import { URL_PRIVACIDAD } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
+import { haptics } from '@/lib/haptics';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import { useShallow } from 'zustand/react/shallow';
@@ -20,8 +21,12 @@ export default function Perfil() {
   const misPartidos = useStore(useShallow((s) => s.misPartidos()));
   const c = useTheme();
 
-  const abrirPrivacidad = () => Linking.openURL(URL_PRIVACIDAD).catch(() => {});
+  const abrirPrivacidad = () => {
+    haptics.tap();
+    Linking.openURL(URL_PRIVACIDAD).catch(() => {});
+  };
   const borrarCuenta = () => {
+    haptics.tap();
     Alert.alert(
       '¿Eliminar tu cuenta?',
       'Se borrarán tu perfil y tus datos. Esta acción no se puede deshacer, parce.',
@@ -50,6 +55,7 @@ export default function Perfil() {
   const puntualidad = Math.max(0, Math.round(100 - ((u?.no_shows ?? 0) / Math.max(1, jugados)) * 100));
   const racha = Math.min(jugados, 5); // racha simple basada en partidos jugados
   const cerrarSesion = async () => {
+    haptics.tap();
     await signOut();
     router.replace('/(auth)/welcome');
   };
@@ -66,8 +72,8 @@ export default function Perfil() {
 
         {/* Tarjeta de perfil */}
         <FadeIn delay={60}>
-          <View className="mx-6 mt-2 overflow-hidden rounded-3xl border border-border">
-            <LinearGradient colors={['#10231C', '#0C1712']} style={{ padding: 24, alignItems: 'center' }}>
+          <View className="mx-6 mt-2 overflow-hidden rounded-lg border border-border">
+            <LinearGradient colors={[c.card, c.background]} style={{ padding: 24, alignItems: 'center' }}>
               <View
                 className="rounded-full"
                 style={{ padding: 3, borderWidth: 2, borderColor: c.primary }}>
@@ -147,9 +153,12 @@ export default function Perfil() {
         {esAdmin ? (
           <FadeIn delay={150}>
             <Pressable
-              onPress={() => router.push('/admin')}
-              className="mx-6 mt-6 flex-row items-center overflow-hidden rounded-3xl border border-primary/50 bg-primary/10 p-4 active:opacity-80">
-              <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary/20">
+              onPress={() => {
+                haptics.tap();
+                router.push('/admin');
+              }}
+              className="mx-6 mt-6 flex-row items-center overflow-hidden rounded-lg border border-primary/50 bg-primary/10 p-4 active:opacity-80">
+              <View className="h-12 w-12 items-center justify-center rounded-md bg-primary/20">
                 <Ionicons name="shield-checkmark" size={24} color={c.primary} />
               </View>
               <View className="ml-3 flex-1">
@@ -164,9 +173,12 @@ export default function Perfil() {
         {/* Modo cancha: panel del dueño o CTA para registrar la cancha */}
         <FadeIn delay={160}>
           <Pressable
-            onPress={() => router.push(esDueno ? '/cancha/panel' : '/cancha/registrar')}
-            className="mx-6 mt-6 flex-row items-center overflow-hidden rounded-3xl border border-accent/40 bg-accent/10 p-4 active:opacity-80">
-            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-accent/20">
+            onPress={() => {
+              haptics.tap();
+              router.push(esDueno ? '/cancha/panel' : '/cancha/registrar');
+            }}
+            className="mx-6 mt-6 flex-row items-center overflow-hidden rounded-lg border border-accent/40 bg-accent/10 p-4 active:opacity-80">
+            <View className="h-12 w-12 items-center justify-center rounded-md bg-accent/20">
               <Ionicons name="business" size={24} color={c.accent} />
             </View>
             <View className="ml-3 flex-1">
@@ -183,7 +195,7 @@ export default function Perfil() {
 
         {/* Acciones */}
         <FadeIn delay={180}>
-          <View className="mx-6 mt-4 overflow-hidden rounded-3xl border border-border bg-card">
+          <View className="mx-6 mt-4 overflow-hidden rounded-lg border border-border bg-card">
             <Accion icon="ticket-outline" label="Mis partidos" valor={`${misPartidos.length}`} onPress={() => router.push('/mis-partidos')} />
             <Accion icon="football-outline" label="Reservar una cancha" onPress={() => router.push('/canchas')} />
             <Accion icon="calendar-outline" label="Mis reservas" onPress={() => router.push('/mis-reservas')} />
@@ -197,17 +209,17 @@ export default function Perfil() {
         <FadeIn delay={210}>
           <View className="mx-6 mt-4 overflow-hidden rounded-md border border-border bg-card">
             <Pressable onPress={abrirPrivacidad} className="flex-row items-center border-b border-border px-4 py-4 active:bg-border/40">
-              <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
+              <View className="h-9 w-9 items-center justify-center rounded-sm bg-primary/15">
                 <Ionicons name="shield-checkmark-outline" size={18} color={c.primary} />
               </View>
               <Text className="ml-3 flex-1 font-body-semibold text-base text-cream">Privacidad y términos</Text>
               <Ionicons name="open-outline" size={18} color={c.muted} />
             </Pressable>
             <Pressable onPress={borrarCuenta} className="flex-row items-center px-4 py-4 active:bg-border/40">
-              <View className="h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: c.danger + '22' }}>
+              <View className="h-9 w-9 items-center justify-center rounded-sm bg-danger/15">
                 <Ionicons name="trash-outline" size={18} color={c.danger} />
               </View>
-              <Text className="ml-3 flex-1 font-body-semibold text-base" style={{ color: c.danger }}>Eliminar cuenta</Text>
+              <Text className="ml-3 flex-1 font-body-semibold text-base text-danger">Eliminar cuenta</Text>
             </Pressable>
           </View>
         </FadeIn>
@@ -229,7 +241,7 @@ function Medalla({ emoji, label, activo }: { emoji: string; label: string; activ
         <Text style={{ fontSize: 24 }}>{emoji}</Text>
         {!activo ? <View className="absolute inset-0 rounded-full bg-card/60" /> : null}
       </View>
-      <Text className="mt-1.5 font-body text-[11px] text-cream">{label}</Text>
+      <Text className="mt-1.5 font-body text-xs text-cream">{label}</Text>
     </View>
   );
 }
@@ -249,8 +261,13 @@ function Accion({
 }) {
   const c = useTheme();
   return (
-    <Pressable onPress={onPress} className={`flex-row items-center px-4 py-4 active:bg-border/40 ${ultimo ? '' : 'border-b border-border'}`}>
-      <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
+    <Pressable
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
+      className={`flex-row items-center px-4 py-4 active:bg-border/40 ${ultimo ? '' : 'border-b border-border'}`}>
+      <View className="h-9 w-9 items-center justify-center rounded-sm bg-primary/15">
         <Ionicons name={icon} size={18} color={c.primary} />
       </View>
       <Text className="ml-3 flex-1 font-body-semibold text-base text-cream">{label}</Text>

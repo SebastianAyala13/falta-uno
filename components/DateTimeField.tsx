@@ -3,7 +3,7 @@ import DateTimePicker, { type DateTimePickerEvent } from '@react-native-communit
 import { useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 
-import { useTheme } from '@/lib/theme';
+import { useTheme, useThemeMeta } from '@/lib/theme';
 
 interface DateTimeFieldProps {
   label: string;
@@ -42,6 +42,7 @@ const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'o
 /** Campo premium que abre el selector nativo de fecha u hora. */
 export default function DateTimeField({ label, mode, value, onChange, icon, minToday }: DateTimeFieldProps) {
   const c = useTheme();
+  const meta = useThemeMeta();
   const [show, setShow] = useState(false);
   const fecha = aFecha(value, mode);
 
@@ -81,7 +82,7 @@ export default function DateTimeField({ label, mode, value, onChange, icon, minT
             mode={mode}
             display="spinner"
             is24Hour
-            themeVariant="dark"
+            themeVariant={meta.dark ? 'dark' : 'light'}
             minimumDate={minToday && mode === 'date' ? new Date() : undefined}
             onChange={onPicked}
           />

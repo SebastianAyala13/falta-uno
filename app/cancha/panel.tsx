@@ -206,7 +206,7 @@ export default function PanelCancha() {
                     </Text>
                   </View>
                   <View className="rounded-full px-3 py-1" style={{ backgroundColor: estadoColor[r.estado] + '22' }}>
-                    <Text className="font-body-bold text-[10px] uppercase tracking-wide" style={{ color: estadoColor[r.estado] }}>
+                    <Text className="font-body-bold text-xs uppercase tracking-wide" style={{ color: estadoColor[r.estado] }}>
                       {ESTADO_LABEL[r.estado]}
                     </Text>
                   </View>

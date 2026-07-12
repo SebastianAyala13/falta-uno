@@ -164,7 +164,7 @@ export default function RetirosAdmin() {
           </View>
           <View className="rounded-full px-3 py-1" style={{ backgroundColor: estado.color + '22' }}>
             <Text
-              className="font-body-bold text-[11px] uppercase tracking-wide"
+              className="font-body-bold text-xs uppercase tracking-wide"
               style={{ color: estado.color }}>
               {estado.label}
             </Text>

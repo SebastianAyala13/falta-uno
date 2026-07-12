@@ -134,7 +134,7 @@ export default function AgendaCancha() {
                         <View className="flex-row items-center">
                           <Text className="mr-3 font-body-semibold text-sm text-cream">{precioCOP(s.precio)}</Text>
                           <View className="rounded-full px-3 py-1" style={{ backgroundColor: color + '22' }}>
-                            <Text className="font-body-bold text-[10px] uppercase tracking-wide" style={{ color }}>
+                            <Text className="font-body-bold text-xs uppercase tracking-wide" style={{ color }}>
                               {s.ocupado ? 'Reservado' : 'Libre'}
                             </Text>
                           </View>
@@ -163,7 +163,7 @@ export default function AgendaCancha() {
                         </Text>
                       </View>
                       <View className="rounded-full px-3 py-1" style={{ backgroundColor: estadoColor[r.estado] + '22' }}>
-                        <Text className="font-body-bold text-[10px] uppercase tracking-wide" style={{ color: estadoColor[r.estado] }}>
+                        <Text className="font-body-bold text-xs uppercase tracking-wide" style={{ color: estadoColor[r.estado] }}>
                           {ESTADO_LABEL[r.estado]}
                         </Text>
                       </View>

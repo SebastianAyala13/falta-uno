@@ -66,7 +66,7 @@ export default function PostCard({ post, comentarios = 0 }: PostCardProps) {
           style={{ backgroundColor: esRecap ? c.accent + '22' : c.background }}>
           <Ionicons name={meta.icon} size={12} color={esRecap ? c.accent : c.primary} />
           <Text
-            className="font-body-semibold text-[11px] uppercase tracking-wide"
+            className="font-body-semibold text-xs uppercase tracking-wide"
             style={{ color: esRecap ? c.accent : c.primary }}>
             {meta.label}
           </Text>
@@ -81,7 +81,7 @@ export default function PostCard({ post, comentarios = 0 }: PostCardProps) {
       </View>
 
       {/* Texto */}
-      <Text className="px-4 pt-3 font-body text-[15px] leading-5 text-cream">{post.texto}</Text>
+      <Text className="px-4 pt-3 font-body text-base leading-5 text-cream">{post.texto}</Text>
 
       {/* Foto opcional */}
       {post.foto_url ? (

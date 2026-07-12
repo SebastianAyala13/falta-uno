@@ -37,7 +37,7 @@ const PAD: Record<`${Shape}-${Size}`, string> = {
 
 const TEXT: Record<`${Shape}-${Size}`, string> = {
   'strip-md': 'font-body-bold text-xs uppercase tracking-wider',
-  'strip-sm': 'font-body-bold text-[11px] uppercase tracking-wide',
+  'strip-sm': 'font-body-bold text-xs uppercase tracking-wide',
   'pill-md': 'font-body-bold text-xs uppercase',
   'pill-sm': 'font-body-bold text-xs uppercase',
 };

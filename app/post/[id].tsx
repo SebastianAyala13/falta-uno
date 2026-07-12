@@ -108,7 +108,7 @@ export default function PostDetalle() {
                 />
               </View>
 
-              <Text className="mt-3 font-body text-[15px] leading-5 text-cream">{post.texto}</Text>
+              <Text className="mt-3 font-body text-base leading-5 text-cream">{post.texto}</Text>
 
               {post.foto_url ? (
                 <Image source={{ uri: post.foto_url }} style={{ width: '100%', height: 200, marginTop: 12, borderRadius: 18 }} contentFit="cover" />
@@ -151,7 +151,7 @@ export default function PostDetalle() {
                 <View className="flex-row items-center justify-between">
                   <Text className="font-body-semibold text-xs text-primary">{item.autor_nombre}</Text>
                   <View className="flex-row items-center gap-2">
-                    <Text className="font-body text-[10px] text-muted">{tiempoRelativo(item.created_at)}</Text>
+                    <Text className="font-body text-xs text-muted">{tiempoRelativo(item.created_at)}</Text>
                     <ModeracionBoton
                       tipo="comentario"
                       contenidoId={item.id}
@@ -162,7 +162,7 @@ export default function PostDetalle() {
                     />
                   </View>
                 </View>
-                <Text className="mt-0.5 font-body text-[15px] text-cream">{item.texto}</Text>
+                <Text className="mt-0.5 font-body text-base text-cream">{item.texto}</Text>
               </View>
             </View>
           )}

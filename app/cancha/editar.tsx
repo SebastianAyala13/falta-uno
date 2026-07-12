@@ -313,7 +313,7 @@ export default function EditarCancha() {
                     />
                     {i === 0 ? (
                       <View className="absolute bottom-1 left-1 rounded-md bg-black/60 px-1.5 py-0.5">
-                        <Text className="font-body-semibold text-[10px] text-cream">Portada</Text>
+                        <Text className="font-body-semibold text-xs text-cream">Portada</Text>
                       </View>
                     ) : null}
                     <Pressable

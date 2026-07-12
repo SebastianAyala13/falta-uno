@@ -90,7 +90,7 @@ export default function GameCard({ partido, destacado = false }: GameCardProps) 
           </View>
           <View className="items-end">
             <Text className="font-display text-2xl text-accentText">{precioCOP(partido.precio)}</Text>
-            <Text className="font-body text-[10px] uppercase tracking-wide text-muted">
+            <Text className="font-body text-xs uppercase tracking-wide text-muted">
               por jugador
             </Text>
           </View>

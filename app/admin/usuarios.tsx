@@ -149,7 +149,7 @@ export default function AdminUsuarios() {
                                 {u.rating.toFixed(1)}
                               </Text>
                             </View>
-                            <Text className="mt-1 font-body text-[11px] text-muted">
+                            <Text className="mt-1 font-body text-xs text-muted">
                               {u.partidos_jugados} {u.partidos_jugados === 1 ? 'partido' : 'partidos'}
                             </Text>
                           </View>
@@ -165,7 +165,7 @@ export default function AdminUsuarios() {
                                 className="mb-1 mr-2 rounded-full px-3 py-1"
                                 style={{ backgroundColor: chip.color + '22' }}>
                                 <Text
-                                  className="font-body-bold text-[11px] uppercase tracking-wide"
+                                  className="font-body-bold text-xs uppercase tracking-wide"
                                   style={{ color: chip.color }}>
                                   {chip.label}
                                 </Text>

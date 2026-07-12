@@ -350,7 +350,7 @@ export default function Finanzas() {
                           {m.descripcion}
                         </Text>
                       ) : null}
-                      <Text className="font-body text-[11px] text-muted">{tiempoRelativo(m.created_at)}</Text>
+                      <Text className="font-body text-xs text-muted">{tiempoRelativo(m.created_at)}</Text>
                     </View>
                     <Text className="font-display text-base" style={{ color }}>
                       {positivo ? '+' : '-'}
@@ -382,7 +382,7 @@ export default function Finanzas() {
                       className="rounded-full px-3 py-1"
                       style={{ backgroundColor: estado.color + '22' }}>
                       <Text
-                        className="font-body-bold text-[11px] uppercase tracking-wide"
+                        className="font-body-bold text-xs uppercase tracking-wide"
                         style={{ color: estado.color }}>
                         {estado.label}
                       </Text>

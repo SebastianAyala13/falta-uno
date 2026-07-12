@@ -166,7 +166,7 @@ export default function PartidoDetalle() {
                 {rosterNombres(partido, inscrito).map((nombre, i) => (
                   <View key={i} style={{ width: 58 }} className="mb-2 items-center">
                     <Avatar nombre={nombre} size={44} />
-                    <Text className="mt-1 font-body text-[10px] text-cream" numberOfLines={1}>{nombre}</Text>
+                    <Text className="mt-1 font-body text-xs text-cream" numberOfLines={1}>{nombre}</Text>
                   </View>
                 ))}
                 {!lleno && !inscrito ? (
@@ -179,7 +179,7 @@ export default function PartidoDetalle() {
                       style={{ borderWidth: 1.5, borderColor: c.accent, borderStyle: 'dashed' }}>
                       <Ionicons name="add" size={20} color={c.accentText} />
                     </View>
-                    <Text className="mt-1 font-body-semibold text-[10px] text-accentText" numberOfLines={1}>Vos</Text>
+                    <Text className="mt-1 font-body-semibold text-xs text-accentText" numberOfLines={1}>Vos</Text>
                   </Pressable>
                 ) : null}
               </View>

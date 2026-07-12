@@ -131,8 +131,8 @@ function Burbuja({ msg, mio }: { msg: Mensaje; mio: boolean }) {
         {!mio ? (
           <Text className="mb-0.5 font-body-semibold text-xs text-primary">{msg.autor_nombre}</Text>
         ) : null}
-        <Text className={`font-body text-[15px] ${mio ? 'text-ink' : 'text-cream'}`}>{msg.texto}</Text>
-        <Text className={`mt-1 text-right font-body text-[10px] ${mio ? 'text-ink/60' : 'text-muted'}`}>
+        <Text className={`font-body text-base ${mio ? 'text-ink' : 'text-cream'}`}>{msg.texto}</Text>
+        <Text className={`mt-1 text-right font-body text-xs ${mio ? 'text-ink/60' : 'text-muted'}`}>
           {hora(msg.created_at)}
         </Text>
       </View>

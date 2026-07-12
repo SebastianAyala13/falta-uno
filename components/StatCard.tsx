@@ -93,7 +93,7 @@ export default function StatCard({
   // Etiqueta
   const labelClass =
     variant === 'info'
-      ? `font-body text-[10px] uppercase tracking-${labelTracking} text-muted`
+      ? `font-body text-xs uppercase tracking-${labelTracking} text-muted`
       : labelPosition === 'top'
         ? `${labelWeight === 'semibold' ? 'font-body-semibold' : 'font-body'} text-xs uppercase tracking-${labelTracking} text-muted`
         : 'font-body text-xs text-muted';

@@ -137,7 +137,7 @@ export default function ReservasAdmin() {
                               <Text className="font-display text-lg text-cream">{precioCOP(r.precio)}</Text>
                               <View className="mt-1 rounded-full px-2 py-0.5" style={{ backgroundColor: color + '22' }}>
                                 <Text
-                                  className="font-body-semibold text-[10px] uppercase tracking-wide"
+                                  className="font-body-semibold text-xs uppercase tracking-wide"
                                   style={{ color }}>
                                   {ESTADO_LABEL[r.estado]}
                                 </Text>

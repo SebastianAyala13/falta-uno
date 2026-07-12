@@ -53,7 +53,7 @@ export default function MisPagos() {
                   </View>
                   <View className="items-end">
                     <Text className="font-display text-lg text-cream">{precioCOP(p.monto)}</Text>
-                    <Text className="font-body text-[10px] uppercase tracking-wide" style={{ color: aprobado ? c.primary : c.warning }}>
+                    <Text className="font-body text-xs uppercase tracking-wide" style={{ color: aprobado ? c.primary : c.warning }}>
                       {aprobado ? 'Aprobado' : 'Pendiente'}
                     </Text>
                   </View>

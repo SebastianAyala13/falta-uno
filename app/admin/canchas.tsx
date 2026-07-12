@@ -180,7 +180,7 @@ export default function CanchasAdmin() {
           </View>
           <View className="rounded-full px-3 py-1" style={{ backgroundColor: estadoColor + '22' }}>
             <Text
-              className="font-body-bold text-[11px] uppercase tracking-wide"
+              className="font-body-bold text-xs uppercase tracking-wide"
               style={{ color: estadoColor }}>
               {activa ? 'Activa' : 'Pausada'}
             </Text>
@@ -402,11 +402,11 @@ export default function CanchasAdmin() {
                                 {TIPO_MOVIMIENTO[m.tipo]}
                               </Text>
                               {m.descripcion ? (
-                                <Text className="font-body text-[11px] text-muted" numberOfLines={1}>
+                                <Text className="font-body text-xs text-muted" numberOfLines={1}>
                                   {m.descripcion}
                                 </Text>
                               ) : null}
-                              <Text className="font-body text-[11px] text-muted">
+                              <Text className="font-body text-xs text-muted">
                                 {tiempoRelativo(m.created_at)}
                               </Text>
                             </View>

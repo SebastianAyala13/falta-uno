@@ -142,7 +142,7 @@ export default function AdminReportes() {
                             className="mr-2 rounded-full px-3 py-1"
                             style={{ backgroundColor: motivo.color + '22' }}>
                             <Text
-                              className="font-body-bold text-[11px] uppercase tracking-wide"
+                              className="font-body-bold text-xs uppercase tracking-wide"
                               style={{ color: motivo.color }}>
                               {motivo.label}
                             </Text>
@@ -151,7 +151,7 @@ export default function AdminReportes() {
                             <Ionicons name={tipo.icon} size={14} color={c.muted} />
                             <Text className="ml-1 font-body-semibold text-xs text-cream">{tipo.label}</Text>
                           </View>
-                          <Text className="ml-auto font-body text-[11px] text-muted">
+                          <Text className="ml-auto font-body text-xs text-muted">
                             {tiempoRelativo(r.created_at)}
                           </Text>
                         </View>

@@ -18,6 +18,7 @@ import {
 import AmenidadPicker from '@/components/AmenidadPicker';
 import Chip from '@/components/Chip';
 import DateTimeField from '@/components/DateTimeField';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
@@ -551,12 +552,7 @@ export default function RegistrarCancha() {
             ) : null}
           </FadeIn>
 
-          {error ? (
-            <View className="mb-4 mt-2 flex-row items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5">
-              <Ionicons name="alert-circle" size={16} color={Colors.danger} />
-              <Text className="flex-1 font-body text-sm text-red-300">{error}</Text>
-            </View>
-          ) : null}
+          <ErrorBanner message={error} className="mb-4 mt-2" />
 
           {/* Botonera */}
           <View className="mt-4 flex-row gap-3">

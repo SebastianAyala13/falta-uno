@@ -6,6 +6,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } fro
 
 import Chip from '@/components/Chip';
 import DateTimeField from '@/components/DateTimeField';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
@@ -212,12 +213,7 @@ export default function Crear() {
             <Field label="Precio por jugador (COP)" icon="cash-outline" placeholder="12000" value={precio} onChangeText={setPrecio} keyboardType="numeric" hint="Lo que pone cada uno para la cancha." />
             <Field label="Descripción" icon="chatbubble-outline" placeholder="Contale al parche cómo está la cosa..." value={descripcion} onChangeText={setDescripcion} multiline />
 
-            {error ? (
-              <View className="mb-4 flex-row items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5">
-                <Ionicons name="alert-circle" size={16} color={Colors.danger} />
-                <Text className="flex-1 font-body text-sm text-red-300">{error}</Text>
-              </View>
-            ) : null}
+            <ErrorBanner message={error} />
 
             <GlowButton label="Publicar partido" variant="accent" icon="megaphone" onPress={onSubmit} loading={publicando} />
           </FadeIn>

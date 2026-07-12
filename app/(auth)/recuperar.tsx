@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
@@ -86,12 +87,7 @@ export default function Recuperar() {
                 autoComplete="email"
               />
 
-              {error ? (
-                <View className="mb-4 flex-row items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5">
-                  <Ionicons name="alert-circle" size={16} color={Colors.danger} />
-                  <Text className="flex-1 font-body text-sm text-red-300">{error}</Text>
-                </View>
-              ) : null}
+              <ErrorBanner message={error} />
 
               {demo ? (
                 <Text className="mb-4 font-body text-xs text-muted">

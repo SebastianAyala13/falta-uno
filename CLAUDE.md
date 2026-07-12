@@ -116,7 +116,23 @@ the advisory ones (`react-hooks/immutability`, `set-state-in-effect`, `preserve-
 `purity`) because they flag Reanimated's `sharedValue.value = …` API and standard data-loading
 effects — they are optimization hints, not bugs. It also ignores `supabase/functions/**` (Deno).
 
-## Design docs
+## Working style & skills
 
-Feature work is specced before coding: specs in `docs/superpowers/specs/`, implementation plans in
-`docs/superpowers/plans/` (dated `YYYY-MM-DD-<topic>`).
+This project is built with Claude Code's **superpowers** and **taste** plugins. Use them whenever they
+fit — prefer them over ad-hoc work:
+
+- **superpowers (process discipline).** For any non-trivial change, follow its flow instead of coding
+  off the cuff: `brainstorming` to turn an idea into a design, `writing-plans` → `executing-plans` (or
+  `subagent-driven-development`) for multi-step work, `systematic-debugging` for any bug or test failure,
+  `test-driven-development` when writing logic, and `verification-before-completion` before claiming
+  anything works. Feature work is **specced before coding**: designs go in `docs/superpowers/specs/`,
+  implementation plans in `docs/superpowers/plans/` (dated `YYYY-MM-DD-<topic>`) — see the existing files
+  for the format. When installed, the `using-superpowers` skill auto-loads at session start.
+- **taste (frontend design).** Reach for the taste skill whenever you **build or redesign UI** — screens,
+  components, visual polish. This app has a real design system (NativeWind brand tokens in
+  `constants/colors.ts`, runtime themes, glassmorphism, staggered Reanimated motion, haptics); keep new
+  screens consistent with it and avoid generic/templated layouts.
+
+> These are **per-machine Claude Code plugins**, not part of the repo, so this guidance only takes effect
+> if your Claude Code has them installed. If it doesn't, install them via `/plugin` (the superpowers
+> marketplace + a taste/design skill). Without them the repo still works — the guidance above is just inert.

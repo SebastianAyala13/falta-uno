@@ -88,5 +88,10 @@ El CLI viene como **devDependency** (`pnpm supabase …`). Para tocar el schema 
 
 - `CLAUDE.md` se autocarga; con eso alcanza para la mayoría del trabajo.
 - Si vas a tocar **Supabase** o **Mercado Pago**, conectá sus MCP en Claude Code (`/mcp`).
-- El plan de upgrade referencia skills de `superpowers` (brainstorming/plans); son opcionales — el
-  runbook se puede seguir sin ellas.
+- **Instalá los plugins que usa el repo** (`/plugin`) — ver la sección "Working style & skills" de `CLAUDE.md`:
+  - **superpowers**: flujo de trabajo (brainstorming → plans → execute → verify, systematic-debugging,
+    TDD). El repo **especifica antes de codear**: specs en `docs/superpowers/specs/`, planes en
+    `docs/superpowers/plans/`. Al instalarlo se autocarga al iniciar la sesión.
+  - **taste**: diseño de frontend; úsala al construir o rediseñar UI para no salirte del design system
+    (tokens de marca, themes, glassmorphism, motion).
+  - Sin ellos el repo funciona igual, pero esa guía de `CLAUDE.md` queda inerte.

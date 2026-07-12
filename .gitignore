@@ -34,11 +34,6 @@ yarn-error.*
 .env
 .env*.local
 
-# Credenciales de deploy/migración a Supabase (NUNCA commitear)
-.supabase-deploy.env
-supabase/.tmp-secrets.env
-supabase/.env.wompi
-
 # typescript
 *.tsbuildinfo
 
@@ -50,3 +45,6 @@ example
 
 # Archivos fuente de multimedia (originales; los usados viven en assets/brand)
 multimedia/
+
+# Backups/dumps de la base (pueden tener datos de prod — NUNCA commitear)
+backups/

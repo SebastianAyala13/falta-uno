@@ -1,0 +1,42 @@
+name: Aplicar migraciones a Supabase (prod)
+
+# Aplica las migraciones pendientes de supabase/migrations/ a producción con
+# `supabase db push` cada vez que se mergea a main un cambio de schema.
+#
+# Autenticación: un único secret del repo, SUPABASE_DB_URL = el connection string
+# del **Session pooler** (Dashboard → Settings → Database → Connection string →
+# Session pooler → URI), con la DB password embebida. Es una credencial
+# project-scoped (solo esta base) y rotable (reseteás la password cuando quieras).
+# (Edge Functions y secrets NO se despliegan acá — se gestionan en el dashboard.)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/config.toml'
+
+# Least privilege: este workflow solo necesita leer el repo.
+permissions:
+  contents: read
+
+# Nunca correr dos db push en paralelo contra la misma base.
+concurrency:
+  group: db-migrations
+  cancel-in-progress: false
+
+jobs:
+  db-push:
+    runs-on: ubuntu-latest
+    steps:
+      # Actions pinneadas a SHA completo (supply-chain); el comentario indica la versión.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1
+        with:
+          version: 2.109.1
+
+      # El secret (connection string con password) se pasa SOLO a este step.
+      - name: Aplicar migraciones pendientes
+        run: supabase db push --db-url "$SUPABASE_DB_URL"
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}

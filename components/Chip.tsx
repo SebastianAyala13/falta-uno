@@ -1,5 +1,7 @@
 import { Pressable, Text } from 'react-native';
 
+import { haptics } from '@/lib/haptics';
+
 interface ChipProps {
   label: string;
   selected?: boolean;
@@ -12,7 +14,7 @@ export default function Chip({ label, selected = false, onPress }: ChipProps) {
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      onPress={onPress}
+      onPress={onPress ? () => { haptics.select(); onPress(); } : undefined}
       className={`mb-2 mr-2 rounded-full border px-4 py-2 ${
         selected
           ? 'border-primary bg-primary'

@@ -13,6 +13,8 @@ export interface Palette {
   primary: string;
   primary2: string;
   accent: string;
+  /** Variante del accent legible como TEXTO/ícono sobre superficies claras. En temas oscuros = accent. */
+  accentText: string;
   secondary: string;
   background: string;
   card: string;
@@ -55,42 +57,42 @@ export const THEMES: Theme[] = [
     label: 'Esmeralda',
     dark: true,
     swatch: '#10B981',
-    palette: { ...DARK_NEUTRALS, primary: '#10B981', primary2: '#34D399', accent: '#C6FF3D', secondary: '#047857' },
+    palette: { ...DARK_NEUTRALS, primary: '#10B981', primary2: '#34D399', accent: '#C6FF3D', accentText: '#C6FF3D', secondary: '#047857' },
   },
   {
     id: 'azul',
     label: 'Azul',
     dark: true,
     swatch: '#3B82F6',
-    palette: { ...DARK_NEUTRALS, primary: '#3B82F6', primary2: '#60A5FA', accent: '#38BDF8', secondary: '#1D4ED8' },
+    palette: { ...DARK_NEUTRALS, primary: '#3B82F6', primary2: '#60A5FA', accent: '#38BDF8', accentText: '#38BDF8', secondary: '#1D4ED8' },
   },
   {
     id: 'morado',
     label: 'Morado',
     dark: true,
     swatch: '#8B5CF6',
-    palette: { ...DARK_NEUTRALS, primary: '#8B5CF6', primary2: '#A78BFA', accent: '#C4B5FD', secondary: '#6D28D9' },
+    palette: { ...DARK_NEUTRALS, primary: '#8B5CF6', primary2: '#A78BFA', accent: '#C4B5FD', accentText: '#C4B5FD', secondary: '#6D28D9' },
   },
   {
     id: 'rosado',
     label: 'Rosado',
     dark: true,
     swatch: '#EC4899',
-    palette: { ...DARK_NEUTRALS, primary: '#EC4899', primary2: '#F472B6', accent: '#FBCFE8', secondary: '#BE185D' },
+    palette: { ...DARK_NEUTRALS, primary: '#EC4899', primary2: '#F472B6', accent: '#FBCFE8', accentText: '#FBCFE8', secondary: '#BE185D' },
   },
   {
     id: 'rojo',
     label: 'Rojo',
     dark: true,
     swatch: '#EF4444',
-    palette: { ...DARK_NEUTRALS, primary: '#EF4444', primary2: '#F87171', accent: '#FCA5A5', secondary: '#B91C1C' },
+    palette: { ...DARK_NEUTRALS, primary: '#EF4444', primary2: '#F87171', accent: '#FCA5A5', accentText: '#FCA5A5', secondary: '#B91C1C' },
   },
   {
     id: 'naranja',
     label: 'Naranja',
     dark: true,
     swatch: '#F97316',
-    palette: { ...DARK_NEUTRALS, primary: '#F97316', primary2: '#FB923C', accent: '#FDBA74', secondary: '#C2410C' },
+    palette: { ...DARK_NEUTRALS, primary: '#F97316', primary2: '#FB923C', accent: '#FDBA74', accentText: '#FDBA74', secondary: '#C2410C' },
   },
   {
     id: 'blanco',
@@ -101,6 +103,7 @@ export const THEMES: Theme[] = [
       primary: '#10B981',
       primary2: '#34D399',
       accent: '#C6FF3D',
+      accentText: '#4D7C0F', // lima oscura: legible como texto/ícono sobre fondos claros
       secondary: '#047857',
       background: '#F2F5F2', // Crema Cal — fondo claro
       card: '#FFFFFF',
@@ -141,6 +144,7 @@ export function buildVars(p: Palette): Record<string, string> {
     '--c-primary': hexToRgbTriplet(p.primary),
     '--c-primary2': hexToRgbTriplet(p.primary2),
     '--c-accent': hexToRgbTriplet(p.accent),
+    '--c-accent-text': hexToRgbTriplet(p.accentText),
     '--c-secondary': hexToRgbTriplet(p.secondary),
     '--c-bg': hexToRgbTriplet(p.background),
     '--c-card': hexToRgbTriplet(p.card),

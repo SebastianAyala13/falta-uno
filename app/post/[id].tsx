@@ -90,7 +90,7 @@ export default function PostDetalle() {
               <View className="flex-row items-center gap-3">
                 {esRecap ? (
                   <View className="h-11 w-11 items-center justify-center rounded-full bg-accent/15">
-                    <Ionicons name="football" size={22} color={c.accent} />
+                    <Ionicons name="football" size={22} color={c.accentText} />
                   </View>
                 ) : (
                   <Avatar nombre={post.autor_nombre} uri={post.autor_avatar} size={44} />

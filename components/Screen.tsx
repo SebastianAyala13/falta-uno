@@ -44,14 +44,12 @@ export default function Screen({ children, edges = ['top'], glow = true, maxWidt
       {glow ? (
         <>
           <View
-            pointerEvents="none"
             className="absolute rounded-full"
-            style={{ top: -140, right: -100, width: 320, height: 320, backgroundColor: withAlpha(t.primary, 0.16) }}
+            style={{ top: -140, right: -100, width: 320, height: 320, backgroundColor: withAlpha(t.primary, 0.16), pointerEvents: 'none' }}
           />
           <View
-            pointerEvents="none"
             className="absolute rounded-full"
-            style={{ bottom: -160, left: -120, width: 300, height: 300, backgroundColor: withAlpha(t.accent, 0.06) }}
+            style={{ bottom: -160, left: -120, width: 300, height: 300, backgroundColor: withAlpha(t.accent, 0.06), pointerEvents: 'none' }}
           />
         </>
       ) : null}

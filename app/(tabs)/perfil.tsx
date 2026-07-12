@@ -178,7 +178,7 @@ export default function Perfil() {
             }}
             className="mx-6 mt-6 flex-row items-center overflow-hidden rounded-lg border border-accent/40 bg-accent/10 p-4 active:opacity-80">
             <View className="h-12 w-12 items-center justify-center rounded-md bg-accent/20">
-              <Ionicons name="business" size={24} color={c.accent} />
+              <Ionicons name="business" size={24} color={c.accentText} />
             </View>
             <View className="ml-3 flex-1">
               <Text className="font-body-bold text-base text-cream">
@@ -188,7 +188,7 @@ export default function Perfil() {
                 {esDueno ? 'Reservas, agenda, saldo y retiros' : 'Recibí reservas y cobrá por la app'}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={c.accent} />
+            <Ionicons name="chevron-forward" size={18} color={c.accentText} />
           </Pressable>
         </FadeIn>
 

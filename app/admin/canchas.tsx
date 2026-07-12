@@ -197,7 +197,7 @@ export default function CanchasAdmin() {
           <Pressable
             onPress={() => abrirAjuste(cancha)}
             className="flex-row items-center rounded-xl border border-border bg-background px-3 py-2">
-            <Ionicons name="create-outline" size={16} color={c.accent} />
+            <Ionicons name="create-outline" size={16} color={c.accentText} />
             <Text className="ml-1.5 font-body-semibold text-xs text-cream">Ajuste de saldo</Text>
           </Pressable>
 

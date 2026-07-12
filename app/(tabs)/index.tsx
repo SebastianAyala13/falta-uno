@@ -74,9 +74,9 @@ export default function Home() {
         {/* Hero CTA */}
         <FadeIn delay={110}>
           <Pressable onPress={() => router.push('/(tabs)/crear')} className="mx-[22px] mb-5 overflow-hidden rounded-lg">
-            <LinearGradient colors={[c.secondary, '#065F46', '#03251C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18 }}>
-              <View pointerEvents="none" className="absolute rounded-full" style={{ right: -40, top: -40, width: 150, height: 150, backgroundColor: c.accent, opacity: 0.12 }} />
-              <Text className="font-display text-[25px] uppercase text-cream" style={{ lineHeight: 32, paddingTop: 4 }}>¿Te falta llave{'\n'}pa la pichanga?</Text>
+            <LinearGradient colors={[c.secondary, c.background]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18 }}>
+              <View className="absolute rounded-full" style={{ right: -40, top: -40, width: 150, height: 150, backgroundColor: c.accent, opacity: 0.12, pointerEvents: 'none' }} />
+              <Text className="font-display text-2xl uppercase text-cream" style={{ lineHeight: 32, paddingTop: 4 }}>¿Te falta llave{'\n'}pa la pichanga?</Text>
               <Text className="mt-1.5 font-body text-sm text-cream/70">Armá tu partido y que la gente se cuadre sola.</Text>
               <View className="mt-4 flex-row items-center gap-2 self-start rounded-sm bg-accent px-4 py-2.5">
                 <Ionicons name="add-circle" size={18} color={c.ink} />
@@ -161,7 +161,7 @@ function UrgentCard({ partido, onPress }: { partido: PartidoConOrganizador; onPr
       <View className="p-3">
         <Text className="font-display text-base uppercase leading-5 text-cream" numberOfLines={1}>{partido.cancha}</Text>
         <Text className="mt-0.5 font-body text-xs text-muted" numberOfLines={1}>{partido.zona} · {partido.hora}</Text>
-        <Text className="mt-2 font-display text-lg text-accent">{precioCOP(partido.precio)}</Text>
+        <Text className="mt-2 font-display text-lg text-accentText">{precioCOP(partido.precio)}</Text>
       </View>
     </Pressable>
   );

@@ -16,6 +16,8 @@ module.exports = {
         primary: 'rgb(var(--c-primary) / <alpha-value>)',
         primary2: 'rgb(var(--c-primary2) / <alpha-value>)',
         accent: 'rgb(var(--c-accent) / <alpha-value>)',
+        // accent legible como texto/ícono sobre superficies claras (en oscuros = accent)
+        accentText: 'rgb(var(--c-accent-text) / <alpha-value>)',
         secondary: 'rgb(var(--c-secondary) / <alpha-value>)',
         background: 'rgb(var(--c-bg) / <alpha-value>)',
         card: 'rgb(var(--c-card) / <alpha-value>)',

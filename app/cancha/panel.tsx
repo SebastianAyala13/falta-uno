@@ -153,7 +153,7 @@ export default function PanelCancha() {
         <FadeIn delay={100}>
           <View className="mt-4 rounded-2xl border border-border bg-card p-5">
             <View className="flex-row items-center">
-              <Ionicons name="wallet" size={18} color={c.accent} />
+              <Ionicons name="wallet" size={18} color={c.accentText} />
               <Text className="ml-2 font-body-semibold text-xs uppercase tracking-wide text-muted">Saldo disponible</Text>
             </View>
             <Text className="mt-2 font-display text-4xl text-cream" style={{ lineHeight: 44, paddingTop: 2 }}>
@@ -162,8 +162,8 @@ export default function PanelCancha() {
             <Pressable
               onPress={() => router.push('/cancha/finanzas')}
               className="mt-3 flex-row items-center self-start rounded-full border border-borderStrong bg-background px-4 py-2">
-              <Text className="font-body-bold text-sm text-accent">Ver finanzas</Text>
-              <Ionicons name="chevron-forward" size={16} color={c.accent} style={{ marginLeft: 4 }} />
+              <Text className="font-body-bold text-sm text-accentText">Ver finanzas</Text>
+              <Ionicons name="chevron-forward" size={16} color={c.accentText} style={{ marginLeft: 4 }} />
             </Pressable>
           </View>
         </FadeIn>

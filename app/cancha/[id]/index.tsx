@@ -109,7 +109,7 @@ export default function PerfilCancha() {
                   <Pressable
                     onPress={() => Linking.openURL(`tel:${cancha.telefono}`)}
                     className="mt-3 flex-row items-center rounded-2xl border border-border bg-card p-4 active:opacity-80">
-                    <Ionicons name="call" size={20} color={c.accent} />
+                    <Ionicons name="call" size={20} color={c.accentText} />
                     <Text className="ml-3 font-body-semibold text-base text-cream">{cancha.telefono}</Text>
                   </Pressable>
                 ) : null}

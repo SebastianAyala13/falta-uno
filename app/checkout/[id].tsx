@@ -263,7 +263,7 @@ function Resumen({ label, valor, total = false }: { label: string; valor: string
   return (
     <View className="flex-row items-center justify-between pt-2">
       <Text className={`font-body ${total ? 'text-base text-cream' : 'text-sm text-muted'}`}>{label}</Text>
-      <Text className={total ? 'font-display text-xl text-accent' : 'font-body-semibold text-sm text-cream'}>{valor}</Text>
+      <Text className={total ? 'font-display text-xl text-accentText' : 'font-body-semibold text-sm text-cream'}>{valor}</Text>
     </View>
   );
 }

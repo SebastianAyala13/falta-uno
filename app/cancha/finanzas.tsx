@@ -240,7 +240,7 @@ export default function Finanzas() {
                 <View
                   className="h-11 w-11 items-center justify-center rounded-xl"
                   style={{ backgroundColor: c.accent + '22' }}>
-                  <Ionicons name="star" size={22} color={c.accent} />
+                  <Ionicons name="star" size={22} color={c.accentText} />
                 </View>
                 <View className="ml-3 flex-1">
                   <Text className="font-body-bold text-base text-cream">{MEMBRESIA.nombre}</Text>

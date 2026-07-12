@@ -102,9 +102,8 @@ export default function PartidoDetalle() {
             colors={partido.foto_url ? ['rgba(11,15,13,0.30)', 'rgba(11,15,13,0.94)'] : [c.secondary, '#0C1712']}
             style={{ paddingBottom: 24 }}>
             <View
-              pointerEvents="none"
               className="absolute rounded-full"
-              style={{ right: -60, top: -40, width: 220, height: 220, backgroundColor: c.accent, opacity: 0.1 }}
+              style={{ right: -60, top: -40, width: 220, height: 220, backgroundColor: c.accent, opacity: 0.1, pointerEvents: 'none' }}
             />
             <SafeAreaView edges={['top']}>
               <View className="flex-row items-center justify-between px-5 pt-2">
@@ -178,9 +177,9 @@ export default function PartidoDetalle() {
                     <View
                       className="h-11 w-11 items-center justify-center rounded-full"
                       style={{ borderWidth: 1.5, borderColor: c.accent, borderStyle: 'dashed' }}>
-                      <Ionicons name="add" size={20} color={c.accent} />
+                      <Ionicons name="add" size={20} color={c.accentText} />
                     </View>
-                    <Text className="mt-1 font-body-semibold text-[10px] text-accent" numberOfLines={1}>Vos</Text>
+                    <Text className="mt-1 font-body-semibold text-[10px] text-accentText" numberOfLines={1}>Vos</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -196,7 +195,7 @@ export default function PartidoDetalle() {
                 <Text className="font-body-bold text-base text-cream">{partido.organizador?.nombre}</Text>
               </View>
               <View className="flex-row items-center gap-1 rounded-full bg-background px-3 py-1.5">
-                <Ionicons name="star" size={14} color={c.accent} />
+                <Ionicons name="star" size={14} color={c.accentText} />
                 <Text className="font-body-semibold text-sm text-cream">{partido.organizador?.rating?.toFixed(1)}</Text>
               </View>
             </View>
@@ -208,7 +207,7 @@ export default function PartidoDetalle() {
               onPress={irAlChat}
               className="mb-4 flex-row items-center rounded-3xl border border-border bg-card p-4 active:bg-border/40">
               <View className="h-11 w-11 items-center justify-center rounded-xl bg-accent/15">
-                <Ionicons name="chatbubbles" size={22} color={c.accent} />
+                <Ionicons name="chatbubbles" size={22} color={c.accentText} />
               </View>
               <View className="ml-3 flex-1">
                 <Text className="font-body-bold text-base text-cream">Chat del parche</Text>
@@ -301,7 +300,7 @@ function Linea({ label, valor, total = false }: { label: string; valor: string; 
   return (
     <View className="flex-row items-center justify-between py-1">
       <Text className={`font-body ${total ? 'text-base text-cream' : 'text-sm text-muted'}`}>{label}</Text>
-      <Text className={total ? 'font-display text-xl text-accent' : 'font-body-semibold text-sm text-cream'}>{valor}</Text>
+      <Text className={total ? 'font-display text-xl text-accentText' : 'font-body-semibold text-sm text-cream'}>{valor}</Text>
     </View>
   );
 }

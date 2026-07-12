@@ -89,7 +89,7 @@ export default function GameCard({ partido, destacado = false }: GameCardProps) 
             </View>
           </View>
           <View className="items-end">
-            <Text className="font-display text-2xl text-accent">{precioCOP(partido.precio)}</Text>
+            <Text className="font-display text-2xl text-accentText">{precioCOP(partido.precio)}</Text>
             <Text className="font-body text-[10px] uppercase tracking-wide text-muted">
               por jugador
             </Text>
@@ -115,7 +115,7 @@ export default function GameCard({ partido, destacado = false }: GameCardProps) 
             </Text>
           </View>
           <View className="flex-row items-center gap-1">
-            <Ionicons name="star" size={13} color={c.accent} />
+            <Ionicons name="star" size={13} color={c.accentText} />
             <Text className="font-body-semibold text-xs text-cream">
               {partido.organizador?.rating?.toFixed(1)}
             </Text>

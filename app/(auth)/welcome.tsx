@@ -76,8 +76,7 @@ export default function Welcome() {
 
       <LinearGradient
         colors={['transparent', c.background]}
-        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120 }}
-        pointerEvents="none"
+        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, pointerEvents: 'none' }}
       />
     </Screen>
   );

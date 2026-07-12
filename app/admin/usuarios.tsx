@@ -144,7 +144,7 @@ export default function AdminUsuarios() {
                           </View>
                           <View className="ml-3 items-end">
                             <View className="flex-row items-center">
-                              <Ionicons name="star" size={13} color={c.accent} />
+                              <Ionicons name="star" size={13} color={c.accentText} />
                               <Text className="ml-1 font-body-bold text-sm text-cream">
                                 {u.rating.toFixed(1)}
                               </Text>

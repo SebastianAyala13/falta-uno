@@ -90,7 +90,8 @@ type ScreenHeaderProps = {
   onBack?: () => void;
   /** Muestra el botón de volver. `false` → placeholder para no mover el título. */
   showBack?: boolean;
-  /** Clases del botón de volver (o del placeholder). Default: `mr-3`. */
+  /** Clases del botón de volver (o del placeholder). Default: `mr-3` en `left`,
+   * sin margen en `center` (para no romper el centrado real por `justify-between`). */
   backClassName?: string;
   /** Clases externas de la fila (padding, ancho) — el componente NO las gestiona. */
   className?: string;
@@ -114,10 +115,16 @@ export function ScreenHeader({
   backVariant = 'card',
   onBack,
   showBack = true,
-  backClassName = 'mr-3',
+  backClassName,
   className = '',
 }: ScreenHeaderProps) {
   const spec = TITLE_SPEC[titleSize];
+
+  // En `center` el título se centra por `justify-between` entre el botón (izq) y el
+  // spacer derecho (`w-10`): para que quede en el centro REAL ambos lados deben medir
+  // lo mismo, así que el botón NO lleva el `mr-3` por defecto (rompería la simetría).
+  // En `left` el default sigue siendo `mr-3` — los 21 sitios estándar no cambian.
+  const effectiveBackClass = backClassName ?? (titleAlign === 'center' ? '' : 'mr-3');
 
   const rowClass = cx(
     'flex-row items-center',
@@ -127,9 +134,9 @@ export function ScreenHeader({
   );
 
   const back = showBack ? (
-    <BackButton icon={backIcon} variant={backVariant} onPress={onBack} className={backClassName} />
+    <BackButton icon={backIcon} variant={backVariant} onPress={onBack} className={effectiveBackClass} />
   ) : (
-    <View className={cx('h-10 w-10', backClassName)} />
+    <View className={cx('h-10 w-10', effectiveBackClass)} />
   );
 
   const titleNode =

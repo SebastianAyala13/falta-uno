@@ -6,6 +6,7 @@ import { Alert, Linking, Platform, Pressable, ScrollView, Share, Text, View } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Avatar from '@/components/Avatar';
+import { BackButton } from '@/components/BackButton';
 import Badge from '@/components/Badge';
 import CanchaMap from '@/components/CanchaMap';
 import FadeIn from '@/components/FadeIn';
@@ -105,9 +106,7 @@ export default function PartidoDetalle() {
             />
             <SafeAreaView edges={['top']}>
               <View className="flex-row items-center justify-between px-5 pt-2">
-                <Pressable onPress={() => router.back()} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-black/30">
-                  <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-                </Pressable>
+                <BackButton variant="overlay" />
                 <Pressable onPress={compartir} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-black/30">
                   <Ionicons name="share-social-outline" size={20} color={Colors.cream} />
                 </Pressable>

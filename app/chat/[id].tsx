@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Avatar from '@/components/Avatar';
+import { BackButton } from '@/components/BackButton';
 import ModeracionBoton from '@/components/ModeracionBoton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
@@ -23,7 +24,6 @@ const hora = (iso: string) => {
 
 export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
   const { profile } = useAuth();
 
   const partido = useStore((s) => s.getPartido(id));
@@ -51,9 +51,7 @@ export default function Chat() {
     <Screen edges={['top']} glow={false}>
       {/* Header */}
       <View className="flex-row items-center border-b border-border px-4 pb-3 pt-1">
-        <Pressable onPress={() => router.back()} hitSlop={12} className="mr-2 h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
+        <BackButton className="mr-2" />
         <View className="h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
           <Ionicons name="football" size={20} color={Colors.primary} />
         </View>

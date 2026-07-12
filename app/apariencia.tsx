@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { BackButton } from '@/components/BackButton';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import { THEMES } from '@/constants/themes';
@@ -10,7 +10,6 @@ import { useTheme, useThemeMeta } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 
 export default function Apariencia() {
-  const router = useRouter();
   const theme = useTheme();
   const activo = useThemeMeta();
   const setTema = useStore((s) => s.setTema);
@@ -24,9 +23,7 @@ export default function Apariencia() {
     <Screen edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center px-5 pb-2 pt-1">
-        <Pressable onPress={() => router.back()} hitSlop={12} className="mr-3 h-10 w-10 items-center justify-center rounded-sm bg-card">
-          <Ionicons name="chevron-back" size={22} color={theme.cream} />
-        </Pressable>
+        <BackButton className="mr-3" />
         <View>
           <Text className="font-display text-3xl uppercase text-cream">Apariencia</Text>
           <Text className="font-body text-sm text-muted">Elegí el color de tu Falta Uno</Text>

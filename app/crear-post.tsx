@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { ScreenHeader } from '@/components/BackButton';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
@@ -59,13 +60,13 @@ export default function CrearPost() {
   return (
     <Screen edges={['top']} glow={false}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 pb-2 pt-1">
-        <Pressable onPress={() => router.back()} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="close" size={22} color={Colors.cream} />
-        </Pressable>
-        <Text className="font-display text-xl uppercase text-cream">Nuevo post</Text>
-        <View className="w-10" />
-      </View>
+      <ScreenHeader
+        title="Nuevo post"
+        titleSize="xl"
+        backIcon="close"
+        titleAlign="center"
+        className="px-4 pb-2 pt-1"
+      />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView

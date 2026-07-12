@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import Avatar from '@/components/Avatar';
+import { BackButton, ScreenHeader } from '@/components/BackButton';
 import ModeracionBoton from '@/components/ModeracionBoton';
 import Screen from '@/components/Screen';
 import { Colors } from '@/constants/colors';
@@ -36,9 +37,7 @@ export default function PostDetalle() {
     return (
       <Screen edges={['top']}>
         <View className="flex-row items-center px-4 pt-1">
-          <Pressable onPress={() => router.back()} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-card">
-            <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-          </Pressable>
+          <BackButton />
         </View>
         <View className="flex-1 items-center justify-center">
           <Text className="font-body text-sm text-muted">Este post ya no existe, parce.</Text>
@@ -68,12 +67,13 @@ export default function PostDetalle() {
   return (
     <Screen edges={['top']} glow={false}>
       {/* Header */}
-      <View className="flex-row items-center border-b border-border px-4 pb-3 pt-1">
-        <Pressable onPress={() => router.back()} hitSlop={12} className="mr-2 h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
-        <Text className="font-display text-xl uppercase text-cream">Publicación</Text>
-      </View>
+      <ScreenHeader
+        title="Publicación"
+        titleSize="xl"
+        borderBottom
+        backClassName="mr-2"
+        className="px-4 pb-3 pt-1"
+      />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

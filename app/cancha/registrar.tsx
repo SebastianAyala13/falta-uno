@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 
 import AmenidadPicker from '@/components/AmenidadPicker';
+import { BackButton } from '@/components/BackButton';
 import Chip from '@/components/Chip';
 import DateTimeField from '@/components/DateTimeField';
 import ErrorBanner from '@/components/ErrorBanner';
@@ -224,12 +225,7 @@ export default function RegistrarCancha() {
     <Screen edges={['top']}>
       {/* Header: back + barra de progreso */}
       <View className="flex-row items-center gap-3 px-6 pb-3 pt-2">
-        <Pressable
-          onPress={() => (paso > 1 ? atras() : router.back())}
-          hitSlop={12}
-          className="h-10 w-10 items-center justify-center rounded-full bg-card">
-          <Ionicons name="chevron-back" size={22} color={Colors.cream} />
-        </Pressable>
+        <BackButton onPress={() => (paso > 1 ? atras() : router.back())} />
         <View className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ backgroundColor: Colors.border }}>
           <View
             className="h-full rounded-full"

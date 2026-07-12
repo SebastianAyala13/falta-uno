@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
+import { ScreenHeader } from '@/components/BackButton';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
@@ -88,18 +89,13 @@ export default function Checkout() {
   return (
     <Screen edges={['top', 'bottom']}>
       {/* Header */}
-      <View className="flex-row items-center px-6 pb-2 pt-2">
-        {paso === 'metodo' ? (
-          <Pressable onPress={() => router.back()} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-card">
-            <Ionicons name="chevron-down" size={22} color={Colors.cream} />
-          </Pressable>
-        ) : (
-          <View className="h-10 w-10" />
-        )}
-        <Text className="ml-3 font-display text-2xl uppercase text-cream">
-          {paso === 'listo' ? 'Comprobante' : 'Pagar cupo'}
-        </Text>
-      </View>
+      <ScreenHeader
+        title={paso === 'listo' ? 'Comprobante' : 'Pagar cupo'}
+        titleSize="2xl"
+        backIcon="chevron-down"
+        showBack={paso === 'metodo'}
+        className="px-6 pb-2 pt-2"
+      />
 
       {paso === 'procesando' ? <Procesando medio={medio} /> : null}
       {paso === 'listo' && pago ? <Comprobante pago={pago} medio={medio} cancha={partido.cancha} recordatorio={recordatorio} onClose={() => router.replace({ pathname: '/partido/[id]', params: { id } })} /> : null}

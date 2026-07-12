@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { BackButton } from '@/components/BackButton';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import { urgencyLabel } from '@/components/UrgencyPill';
 import { THEMES } from '@/constants/themes';
 import { haptics } from '@/lib/haptics';
 import { useTheme, useThemeMeta } from '@/lib/theme';
@@ -35,7 +36,7 @@ export default function Apariencia() {
         <FadeIn delay={40}>
           <View className="mb-6 overflow-hidden rounded-lg border border-borderStrong bg-card p-5">
             <Text className="font-body text-xs uppercase tracking-widest text-muted">Vista previa</Text>
-            <Text className="mt-1 font-display text-3xl uppercase text-cream">¡Falta 1, parce! 🔥</Text>
+            <Text className="mt-1 font-display text-3xl uppercase text-cream">{`${urgencyLabel(1, { urgentLabel: '¡Falta 1, parce!' })} 🔥`}</Text>
             <View className="mt-4 flex-row gap-3">
               <View className="rounded-sm bg-primary px-4 py-2.5">
                 <Text className="font-body-bold text-sm uppercase text-ink">Unirme</Text>

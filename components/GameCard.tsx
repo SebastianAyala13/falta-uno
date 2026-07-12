@@ -5,10 +5,12 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 
 import Avatar from '@/components/Avatar';
 import ProgressBar from '@/components/ProgressBar';
+import UrgencyPill from '@/components/UrgencyPill';
 import { Colors } from '@/constants/colors';
 import { Duration } from '@/constants/motion';
 import { fechaCorta, precioCOP } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
+import { useTheme } from '@/lib/theme';
 import type { PartidoConOrganizador } from '@/types/database';
 
 interface GameCardProps {
@@ -20,6 +22,7 @@ interface GameCardProps {
 /** Tarjeta premium de un partido. Toca para ver el detalle. */
 export default function GameCard({ partido, destacado = false }: GameCardProps) {
   const router = useRouter();
+  const c = useTheme();
   const lleno = partido.cupos_ocupados >= partido.cupos_totales;
   const faltan = partido.cupos_totales - partido.cupos_ocupados;
   const urgente = faltan === 1;
@@ -58,27 +61,21 @@ export default function GameCard({ partido, destacado = false }: GameCardProps) 
             : null,
         ]}>
       {/* Franja superior con estado de cupos */}
-      <View
-        className="flex-row items-center justify-between px-4 py-2"
-        style={{ backgroundColor: lleno ? Colors.border : urgente ? Colors.accent : Colors.primary }}>
-        <View className="flex-row items-center gap-1.5">
-          <Ionicons
-            name={lleno ? 'lock-closed' : 'flame'}
-            size={13}
-            color={lleno ? Colors.muted : Colors.ink}
-          />
+      <UrgencyPill
+        faltan={faltan}
+        tone="solid"
+        shape="strip"
+        size="md"
+        fill
+        urgentLabel="¡Falta 1, parce!"
+        trailing={
           <Text
-            className="font-body-bold text-xs uppercase tracking-wider"
-            style={{ color: lleno ? Colors.muted : Colors.ink }}>
-            {lleno ? 'Cupo lleno' : faltan === 1 ? '¡Falta 1, parce!' : `Faltan ${faltan}`}
+            className="font-body-bold text-xs uppercase"
+            style={{ color: lleno ? c.muted : c.ink }}>
+            {partido.formato}
           </Text>
-        </View>
-        <Text
-          className="font-body-bold text-xs uppercase"
-          style={{ color: lleno ? Colors.muted : Colors.ink }}>
-          {partido.formato}
-        </Text>
-      </View>
+        }
+      />
 
       <View className="p-4">
         {/* Cancha + zona */}

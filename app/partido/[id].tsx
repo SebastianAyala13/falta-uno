@@ -14,6 +14,7 @@ import GlowButton from '@/components/GlowButton';
 import ProgressBar from '@/components/ProgressBar';
 import Screen from '@/components/Screen';
 import StatCard from '@/components/StatCard';
+import UrgencyPill, { urgencyLabel } from '@/components/UrgencyPill';
 import { Colors } from '@/constants/colors';
 import { COMISION_SERVICIO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
@@ -68,7 +69,7 @@ export default function PartidoDetalle() {
       message:
         `⚽ ${partido.cancha} (${partido.formato}) · ${partido.zona}, Pereira\n` +
         `${fechaLarga(partido.fecha)} a las ${partido.hora}\n` +
-        `${faltan === 1 ? '¡Falta 1!' : `Faltan ${faltan}`} · ${precioCOP(partido.precio)} por jugador\n\n` +
+        `${urgencyLabel(faltan)} · ${precioCOP(partido.precio)} por jugador\n\n` +
         `Cuadrate conmigo en Falta Uno 👟🔥`,
     });
   };
@@ -155,12 +156,7 @@ export default function PartidoDetalle() {
             <View className="mb-4 rounded-lg border border-borderStrong bg-card p-4">
               <View className="mb-3 flex-row items-center justify-between">
                 <Text className="font-display text-xl uppercase text-cream">La llave</Text>
-                <View className="flex-row items-center gap-1 rounded-full px-2.5 py-1" style={{ backgroundColor: (lleno ? Colors.muted : faltan === 1 ? Colors.accent : Colors.primary) + '22' }}>
-                  <Ionicons name={lleno ? 'lock-closed' : 'flame'} size={12} color={lleno ? Colors.muted : faltan === 1 ? Colors.accent : Colors.primary} />
-                  <Text className="font-body-bold text-xs uppercase" style={{ color: lleno ? Colors.muted : faltan === 1 ? Colors.accent : Colors.primary }}>
-                    {lleno ? 'Cupo lleno' : faltan === 1 ? '¡Falta 1!' : `Faltan ${faltan}`}
-                  </Text>
-                </View>
+                <UrgencyPill faltan={faltan} tone="tint" shape="pill" size="sm" />
               </View>
               <ProgressBar value={partido.cupos_ocupados / partido.cupos_totales} urgente={faltan === 1} />
               <Text className="mb-3 mt-2 font-body text-xs text-muted">

@@ -4,9 +4,9 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { BackButton } from '@/components/BackButton';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
-import { urgencyLabel } from '@/components/UrgencyPill';
 import { THEMES } from '@/constants/themes';
 import { haptics } from '@/lib/haptics';
+import { urgencyLabel } from '@/lib/format';
 import { useTheme, useThemeMeta } from '@/lib/theme';
 import { useStore } from '@/lib/store';
 

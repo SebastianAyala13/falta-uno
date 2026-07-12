@@ -2,22 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
+import { urgencyLabel } from '@/lib/format';
 import { useTheme } from '@/lib/theme';
-
-/**
- * Copy de urgencia de cupos — **fuente única de verdad** del wording.
- * `faltan<=0` → `fullLabel` (default `'Cupo lleno'`);
- * `faltan===1` → `urgentLabel` (default `'¡Falta 1!'`);
- * si no, `` `Faltan ${faltan}` ``. Pura: no depende del tema ni del store.
- */
-export function urgencyLabel(
-  faltan: number,
-  { urgentLabel = '¡Falta 1!', fullLabel = 'Cupo lleno' }: { urgentLabel?: string; fullLabel?: string } = {},
-): string {
-  if (faltan <= 0) return fullLabel;
-  if (faltan === 1) return urgentLabel;
-  return `Faltan ${faltan}`;
-}
 
 type Tone = 'solid' | 'tint';
 type Shape = 'strip' | 'pill';

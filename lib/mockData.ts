@@ -3,7 +3,7 @@
  * Se usan mientras no haya backend conectado. Cuando integres Supabase,
  * reemplazá estas constantes por queries reales a `supabase.from(...)`.
  */
-import { urgencyLabel } from '@/components/UrgencyPill';
+import { urgencyLabel } from '@/lib/format';
 import type { PartidoConOrganizador, Post, Profile } from '@/types/database';
 
 export const usuarioActual: Profile = {

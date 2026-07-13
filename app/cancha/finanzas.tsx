@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Modal,
   Pressable,
@@ -12,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';
 import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
@@ -19,8 +19,8 @@ import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
+import { CardListSkeleton, SkeletonBlock } from '@/components/Skeleton';
 import { BANCOS, COMISION_CANCHA_DEFAULT, MEMBRESIA, MERCADOPAGO_CONFIGURADO } from '@/constants/config';
-import type { Palette } from '@/constants/themes';
 import { useAuth } from '@/lib/auth';
 import {
   getDatosDesembolso,
@@ -50,18 +50,17 @@ const TIPO_MOVIMIENTO: Record<MovimientoCancha['tipo'], string> = {
   ajuste: 'Ajuste',
 };
 
-const ESTADO_RETIRO = (c: Palette): Record<Retiro['estado'], { label: string; color: string }> => ({
-  solicitado: { label: 'Solicitado', color: c.warning },
-  procesando: { label: 'Procesando', color: c.warning },
-  pagado: { label: 'Pagado', color: c.primary },
-  rechazado: { label: 'Rechazado', color: c.danger },
-});
+const ESTADO_RETIRO: Record<Retiro['estado'], { label: string; tone: 'primary' | 'warning' | 'danger' }> = {
+  solicitado: { label: 'Solicitado', tone: 'warning' },
+  procesando: { label: 'Procesando', tone: 'warning' },
+  pagado: { label: 'Pagado', tone: 'primary' },
+  rechazado: { label: 'Rechazado', tone: 'danger' },
+};
 
 export default function Finanzas() {
   const router = useRouter();
   const { profile } = useAuth();
   const c = useTheme();
-  const estadoRetiro = ESTADO_RETIRO(c);
 
   const [cancha, setCancha] = useState<Cancha | null>(null);
   const [saldo, setSaldo] = useState(0);
@@ -191,8 +190,18 @@ export default function Finanzas() {
       <ScreenHeader title="Finanzas" className="px-6 pb-2 pt-2" />
 
       {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={c.primary} />
+        <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
+          <View className="rounded-lg border border-border bg-card p-6">
+            <SkeletonBlock height={12} width={'42%'} />
+            <View style={{ height: 16 }} />
+            <SkeletonBlock height={40} width={'60%'} />
+            <View style={{ height: 22 }} />
+            <SkeletonBlock height={48} radius={18} />
+          </View>
+          <View style={{ height: 28 }} />
+          <SkeletonBlock height={18} width={'35%'} />
+          <View style={{ height: 14 }} />
+          <CardListSkeleton rows={3} />
         </View>
       ) : !cancha ? (
         <EmptyState
@@ -369,7 +378,7 @@ export default function Finanzas() {
                 Retiros
               </Text>
               {retiros.map((r) => {
-                const estado = estadoRetiro[r.estado];
+                const estado = ESTADO_RETIRO[r.estado];
                 return (
                   <View
                     key={r.id}
@@ -378,15 +387,7 @@ export default function Finanzas() {
                       <Text className="font-display text-base text-cream">{precioCOP(r.monto)}</Text>
                       <Text className="font-body text-xs text-muted">{tiempoRelativo(r.solicitado_at)}</Text>
                     </View>
-                    <View
-                      className="rounded-full px-3 py-1"
-                      style={{ backgroundColor: estado.color + '22' }}>
-                      <Text
-                        className="font-body-bold text-xs uppercase tracking-wide"
-                        style={{ color: estado.color }}>
-                        {estado.label}
-                      </Text>
-                    </View>
+                    <Badge label={estado.label} tone={estado.tone} />
                   </View>
                 );
               })}

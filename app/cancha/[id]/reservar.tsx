@@ -1,24 +1,40 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
 import { ScreenHeader } from '@/components/BackButton';
 import DateTimeField from '@/components/DateTimeField';
+import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
+import { SkeletonBlock } from '@/components/Skeleton';
 import { COMISION_CANCHA_DEFAULT, WOMPI_CONFIGURADO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { crearReserva, getCancha, slotsDelDia, type Slot } from '@/lib/canchas';
 import { fechaLarga, precioCOP } from '@/lib/format';
+import { haptics } from '@/lib/haptics';
 import { crearCheckoutReserva } from '@/lib/payments';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import type { Cancha } from '@/types/database';
 
 const hoy = () => new Date().toISOString().slice(0, 10);
+
+/** Grilla skeleton (3 col) que imita los turnos mientras cargan. */
+function SlotsGridSkeleton() {
+  return (
+    <View className="flex-row flex-wrap" style={{ marginHorizontal: -4 }}>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <View key={i} className="w-1/3 p-1">
+          <SkeletonBlock height={56} radius={18} />
+        </View>
+      ))}
+    </View>
+  );
+}
 
 export default function Reservar() {
   const router = useRouter();
@@ -152,14 +168,22 @@ export default function Reservar() {
       <ScreenHeader title="Reservar" className="px-6 pb-2 pt-2" />
 
       {cargando ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={c.primary} />
+        <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
+          <SkeletonBlock height={18} width={'55%'} />
+          <View style={{ height: 20 }} />
+          <SkeletonBlock height={52} radius={12} />
+          <View style={{ height: 22 }} />
+          <SkeletonBlock height={14} width={'30%'} />
+          <View style={{ height: 12 }} />
+          <SlotsGridSkeleton />
         </View>
       ) : !cancha ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <Ionicons name="alert-circle-outline" size={42} color={c.muted} />
-          <Text className="mt-3 text-center font-body text-base text-muted">Esta cancha ya no existe</Text>
-        </View>
+        <EmptyState
+          icon="alert-circle-outline"
+          titulo="Cancha no encontrada"
+          texto="Esta cancha ya no está disponible. Puede que la hayan dado de baja."
+          cta={{ label: 'Volver', icon: 'arrow-back', onPress: () => router.back() }}
+        />
       ) : (
         <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
           <FadeIn delay={40}>
@@ -168,9 +192,7 @@ export default function Reservar() {
 
             <Text className="mb-2 font-body-semibold text-sm text-cream">Horarios</Text>
             {cargandoSlots ? (
-              <View className="items-center py-8">
-                <ActivityIndicator color={c.primary} />
-              </View>
+              <SlotsGridSkeleton />
             ) : slots.length === 0 ? (
               <Text className="py-4 font-body text-sm text-muted">
                 La cancha no tiene horarios para ese día. Probá con otra fecha.
@@ -183,7 +205,7 @@ export default function Reservar() {
                     <View key={s.hora_inicio} className="w-1/3 p-1">
                       <Pressable
                         disabled={s.ocupado}
-                        onPress={() => setSlot(s)}
+                        onPress={() => { haptics.select(); setSlot(s); }}
                         className="items-center rounded-md border px-2 py-3"
                         style={{
                           opacity: s.ocupado ? 0.4 : 1,
@@ -229,7 +251,7 @@ export default function Reservar() {
                     return (
                       <Pressable
                         key={m.key}
-                        onPress={() => setMedio(m.key)}
+                        onPress={() => { haptics.select(); setMedio(m.key); }}
                         className="flex-1 rounded-md border p-3"
                         style={{ backgroundColor: sel ? c.primary + '1A' : c.card, borderColor: sel ? c.primary : c.border }}>
                         <Ionicons name={m.icon} size={20} color={sel ? c.primary : c.muted} />

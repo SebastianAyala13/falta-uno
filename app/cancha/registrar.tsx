@@ -37,6 +37,7 @@ import {
 } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { crearEstablecimiento, subirFotoCancha } from '@/lib/canchas';
+import { haptics } from '@/lib/haptics';
 import { elegirImagen } from '@/lib/images';
 import { useTheme } from '@/lib/theme';
 import type { Amenidades } from '@/types/database';
@@ -124,6 +125,7 @@ export default function RegistrarCancha() {
   };
 
   const agregarFoto = async (i: number) => {
+    haptics.tap();
     const uri = await elegirImagen([16, 9]);
     if (!uri) return;
     setSubiendo(i);
@@ -137,8 +139,10 @@ export default function RegistrarCancha() {
     }
   };
 
-  const quitarFoto = (i: number, url: string) =>
+  const quitarFoto = (i: number, url: string) => {
+    haptics.tap();
     setCanchas((prev) => prev.map((cancha, j) => (j === i ? { ...cancha, fotos: cancha.fotos.filter((f) => f !== url) } : cancha)));
+  };
 
   const validarPaso = (): string | null => {
     switch (paso) {
@@ -277,7 +281,7 @@ export default function RegistrarCancha() {
               <View className="items-center">
                 <View className="my-6 flex-row items-center justify-center gap-6">
                   <Pressable
-                    onPress={() => cambiarCantidad(-1)}
+                    onPress={() => { haptics.select(); cambiarCantidad(-1); }}
                     disabled={cantidad <= 1}
                     hitSlop={8}
                     className="h-16 w-16 items-center justify-center rounded-md border border-border bg-card"
@@ -290,7 +294,7 @@ export default function RegistrarCancha() {
                     {cantidad}
                   </Text>
                   <Pressable
-                    onPress={() => cambiarCantidad(1)}
+                    onPress={() => { haptics.select(); cambiarCantidad(1); }}
                     disabled={cantidad >= 10}
                     hitSlop={8}
                     className="h-16 w-16 items-center justify-center rounded-md border border-border bg-card"
@@ -414,7 +418,7 @@ export default function RegistrarCancha() {
                     return (
                       <Pressable
                         key={op.label}
-                        onPress={() => setYaTienePartidos(op.v)}
+                        onPress={() => { haptics.select(); setYaTienePartidos(op.v); }}
                         className="flex-1 items-center rounded-md border p-5"
                         style={{
                           backgroundColor: activo ? c.primary + '1A' : c.card,
@@ -521,7 +525,7 @@ export default function RegistrarCancha() {
                 </View>
 
                 <Pressable
-                  onPress={() => setAcepta((v) => !v)}
+                  onPress={() => { haptics.light(); setAcepta((v) => !v); }}
                   className="mb-2 flex-row items-start gap-3 rounded-md border border-border bg-card p-3.5 active:border-primary/50">
                   <View
                     className="mt-0.5 h-6 w-6 items-center justify-center rounded-md border-2"

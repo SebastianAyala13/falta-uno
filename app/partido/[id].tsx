@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { Alert, Linking, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -36,6 +37,13 @@ export default function PartidoDetalle() {
   const inscrito = useStore((s) => s.estaInscrito(id));
   const salirse = useStore((s) => s.salirse);
   const hidratado = useStore((s) => s.hidratado);
+  const hidratar = useStore((s) => s.hidratar);
+
+  // Deep-link directo (sin pasar por las tabs): si llegamos sin hidratar, disparamos
+  // la carga. El gate de abajo muestra skeleton hasta que hidratado pase a true.
+  useEffect(() => {
+    if (!hidratado && profile?.id) hidratar(profile.id);
+  }, [hidratado, profile?.id, hidratar]);
 
   if (!partido) {
     // Durante la hidratación (Supabase) el store todavía no trajo el partido → skeleton,

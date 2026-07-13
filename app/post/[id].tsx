@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
@@ -33,9 +33,15 @@ export default function PostDetalle() {
   const toggleLike = useStore((s) => s.toggleLike);
   const comentar = useStore((s) => s.comentar);
   const hidratado = useStore((s) => s.hidratado);
+  const hidratar = useStore((s) => s.hidratar);
 
   const [texto, setTexto] = useState('');
   const uid = profile?.id ?? 'demo';
+
+  // Deep-link directo al post sin pasar por las tabs: disparamos la carga si hace falta.
+  useEffect(() => {
+    if (!hidratado && profile?.id) hidratar(profile.id);
+  }, [hidratado, profile?.id, hidratar]);
 
   if (!post) {
     // Durante la hidratación (Supabase) el post aún no llegó → skeleton, no "no existe".

@@ -8,7 +8,7 @@ interface EmptyStateProps {
   icon?: keyof typeof Ionicons.glyphMap;
   titulo: string;
   texto: string;
-  cta?: { label: string; onPress: () => void };
+  cta?: { label: string; onPress: () => void; icon?: keyof typeof Ionicons.glyphMap };
 }
 
 /** Estado vacío futbolero, reutilizable (feed, buscar, etc.). */
@@ -23,7 +23,7 @@ export default function EmptyState({ icon = 'football-outline', titulo, texto, c
       <Text className="mt-2 text-center font-body text-sm text-muted">{texto}</Text>
       {cta ? (
         <View className="mt-6 w-full">
-          <GlowButton label={cta.label} variant="primary" icon="add" onPress={cta.onPress} />
+          <GlowButton label={cta.label} variant="primary" icon={cta.icon ?? 'add'} onPress={cta.onPress} />
         </View>
       ) : null}
     </View>

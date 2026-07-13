@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { cx } from '@/lib/cx';
+import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
 
 /** Íconos admitidos por el botón de volver/cerrar. */
@@ -47,9 +48,15 @@ export function BackButton({
   const resolvedColor = color ?? theme.cream;
   const bg = variant === 'overlay' ? 'bg-black/30' : 'bg-card';
 
+  // Nav control → háptico Medium (§6). Sistémico: cubre el back de todas las pantallas.
+  const handlePress = () => {
+    haptics.tap();
+    (onPress ?? (() => router.back()))();
+  };
+
   return (
     <Pressable
-      onPress={onPress ?? (() => router.back())}
+      onPress={handlePress}
       hitSlop={hitSlop}
       className={cx('h-10 w-10 items-center justify-center rounded-full', bg, className)}>
       <Ionicons name={icon} size={size} color={resolvedColor} />

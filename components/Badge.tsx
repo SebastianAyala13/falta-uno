@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 
-type Tone = 'primary' | 'accent' | 'neutral' | 'danger';
+type Tone = 'primary' | 'accent' | 'neutral' | 'danger' | 'warning';
 
 interface BadgeProps {
   label: string;
@@ -12,6 +12,7 @@ const toneStyles: Record<Tone, { box: string; text: string }> = {
   accent: { box: 'bg-accent border border-accent', text: 'text-ink' },
   neutral: { box: 'bg-card border border-border', text: 'text-muted' },
   danger: { box: 'bg-danger/15 border border-danger/40', text: 'text-danger' },
+  warning: { box: 'bg-warning/15 border border-warning/40', text: 'text-warning' },
 };
 
 /** Etiqueta compacta para posición, nivel, formato, etc. */

@@ -9,10 +9,12 @@ import Avatar from '@/components/Avatar';
 import { BackButton } from '@/components/BackButton';
 import Badge from '@/components/Badge';
 import CanchaMap from '@/components/CanchaMap';
+import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import ProgressBar from '@/components/ProgressBar';
 import Screen from '@/components/Screen';
+import { SkeletonBlock } from '@/components/Skeleton';
 import StatCard from '@/components/StatCard';
 import UrgencyPill from '@/components/UrgencyPill';
 import { COMISION_SERVICIO } from '@/constants/config';
@@ -21,28 +23,32 @@ import { fechaLarga, precioCOP, urgencyLabel } from '@/lib/format';
 import { coordsDePartido } from '@/lib/geo';
 import { cancelarRecordatorio } from '@/lib/notifications';
 import { useStore } from '@/lib/store';
-import { useTheme } from '@/lib/theme';
+import { useTheme, useThemeMeta } from '@/lib/theme';
 
 export default function PartidoDetalle() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile } = useAuth();
   const c = useTheme();
+  const heroDark = useThemeMeta().dark;
 
   const partido = useStore((s) => s.getPartido(id));
   const inscrito = useStore((s) => s.estaInscrito(id));
   const salirse = useStore((s) => s.salirse);
+  const hidratado = useStore((s) => s.hidratado);
 
   if (!partido) {
+    // Durante la hidratación (Supabase) el store todavía no trajo el partido → skeleton,
+    // no "no existe". Ya hidratado y sin partido → de verdad no existe.
+    if (!hidratado) return <PartidoSkeleton />;
     return (
-      <Screen edges={['top', 'bottom']}>
-        <View className="flex-1 items-center justify-center px-6">
-          <Ionicons name="alert-circle-outline" size={48} color={c.muted} />
-          <Text className="mt-3 font-body text-base text-muted">Este partido ya no existe.</Text>
-          <Pressable onPress={() => router.back()} className="mt-4">
-            <Text className="font-body-semibold text-primary">Volver</Text>
-          </Pressable>
-        </View>
+      <Screen edges={['top']}>
+        <EmptyState
+          icon="alert-circle-outline"
+          titulo="Este partido ya no existe"
+          texto="Puede que lo hayan cancelado o que el cupo ya se haya cerrado."
+          cta={{ label: 'Volver', icon: 'arrow-back', onPress: () => router.back() }}
+        />
       </Screen>
     );
   }
@@ -52,6 +58,11 @@ export default function PartidoDetalle() {
   const comision = Math.round(partido.precio * COMISION_SERVICIO);
   const total = partido.precio + comision;
   const coords = coordsDePartido(partido);
+
+  const conFoto = !!partido.foto_url;
+  // Con foto: scrim oscuro sobre la imagen → texto claro. Sin foto: el degradé sigue el tema
+  // (en claro, verde de marca con texto oscuro, igual que el hero de home). Arregla Blanco.
+  const heroClaro = conFoto || heroDark;
 
   const abrirMapa = () => {
     const label = encodeURIComponent(partido.cancha);
@@ -99,7 +110,13 @@ export default function PartidoDetalle() {
             <Image source={{ uri: partido.foto_url }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" />
           ) : null}
           <LinearGradient
-            colors={partido.foto_url ? ['rgba(11,15,13,0.30)', 'rgba(11,15,13,0.94)'] : [c.secondary, '#0C1712']}
+            colors={
+              conFoto
+                ? ['rgba(11,15,13,0.30)', 'rgba(11,15,13,0.94)']
+                : heroDark
+                  ? [c.secondary, c.background]
+                  : [c.primary, c.secondary]
+            }
             style={{ paddingBottom: 24 }}>
             <View
               className="absolute rounded-full"
@@ -118,12 +135,14 @@ export default function PartidoDetalle() {
                   <Badge label={partido.formato} tone="accent" />
                   <Badge label={partido.nivel} tone="neutral" />
                 </View>
-                <Text className="mt-3 font-display text-5xl uppercase text-cream" style={{ lineHeight: 50, paddingTop: 4 }}>
+                <Text
+                  className={`mt-3 font-display text-5xl uppercase ${heroClaro ? 'text-cream' : 'text-ink'}`}
+                  style={{ lineHeight: 50, paddingTop: 4 }}>
                   {partido.cancha}
                 </Text>
                 <View className="mt-2 flex-row items-center">
-                  <Ionicons name="location-sharp" size={15} color={c.cream} />
-                  <Text className="ml-1 font-body text-base text-cream/80">{partido.zona} · Pereira</Text>
+                  <Ionicons name="location-sharp" size={15} color={heroClaro ? c.cream : c.ink} />
+                  <Text className={`ml-1 font-body text-base ${heroClaro ? 'text-cream/80' : 'text-ink/80'}`}>{partido.zona} · Pereira</Text>
                 </View>
               </View>
             </SafeAreaView>
@@ -276,6 +295,30 @@ export default function PartidoDetalle() {
         )}
       </View>
     </View>
+  );
+}
+
+/** Silueta del detalle mientras el store hidrata (hero + stats + tarjetas). */
+function PartidoSkeleton() {
+  return (
+    <Screen edges={['top']}>
+      <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
+        <SkeletonBlock height={200} radius={24} />
+        <View style={{ height: 20 }} />
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <SkeletonBlock height={72} radius={18} />
+          </View>
+          <View className="flex-1">
+            <SkeletonBlock height={72} radius={18} />
+          </View>
+        </View>
+        <View style={{ height: 16 }} />
+        <SkeletonBlock height={150} radius={24} />
+        <View style={{ height: 16 }} />
+        <SkeletonBlock height={84} radius={24} />
+      </View>
+    </Screen>
   );
 }
 

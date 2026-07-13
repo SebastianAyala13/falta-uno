@@ -7,9 +7,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import Avatar from '@/components/Avatar';
-import { BackButton, ScreenHeader } from '@/components/BackButton';
+import { ScreenHeader } from '@/components/BackButton';
+import EmptyState from '@/components/EmptyState';
 import ModeracionBoton from '@/components/ModeracionBoton';
 import Screen from '@/components/Screen';
+import { CardListSkeleton } from '@/components/Skeleton';
 import { useAuth } from '@/lib/auth';
 import { tiempoRelativo } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
@@ -30,19 +32,28 @@ export default function PostDetalle() {
   const comentarios = comentariosRaw.filter((com) => !bloqueados.includes(com.autor_id));
   const toggleLike = useStore((s) => s.toggleLike);
   const comentar = useStore((s) => s.comentar);
+  const hidratado = useStore((s) => s.hidratado);
 
   const [texto, setTexto] = useState('');
   const uid = profile?.id ?? 'demo';
 
   if (!post) {
+    // Durante la hidratación (Supabase) el post aún no llegó → skeleton, no "no existe".
     return (
       <Screen edges={['top']}>
-        <View className="flex-row items-center px-4 pt-1">
-          <BackButton />
-        </View>
-        <View className="flex-1 items-center justify-center">
-          <Text className="font-body text-sm text-muted">Este post ya no existe, parce.</Text>
-        </View>
+        <ScreenHeader title="Publicación" titleSize="xl" borderBottom backClassName="mr-2" className="px-4 pb-3 pt-1" />
+        {!hidratado ? (
+          <View style={{ padding: 16 }}>
+            <CardListSkeleton rows={3} />
+          </View>
+        ) : (
+          <EmptyState
+            icon="document-outline"
+            titulo="Publicación no encontrada"
+            texto="Este post ya no está disponible, parce."
+            cta={{ label: 'Volver al muro', icon: 'arrow-back', onPress: () => router.back() }}
+          />
+        )}
       </Screen>
     );
   }

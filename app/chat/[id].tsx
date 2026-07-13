@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import Avatar from '@/components/Avatar';
-import { BackButton } from '@/components/BackButton';
-import ModeracionBoton from '@/components/ModeracionBoton';
+import { ScreenHeader } from '@/components/BackButton';
+import ChatBubble from '@/components/ChatBubble';
+import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import Screen from '@/components/Screen';
 import { useAuth } from '@/lib/auth';
 import { useChatMensajes } from '@/lib/chat';
@@ -14,13 +15,6 @@ import { MENSAJE_BLOQUEO_FILTRO, contieneContenidoObjetable } from '@/lib/modera
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import type { Mensaje } from '@/types/database';
-
-const hora = (iso: string) => {
-  const d = new Date(iso);
-  const h = d.getHours();
-  const m = d.getMinutes();
-  return `${h < 10 ? '0' + h : h}:${m < 10 ? '0' + m : m}`;
-};
 
 export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,14 +29,16 @@ export default function Chat() {
   const mensajes = mensajesRaw.filter((m) => !bloqueados.includes(m.autor_id));
 
   const [texto, setTexto] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const listRef = useRef<FlatList<Mensaje>>(null);
 
   const enviar = () => {
     if (!texto.trim()) return;
     if (contieneContenidoObjetable(texto)) {
-      Alert.alert('Revisá tu mensaje', MENSAJE_BLOQUEO_FILTRO);
+      setError(MENSAJE_BLOQUEO_FILTRO);
       return;
     }
+    setError(null);
     enviarMensaje({ id: profile?.id ?? 'demo', nombre: profile?.nombre ?? 'Vos' }, texto);
     setTexto('');
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
@@ -50,22 +46,23 @@ export default function Chat() {
 
   return (
     <Screen edges={['top']} glow={false}>
-      {/* Header */}
-      <View className="flex-row items-center border-b border-border px-4 pb-3 pt-1">
-        <BackButton className="mr-2" />
-        <View className="h-10 w-10 items-center justify-center rounded-sm bg-primary/15">
-          <Ionicons name="football" size={20} color={c.primary} />
-        </View>
-        <View className="ml-3 flex-1">
-          <Text className="font-body-bold text-base text-cream" numberOfLines={1}>
-            {partido?.cancha ?? 'Chat del partido'}
-          </Text>
-          <View className="flex-row items-center gap-1.5">
-            {enVivo ? <View className="h-2 w-2 rounded-full bg-primary" /> : null}
-            <Text className="font-body text-xs text-muted">{enVivo ? 'En vivo' : 'Chat del parche'}</Text>
+      {/* Header del parche */}
+      <ScreenHeader borderBottom backClassName="mr-2" className="px-4 pb-3 pt-1">
+        <View className="flex-1 flex-row items-center">
+          <View className="h-10 w-10 items-center justify-center rounded-sm bg-primary/15">
+            <Ionicons name="football" size={20} color={c.primary} />
+          </View>
+          <View className="ml-3 flex-1">
+            <Text className="font-body-bold text-base text-cream" numberOfLines={1}>
+              {partido?.cancha ?? 'Chat del partido'}
+            </Text>
+            <View className="flex-row items-center gap-1.5">
+              {enVivo ? <View className="h-2 w-2 rounded-full bg-primary" /> : null}
+              <Text className="font-body text-xs text-muted">{enVivo ? 'En vivo' : 'Chat del parche'}</Text>
+            </View>
           </View>
         </View>
-      </View>
+      </ScreenHeader>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -79,22 +76,27 @@ export default function Chat() {
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View className="mt-24 items-center">
-              <Ionicons name="chatbubbles-outline" size={40} color={c.muted} />
-              <Text className="mt-3 text-center font-body text-sm text-muted">
-                Rompé el hielo, parce.{'\n'}Saludá al parche 👋
-              </Text>
-            </View>
+            <EmptyState
+              icon="chatbubbles-outline"
+              titulo="Rompé el hielo"
+              texto="Saludá al parche y arrancá la conversación."
+            />
           }
-          renderItem={({ item }) => <Burbuja msg={item} mio={item.autor_id === (profile?.id ?? 'demo')} />}
+          renderItem={({ item }) => (
+            <ChatBubble msg={item} mio={item.autor_id === (profile?.id ?? 'demo')} />
+          )}
         />
 
         {/* Input */}
         <SafeAreaView edges={['bottom']} className="border-t border-border bg-card">
+          <ErrorBanner message={error} className="mx-3 mt-2" />
           <View className="flex-row items-end gap-2 px-3 py-2">
             <TextInput
               value={texto}
-              onChangeText={setTexto}
+              onChangeText={(t) => {
+                setTexto(t);
+                if (error) setError(null);
+              }}
               placeholder="Escribí algo…"
               placeholderTextColor={c.muted}
               multiline
@@ -111,41 +113,5 @@ export default function Chat() {
         </SafeAreaView>
       </KeyboardAvoidingView>
     </Screen>
-  );
-}
-
-function Burbuja({ msg, mio }: { msg: Mensaje; mio: boolean }) {
-  const c = useTheme();
-  return (
-    <View className={`max-w-[82%] ${mio ? 'self-end' : 'self-start'} flex-row items-end gap-2`}>
-      {!mio ? <Avatar nombre={msg.autor_nombre} size={28} /> : null}
-      <View
-        className="rounded-md px-3.5 py-2.5"
-        style={{
-          backgroundColor: mio ? c.primary : c.card,
-          borderWidth: mio ? 0 : 1,
-          borderColor: c.border,
-          borderBottomRightRadius: mio ? 4 : 16,
-          borderBottomLeftRadius: mio ? 16 : 4,
-        }}>
-        {!mio ? (
-          <Text className="mb-0.5 font-body-semibold text-xs text-primary">{msg.autor_nombre}</Text>
-        ) : null}
-        <Text className={`font-body text-base ${mio ? 'text-ink' : 'text-cream'}`}>{msg.texto}</Text>
-        <Text className={`mt-1 text-right font-body text-xs ${mio ? 'text-ink/60' : 'text-muted'}`}>
-          {hora(msg.created_at)}
-        </Text>
-      </View>
-      {!mio ? (
-        <ModeracionBoton
-          tipo="mensaje"
-          contenidoId={msg.id}
-          autorId={msg.autor_id}
-          autorNombre={msg.autor_nombre}
-          texto={msg.texto}
-          size={16}
-        />
-      ) : null}
-    </View>
   );
 }

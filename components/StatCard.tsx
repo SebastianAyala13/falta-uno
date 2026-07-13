@@ -1,12 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
+import { cx } from '@/lib/cx';
 import { useTheme } from '@/lib/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
-
-/** Une clases ignorando vacíos/false. */
-const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ');
 
 type StatCardProps = {
   /** Valor principal, ya formateado como string. */
@@ -15,8 +13,8 @@ type StatCardProps = {
   label: string;
   /** Ícono opcional. Si se omite, no se dibuja ícono. */
   icon?: IconName;
-  /** Tratamiento del ícono: suelto arriba, dentro de un badge circular, o en línea con la etiqueta. */
-  iconStyle?: 'plain' | 'badge' | 'inline';
+  /** Tratamiento del ícono: suelto arriba o dentro de un badge circular. */
+  iconStyle?: 'plain' | 'badge';
   /** Color de acento del ícono (y del fondo del badge). Default: `primary` del tema. */
   tint?: string;
   /**
@@ -40,8 +38,6 @@ type StatCardProps = {
   highlight?: { color: string };
   /** `numberOfLines=1` + `adjustsFontSizeToFit` en el valor (evita desbordes). */
   fitValue?: boolean;
-  /** Hace la tarjeta presionable. */
-  onPress?: () => void;
   /** Clases externas (flex, márgenes) — el componente NO gestiona layout externo. */
   className?: string;
 };
@@ -68,14 +64,13 @@ export default function StatCard({
   labelWeight = 'semibold',
   highlight,
   fitValue = false,
-  onPress,
   className = '',
 }: StatCardProps) {
   const c = useTheme();
   const accent = tint ?? c.primary;
   const resolvedValueColor = highlight ? highlight.color : valueColor ?? c.cream;
 
-  const hasTopIcon = !!icon && iconStyle !== 'inline';
+  const hasTopIcon = !!icon;
   const afterIconGap = hasTopIcon ? (iconStyle === 'badge' ? 'mt-3' : 'mt-2') : '';
 
   // Contenedor: solo el "look" de la tarjeta; flex/márgenes llegan por className.
@@ -134,55 +129,32 @@ export default function StatCard({
     </Text>
   );
 
-  let inner;
-  if (iconStyle === 'inline' && icon) {
-    // No usado por los 6 sitios actuales; disponible para tiles con ícono en línea.
-    inner = (
+  const iconNode =
+    !hasTopIcon || !icon ? null : iconStyle === 'badge' ? (
+      <View
+        className="h-9 w-9 items-center justify-center rounded-full"
+        style={{ backgroundColor: accent + '22' }}>
+        <Ionicons name={icon} size={18} color={accent} />
+      </View>
+    ) : (
+      <Ionicons name={icon} size={18} color={accent} />
+    );
+  const labelNode = <Text className={cx(labelGap, labelClass)}>{label}</Text>;
+  const inner =
+    labelPosition === 'top' ? (
       <>
-        <View className="flex-row items-center">
-          <Ionicons name={icon} size={18} color={accent} />
-          <Text className={cx('ml-2', labelClass)}>{label}</Text>
-        </View>
-        <Text className={cx('mt-2', valueSizeClass)} style={valueStyle}>
-          {value}
-        </Text>
+        {iconNode}
+        {labelNode}
+        {valueNode}
+      </>
+    ) : (
+      <>
+        {iconNode}
+        {valueNode}
+        {labelNode}
       </>
     );
-  } else {
-    const iconNode =
-      !hasTopIcon || !icon ? null : iconStyle === 'badge' ? (
-        <View
-          className="h-9 w-9 items-center justify-center rounded-full"
-          style={{ backgroundColor: accent + '22' }}>
-          <Ionicons name={icon} size={18} color={accent} />
-        </View>
-      ) : (
-        <Ionicons name={icon} size={18} color={accent} />
-      );
-    const labelNode = <Text className={cx(labelGap, labelClass)}>{label}</Text>;
-    inner =
-      labelPosition === 'top' ? (
-        <>
-          {iconNode}
-          {labelNode}
-          {valueNode}
-        </>
-      ) : (
-        <>
-          {iconNode}
-          {valueNode}
-          {labelNode}
-        </>
-      );
-  }
 
-  if (onPress) {
-    return (
-      <Pressable className={containerClass} style={containerStyle} onPress={onPress}>
-        {inner}
-      </Pressable>
-    );
-  }
   return (
     <View className={containerClass} style={containerStyle}>
       {inner}

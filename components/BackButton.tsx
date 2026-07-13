@@ -3,10 +3,8 @@ import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { cx } from '@/lib/cx';
 import { useTheme } from '@/lib/theme';
-
-/** Une clases ignorando vacíos/false. */
-const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ');
 
 /** Íconos admitidos por el botón de volver/cerrar. */
 type BackIcon = 'chevron-back' | 'chevron-down' | 'close';

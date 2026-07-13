@@ -16,7 +16,7 @@ export default function MisPartidos() {
   const misPartidos = useStore(useShallow((s) => s.misPartidos()));
   const calificaciones = useStore((s) => s.calificaciones);
   const c = useTheme();
-  const yaCalifico = (id: string) => calificaciones.some((c) => c.partido_id === id);
+  const yaCalifico = (id: string) => calificaciones.some((cal) => cal.partido_id === id);
 
   return (
     <Screen edges={['top']}>

@@ -33,10 +33,7 @@ export default function Field({ label, hint, icon, toggleSecure, style, ...props
           minHeight: multiline ? 100 : 56,
           alignItems: multiline ? 'flex-start' : 'center',
           paddingVertical: multiline ? 14 : 0,
-          shadowColor: c.primary,
-          shadowOpacity: focused ? 0.25 : 0,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 0 },
+          boxShadow: focused ? `0px 0px 12px ${c.primary}40` : undefined,
         }}>
         {icon ? (
           <Ionicons

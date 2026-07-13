@@ -80,11 +80,7 @@ export default function TabsLayout() {
                   backgroundColor: c.accent,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  shadowColor: c.accent,
-                  shadowOpacity: 0.6,
-                  shadowRadius: 14,
-                  shadowOffset: { width: 0, height: 4 },
-                  elevation: 10,
+                  boxShadow: `0px 4px 14px ${c.accent}99`,
                   transform: [{ scale: focused ? 1.05 : 1 }],
                 }}>
                 <Ionicons name="add" size={32} color={c.ink} />

@@ -31,10 +31,7 @@ export default function Welcome() {
             className="self-center overflow-hidden rounded-lg border border-border"
             style={{
               backgroundColor: c.background,
-              shadowColor: c.primary,
-              shadowOpacity: 0.4,
-              shadowRadius: 30,
-              shadowOffset: { width: 0, height: 0 },
+              boxShadow: `0px 0px 30px ${c.primary}66`,
             }}>
             <Image source={require('../../assets/brand/logo.png')} style={{ width: 260, height: 260 }} contentFit="contain" />
           </View>

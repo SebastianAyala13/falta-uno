@@ -63,12 +63,8 @@ export default function GlowButton({
           borderWidth: s.border ? 1.5 : 0,
           borderColor: s.border,
           opacity: inactivo ? 0.5 : 1,
-          // glow
-          shadowColor: s.glow,
-          shadowOpacity: variant === 'outline' ? 0 : 0.55,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: 6 },
-          elevation: variant === 'outline' ? 0 : 8,
+          // glow (boxShadow cross-platform en RN 0.86; reemplaza shadow*/elevation)
+          boxShadow: variant === 'outline' ? undefined : `0px 6px 16px ${s.glow}8C`,
         },
       ]}>
       <View className="h-full w-full flex-row items-center justify-center gap-2 px-6">

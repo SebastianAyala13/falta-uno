@@ -217,10 +217,7 @@ function Comprobante({
           className="mt-4 h-24 w-24 items-center justify-center rounded-full"
           style={{
             backgroundColor: aprobado ? c.primary : c.warning,
-            shadowColor: aprobado ? c.primary : c.warning,
-            shadowOpacity: 0.6,
-            shadowRadius: 24,
-            shadowOffset: { width: 0, height: 0 },
+            boxShadow: `0px 0px 24px ${aprobado ? c.primary : c.warning}99`,
           }}>
           <Ionicons name={aprobado ? 'checkmark' : 'time'} size={56} color={c.ink} />
         </View>

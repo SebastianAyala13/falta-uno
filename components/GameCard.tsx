@@ -51,11 +51,7 @@ export default function GameCard({ partido, destacado = false }: GameCardProps) 
           },
           destacado
             ? {
-                shadowColor: c.primary,
-                shadowOpacity: 0.25,
-                shadowRadius: 18,
-                shadowOffset: { width: 0, height: 8 },
-                elevation: 6,
+                boxShadow: `0px 8px 18px ${c.primary}40`,
               }
             : null,
         ]}>

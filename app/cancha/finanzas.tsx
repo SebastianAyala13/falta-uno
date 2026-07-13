@@ -59,7 +59,7 @@ const ESTADO_RETIRO: Record<Retiro['estado'], { label: string; tone: 'primary' |
 
 export default function Finanzas() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, loading: authCargando } = useAuth();
   const c = useTheme();
 
   const [cancha, setCancha] = useState<Cancha | null>(null);
@@ -98,10 +98,15 @@ export default function Finanzas() {
   }, []);
 
   useEffect(() => {
+    if (!profile?.id) {
+      // Auth aún resolviendo → mantenemos el skeleton; ya resolvió sin perfil → cerramos
+      // (evita mostrar "Sin cancha registrada" en la ventana de carga de sesión).
+      if (!authCargando) setLoading(false);
+      return;
+    }
     let activo = true;
     (async () => {
       try {
-        if (!profile) return;
         const [canchas, dd] = await Promise.all([misCanchas(profile.id), getDatosDesembolso(profile.id)]);
         if (!activo) return;
         const cch = canchas[0] ?? null;
@@ -115,7 +120,7 @@ export default function Finanzas() {
     return () => {
       activo = false;
     };
-  }, [profile, cargarDatos]);
+  }, [profile?.id, authCargando, cargarDatos]);
 
   const onRefresh = useCallback(async () => {
     if (!cancha) return;

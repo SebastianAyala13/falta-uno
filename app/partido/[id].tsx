@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,6 +26,10 @@ import { cancelarRecordatorio } from '@/lib/notifications';
 import { useStore } from '@/lib/store';
 import { useTheme, useThemeMeta } from '@/lib/theme';
 
+// Texto sobre el scrim oscuro de una foto: claro fijo (el scrim es siempre oscuro, por
+// eso no puede seguir a `cream`, que en el tema Blanco es casi negro).
+const HERO_TEXTO_SOBRE_FOTO = '#F6F9F6';
+
 export default function PartidoDetalle() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -39,16 +43,23 @@ export default function PartidoDetalle() {
   const hidratado = useStore((s) => s.hidratado);
   const hidratar = useStore((s) => s.hidratar);
 
-  // Deep-link directo (sin pasar por las tabs): si llegamos sin hidratar, disparamos
-  // la carga. El gate de abajo muestra skeleton hasta que hidratado pase a true.
+  // Deep-link directo (sin pasar por las tabs): disparamos la carga si hace falta. El
+  // backstop de 800ms evita que el skeleton se cuelgue si nunca hidrata (p.ej. sin sesión,
+  // donde profile?.id es falsy y hidratar no puede dispararse).
+  const [cargando, setCargando] = useState(!hidratado);
   useEffect(() => {
-    if (!hidratado && profile?.id) hidratar(profile.id);
+    if (hidratado) {
+      setCargando(false);
+      return;
+    }
+    if (profile?.id) hidratar(profile.id);
+    const t = setTimeout(() => setCargando(false), 800);
+    return () => clearTimeout(t);
   }, [hidratado, profile?.id, hidratar]);
 
   if (!partido) {
-    // Durante la hidratación (Supabase) el store todavía no trajo el partido → skeleton,
-    // no "no existe". Ya hidratado y sin partido → de verdad no existe.
-    if (!hidratado) return <PartidoSkeleton />;
+    // Mientras hidrata → skeleton; ya resuelto y sin partido → de verdad no existe.
+    if (cargando) return <PartidoSkeleton />;
     return (
       <Screen edges={['top']}>
         <EmptyState
@@ -68,9 +79,12 @@ export default function PartidoDetalle() {
   const coords = coordsDePartido(partido);
 
   const conFoto = !!partido.foto_url;
-  // Con foto: scrim oscuro sobre la imagen → texto claro. Sin foto: el degradé sigue el tema
-  // (en claro, verde de marca con texto oscuro, igual que el hero de home). Arregla Blanco.
-  const heroClaro = conFoto || heroDark;
+  // Color del texto del hero:
+  // - con foto: el scrim es siempre oscuro → texto claro FIJO (independiente del tema; en
+  //   Blanco `cream` es casi negro y quedaría ilegible sobre el scrim);
+  // - sin foto + tema oscuro: `cream` (claro); sin foto + tema claro (Blanco): `ink` (oscuro)
+  //   sobre el degradé verde de marca.
+  const heroTextColor = conFoto ? HERO_TEXTO_SOBRE_FOTO : heroDark ? c.cream : c.ink;
 
   const abrirMapa = () => {
     const label = encodeURIComponent(partido.cancha);
@@ -144,13 +158,13 @@ export default function PartidoDetalle() {
                   <Badge label={partido.nivel} tone="neutral" />
                 </View>
                 <Text
-                  className={`mt-3 font-display text-5xl uppercase ${heroClaro ? 'text-cream' : 'text-ink'}`}
-                  style={{ lineHeight: 50, paddingTop: 4 }}>
+                  className="mt-3 font-display text-5xl uppercase"
+                  style={{ lineHeight: 50, paddingTop: 4, color: heroTextColor }}>
                   {partido.cancha}
                 </Text>
                 <View className="mt-2 flex-row items-center">
-                  <Ionicons name="location-sharp" size={15} color={heroClaro ? c.cream : c.ink} />
-                  <Text className={`ml-1 font-body text-base ${heroClaro ? 'text-cream/80' : 'text-ink/80'}`}>{partido.zona} · Pereira</Text>
+                  <Ionicons name="location-sharp" size={15} color={heroTextColor} />
+                  <Text className="ml-1 font-body text-base opacity-80" style={{ color: heroTextColor }}>{partido.zona} · Pereira</Text>
                 </View>
               </View>
             </SafeAreaView>

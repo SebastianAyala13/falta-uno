@@ -32,7 +32,7 @@ const ESTADO_LABEL: Record<Reserva['estado'], string> = {
 
 export default function AgendaCancha() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, loading: authCargando } = useAuth();
   const c = useTheme();
 
   const [loading, setLoading] = useState(true);
@@ -43,8 +43,12 @@ export default function AgendaCancha() {
   const [reservas, setReservas] = useState<Reserva[]>([]);
 
   useEffect(() => {
+    if (!profile?.id) {
+      // Auth aún resolviendo → mantenemos el skeleton; ya resolvió sin perfil → cerramos.
+      if (!authCargando) setLoading(false);
+      return;
+    }
     (async () => {
-      if (!profile?.id) return;
       try {
         const canchas = await misCanchas(profile.id);
         setCancha(canchas[0] ?? null);
@@ -54,7 +58,7 @@ export default function AgendaCancha() {
         setLoading(false);
       }
     })();
-  }, [profile?.id]);
+  }, [profile?.id, authCargando]);
 
   useEffect(() => {
     if (!cancha) return;

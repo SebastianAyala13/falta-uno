@@ -58,7 +58,7 @@ const diaInicial = (): DiaConfig => ({ abierto: false, apertura: '08:00', cierre
 
 export default function EditarCancha() {
   const router = useRouter();
-  const { profile, updateProfile } = useAuth();
+  const { profile, updateProfile, loading: authCargando } = useAuth();
   const c = useTheme();
 
   const [cargando, setCargando] = useState(true);
@@ -85,7 +85,8 @@ export default function EditarCancha() {
     let activo = true;
     const cargar = async () => {
       if (!profile?.id) {
-        setCargando(false);
+        // Auth aún resolviendo → mantenemos el skeleton; ya resolvió sin perfil → cerramos.
+        if (activo && !authCargando) setCargando(false);
         return;
       }
       try {
@@ -127,7 +128,7 @@ export default function EditarCancha() {
     return () => {
       activo = false;
     };
-  }, [profile?.id]);
+  }, [profile?.id, authCargando]);
 
   const setDia = (idx: number, cambios: Partial<DiaConfig>) =>
     setDias((prev) => prev.map((d, i) => (i === idx ? { ...d, ...cambios } : d)));

@@ -38,7 +38,7 @@ const NAV_ITEMS: { icon: keyof typeof Ionicons.glyphMap; label: string; ruta: st
 
 export default function PanelCancha() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, loading: authCargando } = useAuth();
   const c = useTheme();
 
   const [loading, setLoading] = useState(true);
@@ -72,12 +72,17 @@ export default function PanelCancha() {
   }, [profile?.id]);
 
   useEffect(() => {
+    if (!profile?.id) {
+      // Auth aún resolviendo → mantenemos el skeleton; ya resolvió sin perfil → cerramos.
+      if (!authCargando) setLoading(false);
+      return;
+    }
     (async () => {
       setLoading(true);
       await cargar();
       setLoading(false);
     })();
-  }, [cargar]);
+  }, [profile?.id, authCargando, cargar]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

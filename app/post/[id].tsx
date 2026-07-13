@@ -36,19 +36,27 @@ export default function PostDetalle() {
   const hidratar = useStore((s) => s.hidratar);
 
   const [texto, setTexto] = useState('');
+  const [cargando, setCargando] = useState(!hidratado);
   const uid = profile?.id ?? 'demo';
 
-  // Deep-link directo al post sin pasar por las tabs: disparamos la carga si hace falta.
+  // Deep-link directo (sin pasar por las tabs): disparamos la carga si hace falta. Backstop
+  // de 800ms para no colgar el skeleton si nunca hidrata (p.ej. sin sesión).
   useEffect(() => {
-    if (!hidratado && profile?.id) hidratar(profile.id);
+    if (hidratado) {
+      setCargando(false);
+      return;
+    }
+    if (profile?.id) hidratar(profile.id);
+    const t = setTimeout(() => setCargando(false), 800);
+    return () => clearTimeout(t);
   }, [hidratado, profile?.id, hidratar]);
 
   if (!post) {
-    // Durante la hidratación (Supabase) el post aún no llegó → skeleton, no "no existe".
+    // Mientras hidrata → skeleton; ya resuelto y sin post → de verdad no existe.
     return (
       <Screen edges={['top']}>
         <ScreenHeader title="Publicación" titleSize="xl" borderBottom backClassName="mr-2" className="px-4 pb-3 pt-1" />
-        {!hidratado ? (
+        {cargando ? (
           <View style={{ padding: 16 }}>
             <CardListSkeleton rows={3} />
           </View>

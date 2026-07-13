@@ -2,13 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/BackButton';
 import CanchaMap from '@/components/CanchaMap';
+import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
+import { SkeletonBlock } from '@/components/Skeleton';
 import { AMENIDADES } from '@/constants/config';
 import { getCancha } from '@/lib/canchas';
 import { useTheme } from '@/lib/theme';
@@ -38,14 +40,25 @@ export default function PerfilCancha() {
       <ScreenHeader title="Cancha" titleSize="2xl" className="px-6 pb-2 pt-2" />
 
       {cargando ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={c.primary} />
+        <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
+          <SkeletonBlock height={160} radius={18} />
+          <View style={{ height: 20 }} />
+          <SkeletonBlock height={28} width={'70%'} />
+          <View style={{ height: 12 }} />
+          <SkeletonBlock height={14} width={'50%'} />
+          <View style={{ height: 20 }} />
+          <View className="flex-row" style={{ gap: 8 }}>
+            <SkeletonBlock height={36} width={72} radius={999} />
+            <SkeletonBlock height={36} width={72} radius={999} />
+          </View>
         </View>
       ) : !cancha ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <Ionicons name="alert-circle-outline" size={42} color={c.muted} />
-          <Text className="mt-3 text-center font-body text-base text-muted">Esta cancha ya no existe</Text>
-        </View>
+        <EmptyState
+          icon="alert-circle-outline"
+          titulo="Cancha no encontrada"
+          texto="Esta cancha ya no está disponible. Puede que la hayan dado de baja."
+          cta={{ label: 'Volver', icon: 'arrow-back', onPress: () => router.back() }}
+        />
       ) : (
         <>
           <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
@@ -109,7 +122,7 @@ export default function PerfilCancha() {
                   <Pressable
                     onPress={() => Linking.openURL(`tel:${cancha.telefono}`)}
                     className="mt-3 flex-row items-center rounded-md border border-border bg-card p-4 active:opacity-80">
-                    <Ionicons name="call" size={20} color={c.accentText} />
+                    <Ionicons name="call" size={20} color={c.primary} />
                     <Text className="ml-3 font-body-semibold text-base text-cream">{cancha.telefono}</Text>
                   </Pressable>
                 ) : null}

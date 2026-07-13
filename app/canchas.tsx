@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/BackButton';
 import Chip from '@/components/Chip';
@@ -10,6 +10,7 @@ import EmptyState from '@/components/EmptyState';
 import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import SearchBar from '@/components/SearchBar';
 import { CardListSkeleton } from '@/components/Skeleton';
 import { FORMATOS, ZONAS, type Formato } from '@/constants/config';
 import { listarCanchas } from '@/lib/canchas';
@@ -63,19 +64,7 @@ export default function Canchas() {
         <View className="px-6 pb-3 pt-2">
           <ScreenHeader title="Canchas" />
 
-          <View className="mt-3 h-14 flex-row items-center rounded-sm border border-border bg-card px-4">
-            <Ionicons name="search" size={20} color={c.muted} />
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Nombre o zona..."
-              placeholderTextColor={c.muted}
-              className="ml-3 flex-1 font-body text-base text-cream"
-            />
-            {query ? (
-              <Ionicons name="close-circle" size={20} color={c.muted} onPress={() => setQuery('')} />
-            ) : null}
-          </View>
+          <SearchBar value={query} onChangeText={setQuery} placeholder="Nombre o zona..." className="mt-3" />
         </View>
       </FadeIn>
 

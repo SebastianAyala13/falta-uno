@@ -1,25 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import Badge from '@/components/Badge';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import { SkeletonBlock } from '@/components/Skeleton';
 import StatCard from '@/components/StatCard';
-import type { Palette } from '@/constants/themes';
 import { useAuth } from '@/lib/auth';
 import { misCanchas, reservasDeCancha, saldoCancha, slotsDelDia } from '@/lib/canchas';
 import { precioCOP } from '@/lib/format';
+import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
 import type { Cancha, Reserva } from '@/types/database';
 
-const ESTADO_COLOR = (c: Palette): Record<Reserva['estado'], string> => ({
-  pendiente: c.warning,
-  confirmada: c.primary,
-  completada: c.accent,
-  cancelada: c.danger,
-});
+const ESTADO_TONE: Record<Reserva['estado'], 'warning' | 'primary' | 'accent' | 'danger'> = {
+  pendiente: 'warning',
+  confirmada: 'primary',
+  completada: 'accent',
+  cancelada: 'danger',
+};
 
 const ESTADO_LABEL: Record<Reserva['estado'], string> = {
   pendiente: 'Pendiente',
@@ -38,7 +40,6 @@ export default function PanelCancha() {
   const router = useRouter();
   const { profile } = useAuth();
   const c = useTheme();
-  const estadoColor = ESTADO_COLOR(c);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -84,39 +85,7 @@ export default function PanelCancha() {
     setRefreshing(false);
   }, [cargar]);
 
-  if (loading) {
-    return (
-      <Screen edges={['top']}>
-        <View className="px-6 pb-2 pt-2">
-          <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-            Mi cancha
-          </Text>
-        </View>
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={c.primary} />
-        </View>
-      </Screen>
-    );
-  }
-
-  if (!cancha) {
-    return (
-      <Screen edges={['top']}>
-        <View className="px-6 pb-2 pt-2">
-          <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-            Mi cancha
-          </Text>
-        </View>
-        <EmptyState
-          icon="business-outline"
-          titulo="Aún no tenés cancha"
-          texto="Registrá tu cancha y empezá a recibir reservas de los parceros de la zona."
-          cta={{ label: 'Registrar mi cancha', onPress: () => router.push('/cancha/registrar') }}
-        />
-      </Screen>
-    );
-  }
-
+  // Header una sola vez; el body cambia por estado (evita repetir el título ×3).
   return (
     <Screen edges={['top']}>
       <View className="px-6 pb-2 pt-2">
@@ -125,6 +94,37 @@ export default function PanelCancha() {
         </Text>
       </View>
 
+      {loading ? (
+        <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
+          <SkeletonBlock height={20} width={'55%'} />
+          <View style={{ height: 8 }} />
+          <SkeletonBlock height={12} width={'72%'} />
+          <View style={{ height: 20 }} />
+          <View className="rounded-lg border border-border bg-card p-5">
+            <SkeletonBlock height={12} width={'40%'} />
+            <View style={{ height: 14 }} />
+            <SkeletonBlock height={38} width={'55%'} />
+          </View>
+          <View style={{ height: 12 }} />
+          <View className="flex-row gap-3">
+            <View className="flex-1"><SkeletonBlock height={92} radius={18} /></View>
+            <View className="flex-1"><SkeletonBlock height={92} radius={18} /></View>
+          </View>
+          <View style={{ height: 16 }} />
+          <View className="flex-row gap-3">
+            <View className="flex-1"><SkeletonBlock height={92} radius={18} /></View>
+            <View className="flex-1"><SkeletonBlock height={92} radius={18} /></View>
+            <View className="flex-1"><SkeletonBlock height={92} radius={18} /></View>
+          </View>
+        </View>
+      ) : !cancha ? (
+        <EmptyState
+          icon="business-outline"
+          titulo="Aún no tenés cancha"
+          texto="Registrá tu cancha y empezá a recibir reservas de los parceros de la zona."
+          cta={{ label: 'Registrar mi cancha', onPress: () => router.push('/cancha/registrar') }}
+        />
+      ) : (
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
@@ -141,7 +141,7 @@ export default function PanelCancha() {
               </Text>
             </View>
             <Pressable
-              onPress={() => router.push('/cancha/editar')}
+              onPress={() => { haptics.tap(); router.push('/cancha/editar'); }}
               hitSlop={10}
               className="h-10 w-10 items-center justify-center rounded-full border border-border bg-card">
               <Ionicons name="create-outline" size={20} color={c.cream} />
@@ -160,7 +160,7 @@ export default function PanelCancha() {
               {precioCOP(saldo)}
             </Text>
             <Pressable
-              onPress={() => router.push('/cancha/finanzas')}
+              onPress={() => { haptics.tap(); router.push('/cancha/finanzas'); }}
               className="mt-3 flex-row items-center self-start rounded-full border border-borderStrong bg-background px-4 py-2">
               <Text className="font-body-bold text-sm text-accentText">Ver finanzas</Text>
               <Ionicons name="chevron-forward" size={16} color={c.accentText} style={{ marginLeft: 4 }} />
@@ -205,11 +205,7 @@ export default function PanelCancha() {
                       {r.hora_inicio} – {r.hora_fin}
                     </Text>
                   </View>
-                  <View className="rounded-full px-3 py-1" style={{ backgroundColor: estadoColor[r.estado] + '22' }}>
-                    <Text className="font-body-bold text-xs uppercase tracking-wide" style={{ color: estadoColor[r.estado] }}>
-                      {ESTADO_LABEL[r.estado]}
-                    </Text>
-                  </View>
+                  <Badge label={ESTADO_LABEL[r.estado]} tone={ESTADO_TONE[r.estado]} />
                 </View>
               ))}
             </View>
@@ -222,7 +218,7 @@ export default function PanelCancha() {
             {NAV_ITEMS.map((item, i) => (
               <Pressable
                 key={item.ruta}
-                onPress={() => router.push(item.ruta)}
+                onPress={() => { haptics.tap(); router.push(item.ruta); }}
                 className={`flex-1 items-center rounded-md border border-border bg-card py-5 ${i < NAV_ITEMS.length - 1 ? 'mr-3' : ''}`}>
                 <View className="h-11 w-11 items-center justify-center rounded-sm" style={{ backgroundColor: c.primary + '1F' }}>
                   <Ionicons name={item.icon} size={22} color={c.primary} />
@@ -233,6 +229,7 @@ export default function PanelCancha() {
           </View>
         </FadeIn>
       </ScrollView>
+      )}
     </Screen>
   );
 }

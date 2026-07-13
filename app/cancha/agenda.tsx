@@ -1,26 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
+import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';
 import DateTimeField from '@/components/DateTimeField';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
-import type { Palette } from '@/constants/themes';
+import { CardListSkeleton, SkeletonBlock } from '@/components/Skeleton';
 import { useAuth } from '@/lib/auth';
 import { misCanchas, reservasDeCancha, slotsDelDia, type Slot } from '@/lib/canchas';
 import { precioCOP } from '@/lib/format';
 import { useTheme } from '@/lib/theme';
 import type { Cancha, Reserva } from '@/types/database';
 
-const ESTADO_COLOR = (c: Palette): Record<Reserva['estado'], string> => ({
-  pendiente: c.warning,
-  confirmada: c.primary,
-  completada: c.accent,
-  cancelada: c.danger,
-});
+const ESTADO_TONE: Record<Reserva['estado'], 'warning' | 'primary' | 'accent' | 'danger'> = {
+  pendiente: 'warning',
+  confirmada: 'primary',
+  completada: 'accent',
+  cancelada: 'danger',
+};
 
 const ESTADO_LABEL: Record<Reserva['estado'], string> = {
   pendiente: 'Pendiente',
@@ -33,7 +34,6 @@ export default function AgendaCancha() {
   const router = useRouter();
   const { profile } = useAuth();
   const c = useTheme();
-  const estadoColor = ESTADO_COLOR(c);
 
   const [loading, setLoading] = useState(true);
   const [cargandoDia, setCargandoDia] = useState(false);
@@ -86,8 +86,12 @@ export default function AgendaCancha() {
       <ScreenHeader title="Agenda" className="px-6 pb-2 pt-2" />
 
       {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={c.primary} />
+        <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
+          <SkeletonBlock height={52} radius={12} />
+          <View style={{ height: 22 }} />
+          <SkeletonBlock height={12} width={'35%'} />
+          <View style={{ height: 12 }} />
+          <CardListSkeleton rows={4} />
         </View>
       ) : !cancha ? (
         <EmptyState
@@ -103,8 +107,8 @@ export default function AgendaCancha() {
           </FadeIn>
 
           {cargandoDia ? (
-            <View className="items-center py-10">
-              <ActivityIndicator color={c.primary} />
+            <View className="pt-4">
+              <CardListSkeleton rows={5} />
             </View>
           ) : (
             <>
@@ -119,29 +123,22 @@ export default function AgendaCancha() {
                     </Text>
                   </View>
                 ) : (
-                  slots.map((s) => {
-                    const color = s.ocupado ? c.muted : c.primary;
-                    return (
-                      <View
-                        key={`${s.hora_inicio}-${s.hora_fin}`}
-                        className="mb-2 flex-row items-center justify-between rounded-md border border-border bg-card px-4 py-3">
-                        <View className="flex-row items-center">
-                          <Ionicons name="time-outline" size={16} color={c.muted} />
-                          <Text className="ml-2 font-body-bold text-sm text-cream">
-                            {s.hora_inicio} – {s.hora_fin}
-                          </Text>
-                        </View>
-                        <View className="flex-row items-center">
-                          <Text className="mr-3 font-body-semibold text-sm text-cream">{precioCOP(s.precio)}</Text>
-                          <View className="rounded-full px-3 py-1" style={{ backgroundColor: color + '22' }}>
-                            <Text className="font-body-bold text-xs uppercase tracking-wide" style={{ color }}>
-                              {s.ocupado ? 'Reservado' : 'Libre'}
-                            </Text>
-                          </View>
-                        </View>
+                  slots.map((s) => (
+                    <View
+                      key={`${s.hora_inicio}-${s.hora_fin}`}
+                      className="mb-2 flex-row items-center justify-between rounded-md border border-border bg-card px-4 py-3">
+                      <View className="flex-row items-center">
+                        <Ionicons name="time-outline" size={16} color={c.muted} />
+                        <Text className="ml-2 font-body-bold text-sm text-cream">
+                          {s.hora_inicio} – {s.hora_fin}
+                        </Text>
                       </View>
-                    );
-                  })
+                      <View className="flex-row items-center gap-3">
+                        <Text className="font-body-semibold text-sm text-cream">{precioCOP(s.precio)}</Text>
+                        <Badge label={s.ocupado ? 'Reservado' : 'Libre'} tone={s.ocupado ? 'neutral' : 'primary'} />
+                      </View>
+                    </View>
+                  ))
                 )}
               </FadeIn>
 
@@ -162,11 +159,7 @@ export default function AgendaCancha() {
                           Ref: {r.referencia}
                         </Text>
                       </View>
-                      <View className="rounded-full px-3 py-1" style={{ backgroundColor: estadoColor[r.estado] + '22' }}>
-                        <Text className="font-body-bold text-xs uppercase tracking-wide" style={{ color: estadoColor[r.estado] }}>
-                          {ESTADO_LABEL[r.estado]}
-                        </Text>
-                      </View>
+                      <Badge label={ESTADO_LABEL[r.estado]} tone={ESTADO_TONE[r.estado]} />
                     </View>
                   ))
                 )}

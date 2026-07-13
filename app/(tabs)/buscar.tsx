@@ -1,12 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import GameCard from '@/components/GameCard';
 import Screen from '@/components/Screen';
+import SearchBar from '@/components/SearchBar';
 import { GameCardSkeleton } from '@/components/Skeleton';
 import { FORMATOS, NIVELES, ZONAS } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
@@ -65,19 +65,7 @@ export default function Buscar() {
       <FadeIn delay={40}>
         <View className="px-6 pb-3 pt-2">
           <Text className="mb-4 font-display text-4xl uppercase text-cream" style={{ lineHeight: 44, paddingTop: 2 }}>Buscar partido</Text>
-          <View className="h-14 flex-row items-center rounded-sm border border-border bg-card px-4">
-            <Ionicons name="search" size={20} color={c.muted} />
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Cancha, zona, parche..."
-              placeholderTextColor={c.muted}
-              className="ml-3 flex-1 font-body text-base text-cream"
-            />
-            {query ? (
-              <Ionicons name="close-circle" size={20} color={c.muted} onPress={() => setQuery('')} />
-            ) : null}
-          </View>
+          <SearchBar value={query} onChangeText={setQuery} placeholder="Cancha, zona, parche..." />
         </View>
       </FadeIn>
 

@@ -22,6 +22,7 @@ import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
+import { SkeletonBlock } from '@/components/Skeleton';
 import {
   FORMATOS,
   LEGAL_CANCHA_VERSION,
@@ -39,6 +40,7 @@ import {
   setDisponibilidad,
   subirFotoCancha,
 } from '@/lib/canchas';
+import { haptics } from '@/lib/haptics';
 import { elegirImagen } from '@/lib/images';
 import { useTheme } from '@/lib/theme';
 import type { Amenidades, Cancha } from '@/types/database';
@@ -134,6 +136,7 @@ export default function EditarCancha() {
     setFormatos((prev) => (prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]));
 
   const agregarFoto = async () => {
+    haptics.tap();
     const uri = await elegirImagen([16, 9]);
     if (!uri) return;
     setError(null);
@@ -148,7 +151,10 @@ export default function EditarCancha() {
     }
   };
 
-  const quitarFoto = (idx: number) => setFotos((prev) => prev.filter((_, i) => i !== idx));
+  const quitarFoto = (idx: number) => {
+    haptics.tap();
+    setFotos((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   const guardar = async () => {
     setError(null);
@@ -223,8 +229,17 @@ export default function EditarCancha() {
   if (cargando) {
     return (
       <Screen edges={['top']}>
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={c.primary} />
+        <View className="px-6 pb-2 pt-2">
+          <SkeletonBlock height={30} width={'55%'} />
+        </View>
+        <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <View key={i} style={{ marginBottom: 18 }}>
+              <SkeletonBlock height={12} width={'35%'} />
+              <View style={{ height: 8 }} />
+              <SkeletonBlock height={48} radius={12} />
+            </View>
+          ))}
         </View>
       </Screen>
     );
@@ -356,7 +371,7 @@ export default function EditarCancha() {
                   <View className="flex-row items-center justify-between">
                     <Text className="font-body-bold text-sm text-cream">{nombreDia}</Text>
                     <Pressable
-                      onPress={() => setDia(idx, { abierto: !d.abierto })}
+                      onPress={() => { haptics.select(); setDia(idx, { abierto: !d.abierto }); }}
                       hitSlop={8}
                       className="flex-row items-center rounded-full border px-3 py-1.5"
                       style={{
@@ -416,7 +431,7 @@ export default function EditarCancha() {
 
             {!esEdicion ? (
               <Pressable
-                onPress={() => setAcepta((v) => !v)}
+                onPress={() => { haptics.light(); setAcepta((v) => !v); }}
                 className="mb-4 mt-2 flex-row items-start gap-3 rounded-md border border-border bg-card p-3.5 active:border-primary/50">
                 <View
                   className="mt-0.5 h-6 w-6 items-center justify-center rounded-md border-2"

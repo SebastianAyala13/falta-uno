@@ -27,7 +27,9 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: c.muted,
         tabBarStyle: {
           position: 'absolute',
-          backgroundColor: meta.dark ? 'rgba(13,18,15,0.85)' : 'rgba(255,255,255,0.85)',
+          // Fondo translúcido derivado del tema (D9 ≈ 85% alpha) sobre el blur; sigue
+          // el background real de cada tema en vez de un rgba fijo (arregla Blanco).
+          backgroundColor: c.background + 'D9',
           borderTopColor: c.border,
           borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 90 : 68,

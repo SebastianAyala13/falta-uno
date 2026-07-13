@@ -1,15 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import AdminGate from '@/components/AdminGate';
+import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import { CardListSkeleton, SkeletonBlock } from '@/components/Skeleton';
 import StatCard from '@/components/StatCard';
 import { metricas, type MetricasAdmin } from '@/lib/admin';
 import { precioCOP } from '@/lib/format';
+import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -80,8 +83,18 @@ export default function AdminResumen() {
         <ScreenHeader title="Plataforma Madre" className="px-6 pb-2 pt-2" />
 
         {cargando ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={c.primary} />
+          <View style={{ paddingHorizontal: 24, paddingTop: 12, width: '100%', maxWidth: 1040, alignSelf: 'center' }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <View key={i} style={{ flexGrow: 1, flexBasis: '30%', minWidth: 150 }}>
+                  <SkeletonBlock height={96} radius={18} />
+                </View>
+              ))}
+            </View>
+            <View style={{ height: 28 }} />
+            <SkeletonBlock height={18} width={'35%'} />
+            <View style={{ height: 14 }} />
+            <CardListSkeleton rows={4} />
           </View>
         ) : (
           <ScrollView
@@ -149,7 +162,7 @@ export default function AdminResumen() {
                 {SECCIONES.map((s) => (
                   <Pressable
                     key={s.ruta}
-                    onPress={() => router.push(s.ruta)}
+                    onPress={() => { haptics.tap(); router.push(s.ruta); }}
                     className="mb-2 flex-row items-center rounded-md border border-border bg-card px-4 py-3.5 active:opacity-70">
                     <View
                       className="h-9 w-9 items-center justify-center rounded-full"
@@ -158,10 +171,8 @@ export default function AdminResumen() {
                     </View>
                     <Text className="ml-3 flex-1 font-body-semibold text-base text-cream">{s.label}</Text>
                     {s.ruta === '/admin/retiros' && hayPendientes ? (
-                      <View className="mr-2 rounded-full px-2.5 py-0.5" style={{ backgroundColor: c.warning + '22' }}>
-                        <Text className="font-body-bold text-xs" style={{ color: c.warning }}>
-                          {pendientes}
-                        </Text>
+                      <View className="mr-2">
+                        <Badge label={String(pendientes)} tone="warning" />
                       </View>
                     ) : null}
                     <Ionicons name="chevron-forward" size={18} color={c.muted} />

@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text } from 'react-native';
 
 import { ScreenHeader } from '@/components/BackButton';
+import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import GameCard from '@/components/GameCard';
-import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -24,18 +24,12 @@ export default function MisPartidos() {
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         {misPartidos.length === 0 ? (
-          <FadeIn delay={60} className="mt-16 items-center">
-            <View className="h-20 w-20 items-center justify-center rounded-full bg-card">
-              <Ionicons name="football-outline" size={40} color={c.muted} />
-            </View>
-            <Text className="mt-4 font-display text-2xl uppercase text-cream">Todavía nada</Text>
-            <Text className="mb-6 mt-2 max-w-[260px] text-center font-body text-sm text-muted">
-              No estás inscrito en ningún partido, parce. Buscá uno y cuadrate.
-            </Text>
-            <View className="w-full">
-              <GlowButton label="Buscar partidos" variant="primary" icon="search" onPress={() => router.replace('/(tabs)/buscar')} />
-            </View>
-          </FadeIn>
+          <EmptyState
+            icon="football-outline"
+            titulo="Todavía nada"
+            texto="No estás inscrito en ningún partido, parce. Buscá uno y cuadrate."
+            cta={{ label: 'Buscar partidos', icon: 'search', onPress: () => router.replace('/(tabs)/buscar') }}
+          />
         ) : (
           misPartidos.map((p, i) => {
             const calificado = yaCalifico(p.id);

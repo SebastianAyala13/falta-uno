@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import CanchaMap from '@/components/CanchaMap';
 import Field from '@/components/Field';
 import { reverseGeocode } from '@/lib/geo';
+import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
 
 export interface Ubicacion {
@@ -30,6 +31,7 @@ export default function UbicacionPicker({ value, onChange }: Props) {
 
   const usarMiUbicacion = () => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+    haptics.tap();
     setBuscando(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {

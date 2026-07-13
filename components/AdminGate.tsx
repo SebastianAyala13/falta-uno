@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
+import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { esAdmin } from '@/lib/admin';
 import { useAuth } from '@/lib/auth';
@@ -16,7 +17,18 @@ import { useTheme } from '@/lib/theme';
 export default function AdminGate({ children }: { children: ReactNode }) {
   const router = useRouter();
   const c = useTheme();
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
+
+  // Auth aún resolviendo: no mostramos "sin acceso" (evita el flash para un admin real).
+  if (loading) {
+    return (
+      <Screen edges={['top', 'bottom']}>
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={c.primary} />
+        </View>
+      </Screen>
+    );
+  }
 
   if (!esAdmin(profile)) {
     return (
@@ -29,9 +41,9 @@ export default function AdminGate({ children }: { children: ReactNode }) {
           <Text className="mt-2 text-center font-body text-sm text-muted">
             Esta sección es solo para el equipo de Falta Uno.
           </Text>
-          <Pressable onPress={() => router.back()} className="mt-6 rounded-md border border-border bg-card px-6 py-3">
-            <Text className="font-body-semibold text-sm text-primary">Volver</Text>
-          </Pressable>
+          <View className="mt-6 w-full max-w-[240px]">
+            <GlowButton label="Volver" variant="dark" icon="arrow-back" onPress={() => router.back()} />
+          </View>
         </View>
       </Screen>
     );

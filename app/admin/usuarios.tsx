@@ -1,35 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import AdminGate from '@/components/AdminGate';
 import Avatar from '@/components/Avatar';
+import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
-import type { Palette } from '@/constants/themes';
+import SearchBar from '@/components/SearchBar';
+import { CardListSkeleton } from '@/components/Skeleton';
 import { listarUsuarios } from '@/lib/admin';
 import { useTheme } from '@/lib/theme';
 import type { Profile } from '@/types/database';
 
-const ROL_CHIP = (c: Palette): Record<string, { label: string; color: string }> => ({
-  admin: { label: 'Admin', color: c.primary },
-  cancha: { label: 'Cancha', color: c.accent },
-  jugador: { label: 'Jugador', color: c.muted },
-});
+const ROL_BADGE: Record<string, { label: string; tone: 'primary' | 'accent' | 'neutral' }> = {
+  admin: { label: 'Admin', tone: 'primary' },
+  cancha: { label: 'Cancha', tone: 'accent' },
+  jugador: { label: 'Jugador', tone: 'neutral' },
+};
 
 export default function AdminUsuarios() {
   const c = useTheme();
-  const rolChip = ROL_CHIP(c);
   const [usuarios, setUsuarios] = useState<Profile[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -75,28 +68,12 @@ export default function AdminUsuarios() {
 
         {/* Buscador */}
         <View className="px-6 pb-1 pt-1">
-          <View className="flex-row items-center rounded-sm border border-border bg-card px-4">
-            <Ionicons name="search" size={18} color={c.muted} />
-            <TextInput
-              className="ml-2 flex-1 py-3 font-body text-sm text-cream"
-              placeholder="Buscar por nombre, email o ciudad…"
-              placeholderTextColor={c.muted}
-              value={query}
-              onChangeText={setQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            {query.length > 0 ? (
-              <Pressable onPress={() => setQuery('')} hitSlop={8}>
-                <Ionicons name="close-circle" size={18} color={c.muted} />
-              </Pressable>
-            ) : null}
-          </View>
+          <SearchBar value={query} onChangeText={setQuery} placeholder="Buscar por nombre, email o ciudad…" />
         </View>
 
         {loading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color={c.primary} />
+          <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
+            <CardListSkeleton rows={5} />
           </View>
         ) : (
           <ScrollView
@@ -156,21 +133,10 @@ export default function AdminUsuarios() {
                         </View>
 
                         {/* Roles */}
-                        <View className="mt-3 flex-row flex-wrap">
+                        <View className="mt-3 flex-row flex-wrap gap-2">
                           {roles.map((rol) => {
-                            const chip = rolChip[rol] ?? { label: rol, color: c.muted };
-                            return (
-                              <View
-                                key={rol}
-                                className="mb-1 mr-2 rounded-full px-3 py-1"
-                                style={{ backgroundColor: chip.color + '22' }}>
-                                <Text
-                                  className="font-body-bold text-xs uppercase tracking-wide"
-                                  style={{ color: chip.color }}>
-                                  {chip.label}
-                                </Text>
-                              </View>
-                            );
+                            const b = ROL_BADGE[rol] ?? { label: rol, tone: 'neutral' as const };
+                            return <Badge key={rol} label={b.label} tone={b.tone} />;
                           })}
                         </View>
                       </View>

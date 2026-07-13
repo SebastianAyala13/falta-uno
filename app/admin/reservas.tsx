@@ -1,13 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import AdminGate from '@/components/AdminGate';
+import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';
+import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
-import type { Palette } from '@/constants/themes';
+import { CardListSkeleton } from '@/components/Skeleton';
 import { listarReservasAdmin } from '@/lib/admin';
 import { fechaLarga, precioCOP } from '@/lib/format';
 import { useTheme } from '@/lib/theme';
@@ -28,10 +30,11 @@ const ESTADO_LABEL: Record<EstadoReserva, string> = {
   completada: 'Completada',
 };
 
-const colorEstado = (estado: EstadoReserva, c: Palette) => {
-  if (estado === 'confirmada') return c.primary;
-  if (estado === 'pendiente') return c.warning;
-  return c.muted;
+const ESTADO_TONE: Record<EstadoReserva, 'primary' | 'warning' | 'neutral'> = {
+  confirmada: 'primary',
+  pendiente: 'warning',
+  cancelada: 'neutral',
+  completada: 'neutral',
 };
 
 /** Plataforma Madre — listado global de reservas con filtro por estado. */
@@ -69,31 +72,15 @@ export default function ReservasAdmin() {
             horizontal
             showsHorizontalScrollIndicator={false}
             style={{ flexGrow: 0 }}
-            contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 8, gap: 8 }}>
-            {FILTROS.map((f) => {
-              const activo = filtro === f.valor;
-              return (
-                <Pressable
-                  key={f.label}
-                  onPress={() => setFiltro(f.valor)}
-                  className="rounded-full border px-4 py-2 active:opacity-80"
-                  style={{
-                    backgroundColor: activo ? c.primary : c.card,
-                    borderColor: activo ? c.primary : c.border,
-                  }}>
-                  <Text
-                    className="font-body-semibold text-xs uppercase tracking-wide"
-                    style={{ color: activo ? c.ink : c.muted }}>
-                    {f.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+            contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8 }}>
+            {FILTROS.map((f) => (
+              <Chip key={f.label} label={f.label} selected={filtro === f.valor} onPress={() => setFiltro(f.valor)} />
+            ))}
           </ScrollView>
 
           {loading ? (
-            <View className="flex-1 items-center justify-center">
-              <ActivityIndicator size="large" color={c.primary} />
+            <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
+              <CardListSkeleton rows={5} />
             </View>
           ) : (
             <ScrollView
@@ -120,7 +107,6 @@ export default function ReservasAdmin() {
                   </Text>
 
                   {reservas.map((r, i) => {
-                    const color = colorEstado(r.estado, c);
                     return (
                       <FadeIn key={r.id} delay={40 + Math.min(i, 10) * 40}>
                         <View className="mb-3 rounded-md border border-border bg-card p-4">
@@ -135,12 +121,8 @@ export default function ReservasAdmin() {
                             </View>
                             <View className="items-end">
                               <Text className="font-display text-lg text-cream">{precioCOP(r.precio)}</Text>
-                              <View className="mt-1 rounded-full px-2 py-0.5" style={{ backgroundColor: color + '22' }}>
-                                <Text
-                                  className="font-body-semibold text-xs uppercase tracking-wide"
-                                  style={{ color }}>
-                                  {ESTADO_LABEL[r.estado]}
-                                </Text>
+                              <View className="mt-1">
+                                <Badge label={ESTADO_LABEL[r.estado]} tone={ESTADO_TONE[r.estado]} />
                               </View>
                             </View>
                           </View>

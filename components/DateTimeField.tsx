@@ -3,6 +3,7 @@ import DateTimePicker, { type DateTimePickerEvent } from '@react-native-communit
 import { useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 
+import { haptics } from '@/lib/haptics';
 import { useTheme, useThemeMeta } from '@/lib/theme';
 
 interface DateTimeFieldProps {
@@ -86,7 +87,7 @@ export default function DateTimeField({ label, mode, value, onChange, icon, minT
             minimumDate={minToday && mode === 'date' ? new Date() : undefined}
             onChange={onPicked}
           />
-          <Pressable onPress={() => setShow(false)} className="mx-2 mb-1 items-center rounded-sm bg-primary py-2.5">
+          <Pressable onPress={() => { haptics.tap(); setShow(false); }} className="mx-2 mb-1 items-center rounded-sm bg-primary py-2.5">
             <Text className="font-body-bold text-sm uppercase text-background">Listo</Text>
           </Pressable>
         </View>

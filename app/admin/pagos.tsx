@@ -1,14 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import AdminGate from '@/components/AdminGate';
+import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';
+import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import { CardListSkeleton } from '@/components/Skeleton';
 import StatCard from '@/components/StatCard';
-import type { Palette } from '@/constants/themes';
 import { listarPagosAdmin } from '@/lib/admin';
 import { precioCOP, tiempoRelativo } from '@/lib/format';
 import { useTheme } from '@/lib/theme';
@@ -27,10 +29,10 @@ const ESTADO_LABEL: Record<EstadoPago, string> = {
   rechazado: 'Rechazado',
 };
 
-const colorEstado = (estado: EstadoPago, c: Palette) => {
-  if (estado === 'aprobado') return c.primary;
-  if (estado === 'pendiente') return c.warning;
-  return c.danger;
+const ESTADO_TONE: Record<EstadoPago, 'primary' | 'warning' | 'danger'> = {
+  aprobado: 'primary',
+  pendiente: 'warning',
+  rechazado: 'danger',
 };
 
 /** Plataforma Madre — listado global de pagos con filtro por estado y resumen. */
@@ -73,31 +75,15 @@ export default function PagosAdmin() {
             horizontal
             showsHorizontalScrollIndicator={false}
             style={{ flexGrow: 0 }}
-            contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 8, gap: 8 }}>
-            {FILTROS.map((f) => {
-              const activo = filtro === f.valor;
-              return (
-                <Pressable
-                  key={f.label}
-                  onPress={() => setFiltro(f.valor)}
-                  className="rounded-full border px-4 py-2 active:opacity-80"
-                  style={{
-                    backgroundColor: activo ? c.primary : c.card,
-                    borderColor: activo ? c.primary : c.border,
-                  }}>
-                  <Text
-                    className="font-body-semibold text-xs uppercase tracking-wide"
-                    style={{ color: activo ? c.ink : c.muted }}>
-                    {f.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+            contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8 }}>
+            {FILTROS.map((f) => (
+              <Chip key={f.label} label={f.label} selected={filtro === f.valor} onPress={() => setFiltro(f.valor)} />
+            ))}
           </ScrollView>
 
           {loading ? (
-            <View className="flex-1 items-center justify-center">
-              <ActivityIndicator size="large" color={c.primary} />
+            <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
+              <CardListSkeleton rows={5} />
             </View>
           ) : (
             <ScrollView
@@ -134,7 +120,6 @@ export default function PagosAdmin() {
                 />
               ) : (
                 pagos.map((p, i) => {
-                  const color = colorEstado(p.estado, c);
                   return (
                     <FadeIn key={p.id} delay={40 + Math.min(i, 10) * 40}>
                       <View className="mb-3 rounded-md border border-border bg-card p-4">
@@ -146,12 +131,8 @@ export default function PagosAdmin() {
                             </Text>
                           </View>
                           <View className="items-end">
-                            <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: color + '22' }}>
-                              <Text
-                                className="font-body-semibold text-xs uppercase tracking-wide"
-                                style={{ color }}>
-                                {ESTADO_LABEL[p.estado]}
-                              </Text>
+                            <View>
+                              <Badge label={ESTADO_LABEL[p.estado]} tone={ESTADO_TONE[p.estado]} />
                             </View>
                             <Text className="mt-1 font-body text-xs text-muted">{tiempoRelativo(p.created_at)}</Text>
                           </View>

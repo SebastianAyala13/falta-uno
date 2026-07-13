@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/BackButton';
+import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import { MEDIOS_PAGO } from '@/constants/config';
@@ -22,15 +23,11 @@ export default function MisPagos() {
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         {pagos.length === 0 ? (
-          <FadeIn delay={60} className="mt-16 items-center">
-            <View className="h-20 w-20 items-center justify-center rounded-full bg-card">
-              <Ionicons name="receipt-outline" size={38} color={c.muted} />
-            </View>
-            <Text className="mt-4 font-display text-2xl uppercase text-cream">Sin pagos aún</Text>
-            <Text className="mt-2 max-w-[260px] text-center font-body text-sm text-muted">
-              Cuando te inscribas a un partido, acá te queda el comprobante.
-            </Text>
-          </FadeIn>
+          <EmptyState
+            icon="receipt-outline"
+            titulo="Sin pagos aún"
+            texto="Cuando te inscribas a un partido, acá te queda el comprobante."
+          />
         ) : (
           pagos.map((p, i) => {
             const partido = getPartido(p.partido_id);

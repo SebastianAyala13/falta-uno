@@ -27,6 +27,8 @@ export default function SearchBar({ value, onChangeText, placeholder = 'Buscar..
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={c.muted}
+        autoCapitalize="none"
+        autoCorrect={false}
         className="ml-3 flex-1 font-body text-base text-cream"
       />
       {value ? (

@@ -4,10 +4,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 
 import Avatar from '@/components/Avatar';
+import Chip from '@/components/Chip';
+import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import PostCard from '@/components/PostCard';
 import Screen from '@/components/Screen';
 import { useAuth } from '@/lib/auth';
+import { haptics } from '@/lib/haptics';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import type { Post } from '@/types/database';
@@ -59,7 +62,7 @@ export default function Muro() {
       {/* Compositor */}
       <FadeIn delay={100}>
         <Pressable
-          onPress={() => router.push('/crear-post')}
+          onPress={() => { haptics.tap(); router.push('/crear-post'); }}
           className="mx-6 mb-3 mt-2 flex-row items-center gap-3 rounded-sm border border-border bg-card px-4 py-3 active:border-primary/50">
           <Avatar nombre={profile?.nombre ?? 'Vos'} uri={profile?.avatar_url} size={36} />
           <Text className="flex-1 font-body text-sm text-muted">¿Qué se cuenta, parce?</Text>
@@ -70,26 +73,10 @@ export default function Muro() {
       </FadeIn>
 
       {/* Filtros */}
-      <View className="mb-1 flex-row gap-2 px-6 pb-2">
-        {FILTROS.map((f) => {
-          const activo = filtro === f.key;
-          return (
-            <Pressable
-              key={f.key}
-              onPress={() => setFiltro(f.key)}
-              className="rounded-full border px-4 py-1.5"
-              style={{
-                backgroundColor: activo ? c.primary : c.card,
-                borderColor: activo ? c.primary : c.border,
-              }}>
-              <Text
-                className="font-body-semibold text-sm"
-                style={{ color: activo ? c.ink : c.cream }}>
-                {f.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+      <View className="flex-row flex-wrap px-6 pb-1">
+        {FILTROS.map((f) => (
+          <Chip key={f.key} label={f.label} selected={filtro === f.key} onPress={() => setFiltro(f.key)} />
+        ))}
       </View>
 
       <FlatList
@@ -101,12 +88,11 @@ export default function Muro() {
           <PostCard post={item} comentarios={(comentarios[item.id] ?? []).length} />
         )}
         ListEmptyComponent={
-          <View className="mt-24 items-center">
-            <Ionicons name="newspaper-outline" size={40} color={c.muted} />
-            <Text className="mt-3 text-center font-body text-sm text-muted">
-              Todavía no hay nada por acá.{'\n'}¡Estrená el muro, parce! ⚽
-            </Text>
-          </View>
+          <EmptyState
+            icon="newspaper-outline"
+            titulo="El muro está quieto"
+            texto="Todavía no hay nada por acá. ¡Estrená el muro, parce!"
+          />
         }
       />
     </Screen>

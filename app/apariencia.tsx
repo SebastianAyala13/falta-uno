@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { BackButton } from '@/components/BackButton';
+import { ScreenHeader } from '@/components/BackButton';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import { THEMES } from '@/constants/themes';
@@ -23,13 +23,14 @@ export default function Apariencia() {
   return (
     <Screen edges={['top']}>
       {/* Header */}
-      <View className="flex-row items-center px-5 pb-2 pt-1">
-        <BackButton className="mr-3" />
-        <View>
-          <Text className="font-display text-3xl uppercase text-cream">Apariencia</Text>
+      <ScreenHeader className="px-5 pb-2 pt-1">
+        <View className="flex-1">
+          <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
+            Apariencia
+          </Text>
           <Text className="font-body text-sm text-muted">Elegí el color de tu Falta Uno</Text>
         </View>
-      </View>
+      </ScreenHeader>
 
       <ScrollView contentContainerStyle={{ padding: 22, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
         {/* Preview */}

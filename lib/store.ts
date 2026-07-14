@@ -97,7 +97,7 @@ interface StoreState {
   /**
    * Inscribe al usuario y registra el pago. Devuelve el pago creado.
    * `referencia` permite pasar una referencia ya generada (p. ej. la que se
-   * envió al checkout de Lemon Squeezy) para poder conciliarla con el webhook.
+   * envió al checkout de PayU) para poder conciliarla con el webhook.
    */
   inscribirse: (
     partidoId: string,

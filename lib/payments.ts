@@ -12,8 +12,8 @@ export interface ResultadoPago {
  * con el organizador en la cancha (Falta Uno no custodia dinero).
  *
  * Los pagos online NO pasan por acá: van por `crearCheckoutOnline` / `crearCheckoutReserva`
- * (Wompi) y el estado 'aprobado'/'confirmada' lo escribe SOLO el servidor cuando
- * Wompi confirma vía webhook (`supabase/functions/wompi-webhook`). Nunca marcamos
+ * (PayU) y el estado 'aprobado'/'confirmada' lo escribe SOLO el servidor cuando
+ * PayU confirma vía webhook (`supabase/functions/payu-webhook`). Nunca marcamos
  * un pago como aprobado desde el cliente.
  */
 export async function procesarPago(
@@ -21,7 +21,7 @@ export async function procesarPago(
   _monto: number,
 ): Promise<ResultadoPago> {
   if (medio !== 'efectivo') {
-    throw new Error('Este medio se paga online con Wompi, no desde la app.');
+    throw new Error('Este medio se paga online con PayU, no desde la app.');
   }
   // Pequeña pausa para que el usuario vea la confirmación del registro
   await new Promise((r) => setTimeout(r, 1200));
@@ -29,8 +29,8 @@ export async function procesarPago(
 }
 
 /**
- * Crea el Web Checkout de Wompi para el cupo de un PARTIDO llamando a la Edge
- * Function `wompi-crear-transaccion` (ahí viven las llaves y se calcula la firma
+ * Crea el Web Checkout de PayU para el cupo de un PARTIDO llamando a la Edge
+ * Function `payu-crear-transaccion` (ahí viven las llaves y se calcula la firma
  * de integridad; el monto se recomputa en el servidor). Devuelve la URL segura.
  */
 export async function crearCheckoutOnline(params: {
@@ -41,7 +41,7 @@ export async function crearCheckoutOnline(params: {
   email?: string;
 }): Promise<{ url: string }> {
   const { data, error } = await supabase.functions.invoke<{ url?: string }>(
-    'wompi-crear-transaccion',
+    'payu-crear-transaccion',
     { body: { tipo: 'partido', partidoId: params.partidoId, referencia: params.referencia, email: params.email } },
   );
 
@@ -52,7 +52,7 @@ export async function crearCheckoutOnline(params: {
 }
 
 /**
- * Crea el Web Checkout de Wompi para la RESERVA de una cancha. La reserva debe
+ * Crea el Web Checkout de PayU para la RESERVA de una cancha. La reserva debe
  * existir ya en estado 'pendiente'; el webhook la marca 'confirmada' al pagar.
  */
 export async function crearCheckoutReserva(params: {
@@ -61,7 +61,7 @@ export async function crearCheckoutReserva(params: {
   email?: string;
 }): Promise<{ url: string }> {
   const { data, error } = await supabase.functions.invoke<{ url?: string }>(
-    'wompi-crear-transaccion',
+    'payu-crear-transaccion',
     { body: { tipo: 'reserva', reservaId: params.reservaId, referencia: params.referencia, email: params.email } },
   );
 

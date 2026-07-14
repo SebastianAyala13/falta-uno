@@ -11,7 +11,7 @@ import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { SkeletonBlock } from '@/components/Skeleton';
-import { COMISION_CANCHA_DEFAULT, WOMPI_CONFIGURADO } from '@/constants/config';
+import { COMISION_CANCHA_DEFAULT, PAYU_CONFIGURADO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { crearReserva, getCancha, slotsDelDia, type Slot } from '@/lib/canchas';
 import { fechaLarga, precioCOP } from '@/lib/format';
@@ -50,7 +50,7 @@ export default function Reservar() {
   const [cargandoSlots, setCargandoSlots] = useState(false);
   const [slot, setSlot] = useState<Slot | null>(null);
   const [abrirPartido, setAbrirPartido] = useState(false);
-  const [medio, setMedio] = useState<'efectivo' | 'online'>(WOMPI_CONFIGURADO ? 'online' : 'efectivo');
+  const [medio, setMedio] = useState<'efectivo' | 'online'>(PAYU_CONFIGURADO ? 'online' : 'efectivo');
   const [loading, setLoading] = useState(false);
   const [referencia, setReferencia] = useState<string | null>(null);
   const [online, setOnline] = useState(false); // el comprobante fue de un pago online (queda pendiente)
@@ -79,13 +79,13 @@ export default function Reservar() {
     };
   }, [id, fecha]);
 
-  const pagaOnline = medio === 'online' && WOMPI_CONFIGURADO;
+  const pagaOnline = medio === 'online' && PAYU_CONFIGURADO;
 
   const reservar = async () => {
     if (!id || !cancha || !slot || !profile) return;
     setLoading(true);
     try {
-      // Online: la reserva nace 'pendiente' y Wompi la confirma por webhook.
+      // Online: la reserva nace 'pendiente' y PayU la confirma por webhook.
       // Efectivo: queda 'confirmada' (se paga en la cancha).
       const comision = Math.round(slot.precio * (cancha.comision_pct ?? COMISION_CANCHA_DEFAULT));
       const r = await crearReserva({
@@ -134,7 +134,7 @@ export default function Reservar() {
     }
   };
 
-  // Comprobante (estado "listo"). Online → pendiente hasta que Wompi confirme.
+  // Comprobante (estado "listo"). Online → pendiente hasta que PayU confirme.
   if (referencia && cancha && slot) {
     const tint = online ? c.warning : c.primary;
     return (
@@ -152,7 +152,7 @@ export default function Reservar() {
           </Text>
           <Text className="mt-3 text-center font-body text-sm text-muted">
             {online
-              ? 'Tu cupo se confirma apenas Wompi verifique el pago. Lo ves en "Mis reservas".'
+              ? 'Tu cupo se confirma apenas PayU verifique el pago. Lo ves en "Mis reservas".'
               : `Pagás en la cancha al llegar.`}
           </Text>
           <View className="mt-8 w-full">
@@ -238,8 +238,8 @@ export default function Reservar() {
               />
             </View>
 
-            {/* Medio de pago (online con Wompi solo si está habilitado) */}
-            {WOMPI_CONFIGURADO ? (
+            {/* Medio de pago (online con PayU solo si está habilitado) */}
+            {PAYU_CONFIGURADO ? (
               <View className="mt-4">
                 <Text className="mb-2 font-body-semibold text-sm text-cream">¿Cómo pagás?</Text>
                 <View className="flex-row gap-3">
@@ -272,7 +272,7 @@ export default function Reservar() {
                 </View>
                 <Text className="mt-2 font-body text-xs text-muted">
                   {pagaOnline
-                    ? 'Pago seguro con Wompi (Nequi, PSE o tarjeta). Tu cupo se confirma al pagar.'
+                    ? 'Pago seguro con PayU (Nequi, PSE o tarjeta). Tu cupo se confirma al pagar.'
                     : 'Pagás en la cancha al llegar. Tu cupo queda reservado.'}
                 </Text>
               </View>

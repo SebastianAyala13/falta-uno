@@ -20,7 +20,7 @@ import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { CardListSkeleton, SkeletonBlock } from '@/components/Skeleton';
-import { BANCOS, COMISION_CANCHA_DEFAULT, MEMBRESIA, MERCADOPAGO_CONFIGURADO } from '@/constants/config';
+import { BANCOS, COMISION_CANCHA_DEFAULT, MEMBRESIA, PAYU_CONFIGURADO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import {
   getDatosDesembolso,
@@ -265,7 +265,7 @@ export default function Finanzas() {
               </View>
               <Text className="mt-3 font-body text-sm text-muted">{MEMBRESIA.beneficio}</Text>
               <View className="mt-4">
-                {MERCADOPAGO_CONFIGURADO ? (
+                {PAYU_CONFIGURADO ? (
                   <GlowButton
                     label="Activar membresía"
                     variant="accent"
@@ -324,7 +324,7 @@ export default function Finanzas() {
               <Ionicons name="information-circle-outline" size={20} color={c.muted} style={{ marginTop: 1 }} />
               <Text className="ml-2 flex-1 font-body text-xs text-muted">
                 Los ingresos por reservas pagadas en efectivo los cobrás directo en la cancha. El saldo acá
-                refleja los pagos online (próximamente con Mercado Pago).
+                refleja los pagos online (próximamente con PayU).
               </Text>
             </View>
           </FadeIn>

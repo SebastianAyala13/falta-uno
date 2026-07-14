@@ -129,7 +129,7 @@ export interface Retiro {
   cancha_id: string;
   monto: number;
   estado: EstadoRetiro;
-  mp_payout_ref: string | null;
+  payout_ref: string | null;
   motivo_rechazo: string | null;
   solicitado_at: string;
   procesado_at: string | null;
@@ -265,7 +265,7 @@ export interface PartidoJugador {
 
 export type EstadoPago = 'pendiente' | 'aprobado' | 'rechazado';
 
-/** Pago de un cupo (procesamiento simulado, real-ready para Wompi). */
+/** Pago de un cupo (procesamiento simulado, real-ready para PayU). */
 export interface Pago {
   id: string; // uuid
   partido_id: string;

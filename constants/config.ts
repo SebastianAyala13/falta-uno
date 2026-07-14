@@ -60,62 +60,28 @@ export const ZONAS = [
 export type Zona = (typeof ZONAS)[number];
 
 /**
- * `true` cuando la pasarela Lemon Squeezy está habilitada para esta build.
- * La llave secreta de la API NUNCA va en el cliente: vive en las Edge Functions
- * de Supabase (`create-checkout` y `lemonsqueezy-webhook`).
+ * `true` cuando PayU está habilitado para esta build. PayU es el PSP colombiano
+ * (Nequi, PSE, tarjeta). La llave privada NUNCA va en el cliente: vive en las
+ * Edge Functions (`payu-crear-transaccion`, `payu-webhook`), sin prefijo EXPO_PUBLIC_.
  */
-export const LEMONSQUEEZY_CONFIGURADO = !!process.env.EXPO_PUBLIC_LEMONSQUEEZY_ENABLED;
+export const PAYU_CONFIGURADO = !!process.env.EXPO_PUBLIC_PAYU_ENABLED;
 
 /**
- * `true` cuando Wompi está habilitado para esta build. Wompi es el PSP colombiano
- * unificado (partidos y canchas): Nequi, PSE, tarjetas, Bancolombia. Las llaves
- * privadas / integrity / events viven SOLO en las Edge Functions
- * (`wompi-crear-transaccion`, `wompi-webhook`), nunca con prefijo EXPO_PUBLIC_.
+ * `provider` marca quién procesa el pago: 'payu' abre un checkout externo real
+ * confirmado por webhook en el servidor; 'efectivo' es acuerdo con el organizador.
  */
-export const WOMPI_CONFIGURADO = !!process.env.EXPO_PUBLIC_WOMPI_ENABLED;
-
-/**
- * Medios de pago (contexto colombiano).
- * `provider` marca qué pasarela procesa el pago: 'lemonsqueezy' abre un
- * checkout real en el navegador; 'efectivo' es acuerdo directo con el
- * organizador. Los medios con provider 'wompi' quedan como referencia futura.
- */
-export type MedioPagoId = 'nequi' | 'pse' | 'tarjeta' | 'efectivo' | 'online';
+export type MedioPagoId = 'efectivo' | 'online';
 
 export interface MedioPago {
   id: MedioPagoId;
   nombre: string;
   detalle: string;
-  icon: string; // nombre de Ionicons
-  provider: 'wompi' | 'efectivo' | 'lemonsqueezy';
+  icon: string;
+  provider: 'payu' | 'efectivo';
   instantaneo: boolean;
 }
 
 export const MEDIOS_PAGO: MedioPago[] = [
-  {
-    id: 'nequi',
-    nombre: 'Nequi',
-    detalle: 'Pago instantáneo desde tu Nequi',
-    icon: 'phone-portrait',
-    provider: 'wompi',
-    instantaneo: true,
-  },
-  {
-    id: 'pse',
-    nombre: 'PSE',
-    detalle: 'Débito desde tu banco',
-    icon: 'business',
-    provider: 'wompi',
-    instantaneo: true,
-  },
-  {
-    id: 'tarjeta',
-    nombre: 'Tarjeta',
-    detalle: 'Crédito o débito',
-    icon: 'card',
-    provider: 'wompi',
-    instantaneo: true,
-  },
   {
     id: 'efectivo',
     nombre: 'Efectivo en cancha',
@@ -127,9 +93,9 @@ export const MEDIOS_PAGO: MedioPago[] = [
   {
     id: 'online',
     nombre: 'Nequi, PSE o tarjeta',
-    detalle: 'Pago seguro con Wompi',
+    detalle: 'Pago seguro con PayU',
     icon: 'card',
-    provider: 'wompi',
+    provider: 'payu',
     instantaneo: true,
   },
 ];
@@ -138,13 +104,13 @@ export const MEDIOS_PAGO: MedioPago[] = [
  * Medios de pago ACTIVOS en producción.
  *
  * "Efectivo" está siempre (pago real al organizador en la cancha). "Online"
- * (Wompi) aparece solo cuando `EXPO_PUBLIC_WOMPI_ENABLED` está seteada: es un
- * checkout REAL procesado por Wompi y confirmado por webhook en el servidor.
+ * (PayU) aparece solo cuando `EXPO_PUBLIC_PAYU_ENABLED` está seteada: es un
+ * checkout REAL procesado por PayU y confirmado por webhook en el servidor.
  * Nunca mostramos un pago simulado que finja "Aprobado": eso es causa de rechazo
  * en App Store (2.1) y Google Play.
  */
 export const MEDIOS_PAGO_ACTIVOS: MedioPago[] = MEDIOS_PAGO.filter(
-  (m) => m.id === 'efectivo' || (m.id === 'online' && WOMPI_CONFIGURADO),
+  (m) => m.id === 'efectivo' || (m.id === 'online' && PAYU_CONFIGURADO),
 );
 
 /** Comisión de servicio de Falta Uno (sobre el precio del cupo). */
@@ -167,21 +133,13 @@ export const COMISION_CANCHA_DEFAULT = 0.1; // 10%
 /**
  * Membresía de cancha: mientras esté activa, la cancha no paga comisión.
  * El precio es un default a confirmar con negocio; el cobro real se activa en
- * Fase 2 (Mercado Pago). Ajustá acá cuando definas el valor definitivo.
+ * (PayU). Ajustá acá cuando definas el valor definitivo.
  */
 export const MEMBRESIA = {
   nombre: 'Cancha Pro',
   precioMensual: 49900, // COP/mes (default a confirmar)
   beneficio: '0% de comisión en todas tus reservas',
 } as const;
-
-/**
- * `true` cuando Mercado Pago está habilitado para esta build (Fase 2).
- * Igual que Lemon Squeezy: la llave privada NUNCA va en el cliente, vive en las
- * Edge Functions. Con el flag apagado, las reservas solo aceptan efectivo y los
- * retiros/membresías quedan como "Próximamente".
- */
-export const MERCADOPAGO_CONFIGURADO = !!process.env.EXPO_PUBLIC_MERCADOPAGO_ENABLED;
 
 /** Amenidades de una cancha (para el editor del dueño y el perfil del jugador). */
 export interface AmenidadDef {

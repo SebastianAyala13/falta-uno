@@ -4,7 +4,7 @@
  * Todo es server-authoritative y protegido por RLS: cada dueño solo ve/gestiona
  * sus canchas, reservas, saldo y retiros. El saldo se calcula del ledger
  * (`movimientos_cancha`) vía la función `saldo_cancha`. En Fase 1 las reservas
- * se pagan en efectivo; el cobro online (Mercado Pago) llega en Fase 2.
+ * se pagan en efectivo; el cobro online (PayU) llega en Fase 2.
  */
 import type { Formato } from '@/constants/config';
 import { supabase, supabaseConfigurado } from '@/lib/supabase';

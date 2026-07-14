@@ -66,17 +66,17 @@ export type Zona = (typeof ZONAS)[number];
  */
 export const PAYU_CONFIGURADO = !!process.env.EXPO_PUBLIC_PAYU_ENABLED;
 
+export type MedioPagoId = 'efectivo' | 'online';
+
 /**
  * `provider` marca quién procesa el pago: 'payu' abre un checkout externo real
  * confirmado por webhook en el servidor; 'efectivo' es acuerdo con el organizador.
  */
-export type MedioPagoId = 'efectivo' | 'online';
-
 export interface MedioPago {
   id: MedioPagoId;
   nombre: string;
   detalle: string;
-  icon: string;
+  icon: string; // nombre de Ionicons
   provider: 'payu' | 'efectivo';
   instantaneo: boolean;
 }
@@ -132,8 +132,8 @@ export const COMISION_CANCHA_DEFAULT = 0.1; // 10%
 
 /**
  * Membresía de cancha: mientras esté activa, la cancha no paga comisión.
- * El precio es un default a confirmar con negocio; el cobro real se activa en
- * (PayU). Ajustá acá cuando definas el valor definitivo.
+ * El precio es un default a confirmar con negocio; el cobro real se activa
+ * con PayU. Ajustá acá cuando definas el valor definitivo.
  */
 export const MEMBRESIA = {
   nombre: 'Cancha Pro',

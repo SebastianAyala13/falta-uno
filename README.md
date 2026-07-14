@@ -64,9 +64,9 @@ y **feedback háptico** en las acciones clave.
 ### 🔐 Seguridad & 💳 Pagos
 - **Auth**: Supabase Auth (sesión persistida en el dispositivo) + RLS por usuario
   en todas las tablas (definido en las migraciones de `supabase/migrations/`).
-- **Pagos**: hay dos medios reales — **efectivo en cancha** (acuerdo con el
-  organizador, sin custodia de dinero) y **pago online con PayU**
-  (checkout externo + confirmación por webhook en el servidor). La llave
+- **Pagos**: el medio real hoy es **efectivo en cancha** (acuerdo con el
+  organizador, sin custodia de dinero); **pago online con PayU** (próximamente)
+  abrirá un checkout externo confirmado por webhook en el servidor. La llave
   secreta de la pasarela **nunca** va en el cliente y el estado "aprobado"
   **solo** lo escribe el servidor.
 

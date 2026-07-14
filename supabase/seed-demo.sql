@@ -72,13 +72,13 @@ insert into public.pagos (partido_id, jugador_id, medio, monto, comision, estado
 
 -- ── Ledger de canchas (ingresos + comisiones → saldo) ───────────────────────
 insert into public.movimientos_cancha (cancha_id, tipo, monto, reserva_id, descripcion, created_at) values
-  ('a0e00000-0000-4000-b000-000000000001','ingreso_reserva',60000,'a0e00000-0000-4000-d000-000000000001','Ingreso por reserva (Wompi)', now() - interval '2 days'),
+  ('a0e00000-0000-4000-b000-000000000001','ingreso_reserva',60000,'a0e00000-0000-4000-d000-000000000001','Ingreso por reserva (PayU)', now() - interval '2 days'),
   ('a0e00000-0000-4000-b000-000000000001','comision',-6000,'a0e00000-0000-4000-d000-000000000001','Comisión Falta Uno', now() - interval '2 days'),
-  ('a0e00000-0000-4000-b000-000000000003','ingreso_reserva',80000,'a0e00000-0000-4000-d000-000000000002','Ingreso por reserva (Wompi)', now() - interval '1 days'),
+  ('a0e00000-0000-4000-b000-000000000003','ingreso_reserva',80000,'a0e00000-0000-4000-d000-000000000002','Ingreso por reserva (PayU)', now() - interval '1 days'),
   ('a0e00000-0000-4000-b000-000000000003','comision',-8000,'a0e00000-0000-4000-d000-000000000002','Comisión Falta Uno', now() - interval '1 days'),
-  ('a0e00000-0000-4000-b000-000000000003','ingreso_reserva',80000,'a0e00000-0000-4000-d000-000000000006','Ingreso por reserva (Wompi)', now() - interval '3 days'),
+  ('a0e00000-0000-4000-b000-000000000003','ingreso_reserva',80000,'a0e00000-0000-4000-d000-000000000006','Ingreso por reserva (PayU)', now() - interval '3 days'),
   ('a0e00000-0000-4000-b000-000000000003','comision',-8000,'a0e00000-0000-4000-d000-000000000006','Comisión Falta Uno', now() - interval '3 days'),
-  ('a0e00000-0000-4000-b000-000000000004','ingreso_reserva',70000,'a0e00000-0000-4000-d000-000000000003','Ingreso por reserva (Wompi)', now() - interval '6 hours'),
+  ('a0e00000-0000-4000-b000-000000000004','ingreso_reserva',70000,'a0e00000-0000-4000-d000-000000000003','Ingreso por reserva (PayU)', now() - interval '6 hours'),
   ('a0e00000-0000-4000-b000-000000000004','comision',-7000,'a0e00000-0000-4000-d000-000000000003','Comisión Falta Uno', now() - interval '6 hours');
 
 -- ── Retiros (para aprobar en la Plataforma Madre) ───────────────────────────

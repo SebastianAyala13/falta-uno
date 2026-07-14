@@ -33,10 +33,10 @@ yarn-error.*
 # local env files
 .env
 .env*.local
-# Credenciales de deploy a Supabase/Wompi (secretos de prod — NUNCA commitear)
+# Credenciales de deploy a Supabase/pasarela de pagos (secretos de prod — NUNCA commitear)
 .supabase-deploy.env
 supabase/.tmp-secrets.env
-supabase/.env.wompi
+supabase/.env.payu
 
 # typescript
 *.tsbuildinfo

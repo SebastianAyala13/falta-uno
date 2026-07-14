@@ -17,7 +17,7 @@ páginas legales en `/legal/`, construida por Dockerfile desde GitHub.
    - `EXPO_PUBLIC_SUPABASE_URL` = tu URL de Supabase
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY` = tu anon key
    - `EXPO_PUBLIC_SITE_URL` = `https://<tu-dominio>`
-   - `EXPO_PUBLIC_LEMONSQUEEZY_ENABLED` = `1` (opcional)
+   - `EXPO_PUBLIC_PAYU_ENABLED` = `1` (opcional)
 4. **DNS primero:** creá el registro **A** de `<tu-dominio>` → IP del servidor
    Dokploy y esperá a que resuelva. Hacelo **antes** de activar HTTPS: Let's
    Encrypt valida el dominio contra esa IP y, si todavía no resuelve, la

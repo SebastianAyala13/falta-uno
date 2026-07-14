@@ -43,8 +43,8 @@ Apple actualizó la Guideline 1.2 en junio 2026 dejándolo más estricto. Ambas 
 `lib/payments.ts` **siempre devuelve `aprobado`** para Nequi/PSE/Tarjeta sin pasarela real (es un mock con `setTimeout`). Apple (2.1) y Google rechazan funciones placeholder o no funcionales, y un comprobante de pago falso es especialmente sensible.
 
 **Qué hacer — elegí una:**
-- **(A) Recomendada para v1:** dejar solo **"Efectivo — le pagás al organizador en la cancha"** (ese flujo sí es real) y ocultar Nequi/PSE/Tarjeta hasta integrar Wompi. Pasás revisión sin backend de pagos.
-- **(B)** Integrar Wompi de verdad (pasarela real con llave en backend) antes de enviar.
+- **(A) Recomendada para v1:** dejar solo **"Efectivo — le pagás al organizador en la cancha"** (ese flujo sí es real) y ocultar Nequi/PSE/Tarjeta hasta integrar PayU. Pasás revisión sin backend de pagos.
+- **(B)** Integrar PayU de verdad (pasarela real con llave en backend) antes de enviar.
 
 > Nota buena: la **comisión "Servicio Falta Uno"** sobre un partido presencial es un **servicio del mundo real**, exento de IAP de Apple y de Play Billing. Eso está bien — no necesitás compras dentro de la app.
 
@@ -94,7 +94,7 @@ Apple actualizó la Guideline 1.2 en junio 2026 dejándolo más estricto. Ambas 
 **Para pasar revisión (bloqueantes):**
 1. Implementar reportar + bloquear + filtro básico en chat y muro.
 2. Checkbox de aceptación de Términos/Privacidad en el registro.
-3. Dejar solo pago en efectivo (o integrar Wompi real).
+3. Dejar solo pago en efectivo (o integrar PayU real).
 4. Decidir edad final (18 recomendado si no hay moderación robusta).
 
 **Datos a rellenar (no es programar):**

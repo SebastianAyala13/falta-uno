@@ -40,9 +40,10 @@ Construida con **React Native + Expo**, navegación basada en archivos con **Exp
 - **Fotos** — foto de **perfil** y de **cancha** con `expo-image-picker`.
 - **Reputación** — calificá el partido y al organizador con estrellas, reportá
   no-shows y dejá comentario (pantalla Calificar, desde Mis Partidos).
-- **Checkout / Pago** — **efectivo en cancha** y **pago online real** con
-  Lemon Squeezy (tarjeta), con comprobante y referencia. _(El online se activa
-  con `EXPO_PUBLIC_LEMONSQUEEZY_ENABLED`; ver "Pagos con Lemon Squeezy".)_
+- **Checkout / Pago** — **efectivo en cancha** y **pago online con PayU**
+  (Nequi, PSE o tarjeta, próximamente), con comprobante y referencia. _(El
+  online se activa con `EXPO_PUBLIC_PAYU_ENABLED`; ver
+  [`docs/PAYU-SETUP.md`](docs/PAYU-SETUP.md).)_
 - **Mis partidos** — los partidos en los que te inscribiste.
 - **Mis pagos** — historial de comprobantes con estado.
 - **Editar perfil** — actualizá nombre, ciudad, celular, posición y nivel (sincroniza
@@ -64,47 +65,10 @@ y **feedback háptico** en las acciones clave.
 - **Auth**: Supabase Auth (sesión persistida en el dispositivo) + RLS por usuario
   en todas las tablas (definido en las migraciones de `supabase/migrations/`).
 - **Pagos**: hay dos medios reales — **efectivo en cancha** (acuerdo con el
-  organizador, sin custodia de dinero) y **pago online con Lemon Squeezy**
+  organizador, sin custodia de dinero) y **pago online con PayU**
   (checkout externo + confirmación por webhook en el servidor). La llave
   secreta de la pasarela **nunca** va en el cliente y el estado "aprobado"
   **solo** lo escribe el servidor.
-
-#### 💳 Pagos con Lemon Squeezy
-
-El pago online abre un **checkout real de Lemon Squeezy** en el navegador y se
-confirma **en el servidor** vía webhook. Para activarlo:
-
-1. **Producto en Lemon Squeezy:** creá una tienda y un producto "Cupo de
-   partido" con una variante que acepte **precio custom** (pay-what-you-want),
-   y anotá el `store id` y el `variant id`.
-2. **Secretos del backend** (solo en Edge Functions, nunca en la app):
-   ```bash
-   supabase secrets set LEMONSQUEEZY_API_KEY=... LEMONSQUEEZY_STORE_ID=... \
-     LEMONSQUEEZY_VARIANT_ID=... LEMONSQUEEZY_WEBHOOK_SECRET=...
-   ```
-3. **Desplegar las funciones** (el webhook sin verificación de JWT, porque
-   Lemon Squeezy se autentica con la firma HMAC, no con token de Supabase):
-   ```bash
-   supabase functions deploy create-checkout
-   supabase functions deploy lemonsqueezy-webhook --no-verify-jwt
-   ```
-4. **Registrar el webhook** en Lemon Squeezy (Settings → Webhooks): URL
-   `https://TU-PROYECTO.supabase.co/functions/v1/lemonsqueezy-webhook`, evento
-   `order_created` y el mismo *signing secret* que pusiste en el paso 2.
-5. **Activar el medio en la app:** en `.env` poné
-   `EXPO_PUBLIC_LEMONSQUEEZY_ENABLED=1` (sin esto, el checkout solo muestra
-   efectivo). Aplicá las migraciones pendientes (`pnpm supabase db push`) si tu
-   base es anterior (agregan el medio `online` y el índice de idempotencia).
-
-> **Nota de cumplimiento (stores):** el checkout online se abre en el
-> **navegador externo** y cobra un **servicio del mundo real** (el cupo en una
-> cancha física), que está **exento de las compras in-app (IAP)** de Apple —
-> las reglas de IAP aplican a bienes/servicios digitales, no a servicios
-> físicos. Ojo: Lemon Squeezy es un *merchant of record* pensado ante todo
-> para **productos digitales**; confirmá con ellos que aceptan este caso de
-> uso, o reservá la pasarela para una futura suscripción digital
-> "Falta Uno Pro" (caso ideal para Lemon Squeezy; en ese caso, al ser un bien
-> digital, tocaría revisar de nuevo las reglas de IAP).
 
 ---
 
@@ -204,7 +168,7 @@ Lo que ya está resuelto en la app y lo que tenés que completar vos al publicar
   exige "Sign in with Apple".
 - **Pagos:** el flujo cobra un **servicio del mundo real** (cupo en una cancha),
   que está **exento de las compras in-app (IAP)** de Apple. El pago online es
-  real (Lemon Squeezy, en navegador externo); no hay pagos simulados.
+  real (PayU, en navegador externo); no hay pagos simulados.
 
 **Recursos que ya dejé listos en el repo:**
 - **Páginas legales** en `legal/` (`privacidad.html`, `terminos.html`,

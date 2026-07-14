@@ -87,7 +87,7 @@ El CLI viene como **devDependency** (`pnpm supabase …`). Para tocar el schema 
 ## 7. Claude Code — paridad de setup
 
 - `CLAUDE.md` se autocarga; con eso alcanza para la mayoría del trabajo.
-- Si vas a tocar **Supabase** o **Mercado Pago**, conectá sus MCP en Claude Code (`/mcp`).
+- Si vas a tocar **Supabase**, conectá su MCP en Claude Code (`/mcp`).
 - **Instalá los plugins que usa el repo** (`/plugin`) — ver la sección "Working style & skills" de `CLAUDE.md`:
   - **superpowers**: flujo de trabajo (brainstorming → plans → execute → verify, systematic-debugging,
     TDD). El repo **especifica antes de codear**: specs en `docs/superpowers/specs/`, planes en

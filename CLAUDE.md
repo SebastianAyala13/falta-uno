@@ -59,7 +59,7 @@ paths working when touching data flow.
 **State** — a single persisted **zustand** store in `lib/store.ts` (partidos, inscripciones, pagos,
 chat fallback, calificaciones/reputación, muro social posts+comentarios, moderación bloqueos+reportes).
 Auth lives separately in `lib/auth.tsx`. Data layers: `lib/canchas.ts` (canchas: reservas, agenda,
-saldo, Mercado Pago), `lib/payments.ts`, `types/database.ts` (Supabase row types).
+saldo, PayU), `lib/payments.ts`, `types/database.ts` (Supabase row types).
 
 **Supabase** — the schema (tables + per-user RLS) is managed with **versioned migrations** in
 `supabase/migrations/` (the source of truth; there is no `schema.sql`). Local dev uses the Supabase CLI
@@ -67,12 +67,12 @@ saldo, Mercado Pago), `lib/payments.ts`, `types/database.ts` (Supabase row types
 `pnpm db:diff`), test with `pnpm db:reset` (re-applies every migration + `supabase/seed-demo.sql`).
 Merging to `main` triggers `.github/workflows/db-migrations.yml`, which runs `supabase db push` to apply
 pending migrations to prod. `db reset` is **local only**, never against prod; there is **no staging**, so
-always test locally before merging. Server logic lives in `supabase/functions/` (`create-checkout`,
-`lemonsqueezy-webhook`, `wompi-crear-transaccion`, `wompi-webhook`, `delete-user`) and — together with its
-secrets — is **managed in the Supabase dashboard**, not deployed by the CLI or CI.
+always test locally before merging. Server logic lives in `supabase/functions/` (`payu-crear-transaccion`,
+`payu-webhook`, `delete-user`) and — together with its secrets — is **managed in the Supabase
+dashboard**, not deployed by the CLI or CI.
 
 **Payments (hard invariant)** — the client **never** marks a payment `aprobado`. Cash stays
-`pendiente` (Falta Uno holds no money). Online payments (Lemon Squeezy for partidos, Mercado Pago for
+`pendiente` (Falta Uno holds no money). Online payments (PayU, the Colombian PSP, for both partidos and
 canchas) open an external checkout via an edge function; `aprobado` is written **only** by the server
 webhook. Secret keys live only in edge functions, never with the `EXPO_PUBLIC_` prefix.
 

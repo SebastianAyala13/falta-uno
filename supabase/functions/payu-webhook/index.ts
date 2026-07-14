@@ -1,15 +1,18 @@
-// Edge Function: wompi-webhook
-// Recibe los Eventos de Wompi. El estado 'aprobado' (pago de partido) o
-// 'confirmada' (reserva de cancha) SOLO se escribe acá, tras verificar el
-// checksum del evento con el WOMPI_EVENTS_SECRET. Nunca se confía en el cliente.
+// Edge Function: payu-webhook
+// Recibe la confirmación de PayU (form-urlencoded). El estado 'aprobado' (pago de
+// partido) o 'confirmada' (reserva de cancha) SOLO se escribe acá, tras verificar
+// la firma con PAYU_API_KEY. Nunca se confía en el cliente.
 //
-// Deploy (sin verificación de JWT: Wompi no manda token de Supabase; la
-// autenticidad se valida con el checksum del evento):
-//   supabase functions deploy wompi-webhook --no-verify-jwt
-// Secretos:  WOMPI_EVENTS_SECRET
+// STUB: sin PAYU_API_KEY seteada, devuelve "Webhook no configurado".
+//
+// Deploy (sin verificación de JWT: PayU no manda token de Supabase; la
+// autenticidad se valida con la firma del evento):
+//   supabase functions deploy payu-webhook --no-verify-jwt
+// Secretos:  PAYU_API_KEY
 // (SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY ya vienen en el entorno.)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createHash } from 'node:crypto';
 
 /** Comisión de servicio sobre el cupo de partido (sync con constants/config.ts). */
 const COMISION_SERVICIO = 0.08;
@@ -17,44 +20,42 @@ const COMISION_SERVICIO = 0.08;
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-async function sha256hex(s: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-/** Lee un path con puntos (ej. "transaction.id") dentro de un objeto. */
-function getPath(obj: unknown, path: string): unknown {
-  return path.split('.').reduce<unknown>((o, k) => (o == null ? undefined : (o as Record<string, unknown>)[k]), obj);
-}
+const md5hex = (s: string): string => createHash('md5').update(s).digest('hex');
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
 
   try {
-    const secret = Deno.env.get('WOMPI_EVENTS_SECRET');
-    if (!secret) return json({ error: 'Webhook no configurado' }, 500);
+    const apiKey = Deno.env.get('PAYU_API_KEY');
+    if (!apiKey) return json({ error: 'Webhook no configurado' }, 500);
 
-    const evento = await req.json();
-    const firma = evento?.signature;
-    const props: string[] = firma?.properties ?? [];
-    const checksumRecibido: string = firma?.checksum ?? '';
-    const timestamp = evento?.timestamp;
+    const form = await req.formData();
+    const merchantId = String(form.get('merchant_id') ?? '');
+    const referencia = String(form.get('reference_sale') ?? '');
+    const value = String(form.get('value') ?? '');
+    const currency = String(form.get('currency') ?? '');
+    const statePol = String(form.get('state_pol') ?? '');
+    const sign = String(form.get('sign') ?? '');
 
-    // Checksum = SHA256( valores(data, props en orden) + timestamp + events_secret )
-    const concatenado =
-      props.map((p) => String(getPath(evento?.data, p) ?? '')).join('') + String(timestamp) + secret;
-    const esperado = await sha256hex(concatenado);
-    if (!checksumRecibido || esperado.toLowerCase() !== String(checksumRecibido).toLowerCase()) {
-      return json({ error: 'Checksum inválido' }, 401);
-    }
+    // Firma PayU: MD5(ApiKey~merchant_id~reference_sale~new_value~currency~state_pol).
+    // new_value: PayU formatea el value con una regla de decimales (si el segundo
+    // decimal es 0, usa 1 decimal). Se computan ambas variantes y se acepta
+    // cualquiera. Validar contra la doc de PayU al conectar credenciales.
+    const num = Number(value);
+    const v1 = num.toFixed(1);
+    const v2 = num.toFixed(2);
+    const esperado1 = md5hex(`${apiKey}~${merchantId}~${referencia}~${v1}~${currency}~${statePol}`);
+    const esperado2 = md5hex(`${apiKey}~${merchantId}~${referencia}~${v2}~${currency}~${statePol}`);
+    const firmaOk =
+      sign.toLowerCase() === esperado1.toLowerCase() ||
+      sign.toLowerCase() === esperado2.toLowerCase();
+    if (!sign || !firmaOk) return json({ error: 'Firma inválida' }, 401);
 
-    if (evento?.event !== 'transaction.updated') return json({ ok: true, ignorado: evento?.event });
-
-    const tx = evento?.data?.transaction;
-    const referencia: string = tx?.reference ?? '';
-    const amountInCents: number = Number(tx?.amount_in_cents ?? 0);
-    if (tx?.status !== 'APPROVED') return json({ ok: true, ignorado: tx?.status });
+    // state_pol 4 = APPROVED. Cualquier otro estado se ignora.
+    if (statePol !== '4') return json({ ok: true, ignorado: statePol });
     if (!referencia) return json({ error: 'Sin referencia' }, 400);
+
+    const amountInt = Math.round(num);
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -70,9 +71,8 @@ Deno.serve(async (req) => {
 
     if (pago) {
       if (pago.estado === 'aprobado') return json({ ok: true, duplicado: true });
-      // Anti-tampering: el monto cobrado debe coincidir con el de la BD
-      if (Math.round(pago.monto * 100) !== amountInCents) {
-        console.error('wompi-webhook: monto no coincide (pago)', referencia, pago.monto, amountInCents);
+      if (Math.round(pago.monto) !== amountInt) {
+        console.error('payu-webhook: monto no coincide (pago)', referencia, pago.monto, amountInt);
         return json({ ok: true, alerta: 'monto no coincide' });
       }
       await admin.from('pagos').update({ estado: 'aprobado' }).eq('id', pago.id);
@@ -110,8 +110,8 @@ Deno.serve(async (req) => {
 
     if (reserva) {
       if (reserva.estado === 'confirmada') return json({ ok: true, duplicado: true });
-      if (Math.round(reserva.precio * 100) !== amountInCents) {
-        console.error('wompi-webhook: monto no coincide (reserva)', referencia, reserva.precio, amountInCents);
+      if (Math.round(reserva.precio) !== amountInt) {
+        console.error('payu-webhook: monto no coincide (reserva)', referencia, reserva.precio, amountInt);
         return json({ ok: true, alerta: 'monto no coincide' });
       }
       await admin.from('reservas').update({ estado: 'confirmada' }).eq('id', reserva.id);
@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
           tipo: 'ingreso_reserva',
           monto: reserva.precio,
           reserva_id: reserva.id,
-          descripcion: 'Ingreso por reserva (Wompi)',
+          descripcion: 'Ingreso por reserva (PayU)',
         },
         {
           cancha_id: reserva.cancha_id,
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
 
     return json({ ok: true, ignorado: 'referencia desconocida' });
   } catch (e) {
-    console.error('wompi-webhook:', e);
+    console.error('payu-webhook:', e);
     return json({ error: String(e) }, 500);
   }
 });

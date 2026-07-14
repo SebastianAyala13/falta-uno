@@ -1,15 +1,20 @@
-// Edge Function: wompi-crear-transaccion
-// Arma la URL del Web Checkout de Wompi para pagar el cupo de un partido o la
-// reserva de una cancha. El MONTO se recomputa en el servidor desde la BD (nunca
-// se confía en el cliente) y la FIRMA DE INTEGRIDAD se calcula acá con el secreto
-// que vive SOLO en la Edge Function.
+// Edge Function: payu-crear-transaccion
+// Arma el pago del Web Checkout de PayU para el cupo de un partido o la reserva
+// de una cancha. El MONTO se recomputa en el servidor desde la BD (nunca se
+// confía en el cliente) y la FIRMA se calcula acá con el ApiKey que vive SOLO en
+// la Edge Function.
 //
-// Deploy:  supabase functions deploy wompi-crear-transaccion
+// STUB: sin los secretos PAYU_* seteados, devuelve "Pasarela no configurada".
+// PayU WebCheckout es un form POST; al conectar credenciales hay que cerrar el
+// detalle del envío (ver docs/PAYU-SETUP.md).
+//
+// Deploy:  supabase functions deploy payu-crear-transaccion
 // Secretos (supabase secrets set ...):
-//   WOMPI_PUBLIC_KEY, WOMPI_INTEGRITY_SECRET, WOMPI_REDIRECT_URL (opcional)
-// (SUPABASE_URL y SUPABASE_ANON_KEY ya vienen en el entorno de Functions.)
+//   PAYU_API_KEY, PAYU_MERCHANT_ID, PAYU_ACCOUNT_ID,
+//   PAYU_CHECKOUT_URL (opcional; default sandbox), PAYU_RESPONSE_URL (opcional)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createHash } from 'node:crypto';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -26,10 +31,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...cors, 'Content-Type': 'application/json' },
   });
 
-async function sha256hex(s: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
+const md5hex = (s: string): string => createHash('md5').update(s).digest('hex');
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -47,11 +49,17 @@ Deno.serve(async (req) => {
     } = await userClient.auth.getUser();
     if (!user) return json({ error: 'No autorizado' }, 401);
 
-    const publicKey = Deno.env.get('WOMPI_PUBLIC_KEY');
-    const integritySecret = Deno.env.get('WOMPI_INTEGRITY_SECRET');
-    if (!publicKey || !integritySecret) return json({ error: 'Pasarela no configurada' }, 500);
-    const redirectUrl =
-      Deno.env.get('WOMPI_REDIRECT_URL') || 'https://sebastianayala13.github.io/falta-uno-legal';
+    const apiKey = Deno.env.get('PAYU_API_KEY');
+    const merchantId = Deno.env.get('PAYU_MERCHANT_ID');
+    const accountId = Deno.env.get('PAYU_ACCOUNT_ID');
+    if (!apiKey || !merchantId || !accountId) {
+      return json({ error: 'Pasarela no configurada' }, 500);
+    }
+    const checkoutUrl =
+      Deno.env.get('PAYU_CHECKOUT_URL') ||
+      'https://sandbox.checkout.payulatam.com/ppp-web-gateway-payu/';
+    const responseUrl =
+      Deno.env.get('PAYU_RESPONSE_URL') || 'https://sebastianayala13.github.io/falta-uno-legal';
 
     const { tipo, partidoId, reservaId, referencia, email } = await req.json();
     if (typeof referencia !== 'string' || !referencia) {
@@ -84,26 +92,40 @@ Deno.serve(async (req) => {
     }
 
     if (!Number.isFinite(amount) || amount <= 0) return json({ error: 'Monto inválido' }, 400);
-    const amountInCents = Math.round(amount * 100);
 
-    // Firma de integridad: SHA256(reference + amountInCents + currency + integritySecret)
-    const signature = await sha256hex(`${referencia}${amountInCents}COP${integritySecret}`);
+    // Firma de PayU: MD5(ApiKey~merchantId~referenceCode~amount~currency).
+    // amount va como entero COP (sin decimales) en el WebCheckout.
+    const currency = 'COP';
+    const signature = md5hex(`${apiKey}~${merchantId}~${referencia}~${amount}~${currency}`);
 
-    // La clave 'signature:integrity' y 'customer-data:email' llevan ':' literal
-    const params = [
-      `public-key=${encodeURIComponent(publicKey)}`,
-      `currency=COP`,
-      `amount-in-cents=${amountInCents}`,
-      `reference=${encodeURIComponent(referencia)}`,
-      `signature:integrity=${signature}`,
-      `redirect-url=${encodeURIComponent(redirectUrl)}`,
-      ...(email ? [`customer-data:email=${encodeURIComponent(email)}`] : []),
-    ];
-    const url = `https://checkout.wompi.co/p/?${params.join('&')}`;
+    // Campos firmados del WebCheckout de PayU. OJO: PayU espera un form POST a
+    // `checkoutUrl`. Este stub arma la estructura firmada y devuelve el gateway
+    // con los parámetros; el cierre del envío (form POST / página puente) se
+    // valida al conectar credenciales reales (ver docs/PAYU-SETUP.md).
+    const fields: Record<string, string> = {
+      merchantId,
+      accountId,
+      description: tipo === 'partido' ? 'Cupo de partido - Falta Uno' : 'Reserva de cancha - Falta Uno',
+      referenceCode: referencia,
+      amount: String(amount),
+      tax: '0',
+      taxReturnBase: '0',
+      currency,
+      signature,
+      buyerEmail: email ?? '',
+      responseUrl,
+      confirmationUrl: `${supaUrl}/functions/v1/payu-webhook`,
+      test: '1',
+    };
+
+    const qs = Object.entries(fields)
+      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+      .join('&');
+    const url = `${checkoutUrl}?${qs}`;
 
     return json({ url });
   } catch (e) {
-    console.error('wompi-crear-transaccion:', e);
+    console.error('payu-crear-transaccion:', e);
     return json({ error: String(e) }, 500);
   }
 });

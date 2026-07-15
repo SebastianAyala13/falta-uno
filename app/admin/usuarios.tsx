@@ -7,6 +7,7 @@ import Avatar from '@/components/Avatar';
 import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import SearchBar from '@/components/SearchBar';
@@ -27,10 +28,15 @@ export default function AdminUsuarios() {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(async (q: string) => {
-    const filas = await listarUsuarios(q.trim() || undefined);
-    setUsuarios(filas);
+    setError(null);
+    try {
+      setUsuarios(await listarUsuarios(q.trim() || undefined));
+    } catch {
+      setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
+    }
   }, []);
 
   // Búsqueda con debounce simple: espera a que dejes de escribir para pedir datos.
@@ -38,9 +44,12 @@ export default function AdminUsuarios() {
   useEffect(() => {
     let activo = true;
     const timer = setTimeout(async () => {
+      if (activo) setError(null);
       try {
         const filas = await listarUsuarios(query.trim() || undefined);
         if (activo) setUsuarios(filas);
+      } catch {
+        if (activo) setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
       } finally {
         if (activo) setLoading(false);
       }
@@ -82,7 +91,12 @@ export default function AdminUsuarios() {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
             }>
-            {usuarios.length === 0 ? (
+            {error ? (
+              <ErrorBanner
+                message={error}
+                action={{ label: 'Reintentar', onPress: () => { setLoading(true); cargar(query).finally(() => setLoading(false)); } }}
+              />
+            ) : usuarios.length === 0 ? (
               <EmptyState
                 icon="people-outline"
                 titulo="Sin usuarios"

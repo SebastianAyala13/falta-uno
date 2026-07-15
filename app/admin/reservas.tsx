@@ -7,6 +7,7 @@ import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';
 import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import { CardListSkeleton } from '@/components/Skeleton';
@@ -44,10 +45,15 @@ export default function ReservasAdmin() {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
-    const filas = await listarReservasAdmin(filtro);
-    setReservas(filas);
+    setError(null);
+    try {
+      setReservas(await listarReservasAdmin(filtro));
+    } catch {
+      setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
+    }
   }, [filtro]);
 
   useEffect(() => {
@@ -94,7 +100,12 @@ export default function ReservasAdmin() {
                   colors={[c.primary]}
                 />
               }>
-              {reservas.length === 0 ? (
+              {error ? (
+                <ErrorBanner
+                  message={error}
+                  action={{ label: 'Reintentar', onPress: () => { setLoading(true); cargar().finally(() => setLoading(false)); } }}
+                />
+              ) : reservas.length === 0 ? (
                 <EmptyState
                   icon="calendar-outline"
                   titulo="Sin reservas"

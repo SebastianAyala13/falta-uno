@@ -6,6 +6,7 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import AdminGate from '@/components/AdminGate';
 import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import { CardListSkeleton, SkeletonBlock } from '@/components/Skeleton';
@@ -39,9 +40,15 @@ export default function AdminResumen() {
   const [datos, setDatos] = useState<MetricasAdmin | null>(null);
   const [cargando, setCargando] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
-    setDatos(await metricas());
+    setError(null);
+    try {
+      setDatos(await metricas());
+    } catch {
+      setError('No se pudieron cargar las métricas. Revisá tu conexión e intentá de nuevo.');
+    }
   }, []);
 
   useEffect(() => {
@@ -109,6 +116,10 @@ export default function AdminResumen() {
               />
             }>
             <View style={{ width: '100%', maxWidth: 1040, alignSelf: 'center' }}>
+              <ErrorBanner
+                message={error}
+                action={{ label: 'Reintentar', onPress: () => { setCargando(true); cargar().finally(() => setCargando(false)); } }}
+              />
               {/* Métricas */}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                 {tarjetas.map((t, i) => (

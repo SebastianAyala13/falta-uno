@@ -7,6 +7,7 @@ import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';
 import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import { CardListSkeleton } from '@/components/Skeleton';
@@ -42,10 +43,15 @@ export default function PagosAdmin() {
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
-    const filas = await listarPagosAdmin(filtro);
-    setPagos(filas);
+    setError(null);
+    try {
+      setPagos(await listarPagosAdmin(filtro));
+    } catch {
+      setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
+    }
   }, [filtro]);
 
   useEffect(() => {
@@ -97,6 +103,10 @@ export default function PagosAdmin() {
                   colors={[c.primary]}
                 />
               }>
+              <ErrorBanner
+                message={error}
+                action={{ label: 'Reintentar', onPress: () => { setLoading(true); cargar().finally(() => setLoading(false)); } }}
+              />
               {/* Resumen sobre lo cargado */}
               <View className="mb-4 flex-row gap-3">
                 <StatCard
@@ -112,7 +122,7 @@ export default function PagosAdmin() {
                 />
               </View>
 
-              {pagos.length === 0 ? (
+              {error ? null : pagos.length === 0 ? (
                 <EmptyState
                   icon="card-outline"
                   titulo="Sin pagos"

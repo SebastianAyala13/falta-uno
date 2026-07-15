@@ -53,6 +53,12 @@ export async function metricas(): Promise<MetricasAdmin> {
     supabase.from('canchas').select('ciudad'),
   ]);
 
+  // supabase-js no lanza ante errores de servidor/RLS: los devuelve en `.error`.
+  // Sin este chequeo, un fallo se disfrazaría de "plataforma vacía" (todo en cero).
+  for (const res of [u, c, r, pagos, retiros, ciudades]) {
+    if (res.error) throw new Error(res.error.message ?? 'No se pudieron cargar las métricas.');
+  }
+
   const pagosArr = (pagos.data ?? []) as { monto: number }[];
   const gmv = pagosArr.reduce((s, p) => s + (p.monto ?? 0), 0);
 
@@ -79,11 +85,12 @@ export async function metricas(): Promise<MetricasAdmin> {
 // ---------------------------------------------------------------------------
 export async function listarUsuarios(q?: string): Promise<Profile[]> {
   if (!supabaseConfigurado) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(300);
+  if (error) throw new Error('No se pudieron cargar los usuarios.');
   let filas = (data ?? []) as Profile[];
   if (q) {
     const s = q.toLowerCase();
@@ -94,7 +101,8 @@ export async function listarUsuarios(q?: string): Promise<Profile[]> {
 
 export async function listarCanchasAdmin(): Promise<Cancha[]> {
   if (!supabaseConfigurado) return [];
-  const { data } = await supabase.from('canchas').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('canchas').select('*').order('created_at', { ascending: false });
+  if (error) throw new Error('No se pudieron cargar las canchas.');
   return (data ?? []) as Cancha[];
 }
 
@@ -102,7 +110,8 @@ export async function listarReservasAdmin(estado?: string): Promise<Reserva[]> {
   if (!supabaseConfigurado) return [];
   let query = supabase.from('reservas').select('*').order('fecha', { ascending: false }).limit(300);
   if (estado) query = query.eq('estado', estado);
-  const { data } = await query;
+  const { data, error } = await query;
+  if (error) throw new Error('No se pudieron cargar las reservas.');
   return (data ?? []) as Reserva[];
 }
 
@@ -110,38 +119,42 @@ export async function listarPagosAdmin(estado?: string): Promise<Pago[]> {
   if (!supabaseConfigurado) return [];
   let query = supabase.from('pagos').select('*').order('created_at', { ascending: false }).limit(300);
   if (estado) query = query.eq('estado', estado);
-  const { data } = await query;
+  const { data, error } = await query;
+  if (error) throw new Error('No se pudieron cargar los pagos.');
   return (data ?? []) as Pago[];
 }
 
 export async function retirosTodos(): Promise<Retiro[]> {
   if (!supabaseConfigurado) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('retiros')
     .select('*')
     .order('solicitado_at', { ascending: false })
     .limit(300);
+  if (error) throw new Error('No se pudieron cargar los retiros.');
   return (data ?? []) as Retiro[];
 }
 
 export async function reportesAdmin(): Promise<Reporte[]> {
   if (!supabaseConfigurado) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('reportes')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(300);
+  if (error) throw new Error('No se pudieron cargar los reportes.');
   return (data ?? []) as Reporte[];
 }
 
 export async function movimientosCancha(canchaId: string): Promise<MovimientoCancha[]> {
   if (!supabaseConfigurado) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('movimientos_cancha')
     .select('*')
     .eq('cancha_id', canchaId)
     .order('created_at', { ascending: false })
     .limit(200);
+  if (error) throw new Error('No se pudieron cargar los movimientos.');
   return (data ?? []) as MovimientoCancha[];
 }
 

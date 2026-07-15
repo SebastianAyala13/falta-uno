@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';
 import DateTimeField from '@/components/DateTimeField';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import { CardListSkeleton, SkeletonBlock } from '@/components/Skeleton';
@@ -41,6 +42,21 @@ export default function AgendaCancha() {
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
   const [slots, setSlots] = useState<Slot[]>([]);
   const [reservas, setReservas] = useState<Reserva[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const cargarCancha = useCallback(async () => {
+    if (!profile?.id) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const canchas = await misCanchas(profile.id);
+      setCancha(canchas[0] ?? null);
+    } catch {
+      setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  }, [profile?.id]);
 
   useEffect(() => {
     if (!profile?.id) {
@@ -48,17 +64,8 @@ export default function AgendaCancha() {
       if (!authCargando) setLoading(false);
       return;
     }
-    (async () => {
-      try {
-        const canchas = await misCanchas(profile.id);
-        setCancha(canchas[0] ?? null);
-      } catch {
-        setCancha(null);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [profile?.id, authCargando]);
+    cargarCancha();
+  }, [profile?.id, authCargando, cargarCancha]);
 
   useEffect(() => {
     if (!cancha) return;
@@ -96,6 +103,10 @@ export default function AgendaCancha() {
           <SkeletonBlock height={12} width={'35%'} />
           <View style={{ height: 12 }} />
           <CardListSkeleton rows={4} />
+        </View>
+      ) : error && !cancha ? (
+        <View className="px-6 pt-4">
+          <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: cargarCancha }} />
         </View>
       ) : !cancha ? (
         <EmptyState

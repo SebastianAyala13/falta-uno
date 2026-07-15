@@ -71,7 +71,7 @@ export default function Calificar() {
               <Avatar nombre={partido?.organizador?.nombre ?? '?'} size={44} />
               <View className="ml-3 flex-1">
                 <Text className="font-body text-xs uppercase tracking-wide text-muted">Organizador</Text>
-                <Text className="font-body-bold text-base text-cream">{partido?.organizador?.nombre ?? '—'}</Text>
+                <Text className="font-body-bold text-base text-cream">{partido?.organizador?.nombre ?? 'Sin nombre'}</Text>
               </View>
               <StarRating value={orgEstrellas} onChange={setOrgEstrellas} size={22} />
             </View>

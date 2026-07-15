@@ -5,6 +5,7 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 
 import Badge from '@/components/Badge';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import { SkeletonBlock } from '@/components/Skeleton';
@@ -44,12 +45,14 @@ export default function PanelCancha() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [cancha, setCancha] = useState<Cancha | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [saldo, setSaldo] = useState(0);
   const [reservasHoy, setReservasHoy] = useState<Reserva[]>([]);
   const [ocupacion, setOcupacion] = useState(0);
 
   const cargar = useCallback(async () => {
     if (!profile?.id) return;
+    setError(null);
     try {
       const canchas = await misCanchas(profile.id);
       const cch = canchas[0] ?? null;
@@ -67,7 +70,7 @@ export default function PanelCancha() {
       setReservasHoy(activas);
       setOcupacion(Math.round((activas.length / Math.max(1, slots.length)) * 100));
     } catch {
-      // silencioso: pull-to-refresh permite reintentar
+      setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
     }
   }, [profile?.id]);
 
@@ -121,6 +124,13 @@ export default function PanelCancha() {
             <View className="flex-1"><SkeletonBlock height={92} radius={18} /></View>
             <View className="flex-1"><SkeletonBlock height={92} radius={18} /></View>
           </View>
+        </View>
+      ) : error && !cancha ? (
+        <View className="px-6 pt-4">
+          <ErrorBanner
+            message={error}
+            action={{ label: 'Reintentar', onPress: () => { setLoading(true); cargar().finally(() => setLoading(false)); } }}
+          />
         </View>
       ) : !cancha ? (
         <EmptyState

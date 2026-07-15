@@ -15,6 +15,7 @@ import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';
 import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
@@ -69,6 +70,7 @@ export default function Finanzas() {
   const [esPro, setEsPro] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [modalRetiro, setModalRetiro] = useState(false);
   const [monto, setMonto] = useState('');
@@ -97,6 +99,23 @@ export default function Finanzas() {
     setEsPro(pro);
   }, []);
 
+  const cargarTodo = useCallback(async () => {
+    if (!profile?.id) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const [canchas, dd] = await Promise.all([misCanchas(profile.id), getDatosDesembolso(profile.id)]);
+      const cch = canchas[0] ?? null;
+      setCancha(cch);
+      setDesembolso(dd);
+      if (cch) await cargarDatos(cch);
+    } catch {
+      setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  }, [profile?.id, cargarDatos]);
+
   useEffect(() => {
     if (!profile?.id) {
       // Auth aún resolviendo → mantenemos el skeleton; ya resolvió sin perfil → cerramos
@@ -104,23 +123,8 @@ export default function Finanzas() {
       if (!authCargando) setLoading(false);
       return;
     }
-    let activo = true;
-    (async () => {
-      try {
-        const [canchas, dd] = await Promise.all([misCanchas(profile.id), getDatosDesembolso(profile.id)]);
-        if (!activo) return;
-        const cch = canchas[0] ?? null;
-        setCancha(cch);
-        setDesembolso(dd);
-        if (cch) await cargarDatos(cch);
-      } finally {
-        if (activo) setLoading(false);
-      }
-    })();
-    return () => {
-      activo = false;
-    };
-  }, [profile?.id, authCargando, cargarDatos]);
+    cargarTodo();
+  }, [profile?.id, authCargando, cargarTodo]);
 
   const onRefresh = useCallback(async () => {
     if (!cancha) return;
@@ -207,6 +211,10 @@ export default function Finanzas() {
           <SkeletonBlock height={18} width={'35%'} />
           <View style={{ height: 14 }} />
           <CardListSkeleton rows={3} />
+        </View>
+      ) : error && !cancha ? (
+        <View className="px-6 pt-4">
+          <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: cargarTodo }} />
         </View>
       ) : !cancha ? (
         <EmptyState

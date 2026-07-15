@@ -344,18 +344,14 @@ function PartidoSkeleton() {
   );
 }
 
-// Nombres del parche para mostrar las "caras" del roster (mock determinista).
-const NOMBRES_PARCHE = [
-  'Mateo', 'Dani', 'Juan', 'Nico', 'Santi', 'Cris', 'Pipe', 'Tato', 'Richi', 'Lucho',
-  'Sergio', 'Brayan', 'Kevin', 'Jhon', 'Edwin', 'Yair', 'Maicol', 'Caco', 'Memo', 'Wbeimar',
-];
-
+// Roster: mostramos al organizador real y el resto como cupos confirmados anónimos.
+// No inventamos identidades — no presentar jugadores ficticios como si fueran reales.
 function rosterNombres(partido: { cupos_ocupados: number; organizador?: { nombre?: string } }, inscrito: boolean): string[] {
   const n = Math.max(0, partido.cupos_ocupados);
   const nombres: string[] = [];
   for (let i = 0; i < n; i++) {
     if (i === 0) nombres.push(partido.organizador?.nombre ?? 'Organizador');
-    else nombres.push(NOMBRES_PARCHE[(i - 1) % NOMBRES_PARCHE.length]);
+    else nombres.push('Cuadrado');
   }
   if (inscrito && nombres.length) nombres[nombres.length - 1] = 'Vos';
   return nombres;

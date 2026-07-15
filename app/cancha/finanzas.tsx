@@ -21,7 +21,7 @@ import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { CardListSkeleton, SkeletonBlock } from '@/components/Skeleton';
-import { BANCOS, COMISION_CANCHA_DEFAULT, MEMBRESIA, PAYU_CONFIGURADO } from '@/constants/config';
+import { BANCOS, COMISION_CANCHA_DEFAULT, MEMBRESIA } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import {
   getDatosDesembolso,
@@ -255,39 +255,24 @@ export default function Finanzas() {
             </View>
           </FadeIn>
 
-          {/* Membresía */}
-          <FadeIn delay={100}>
-            <View className="mt-4 rounded-lg border border-border bg-card p-5">
-              <View className="flex-row items-center">
-                <View
-                  className="h-11 w-11 items-center justify-center rounded-sm"
-                  style={{ backgroundColor: c.accent + '22' }}>
-                  <Ionicons name="star" size={22} color={c.accentText} />
-                </View>
-                <View className="ml-3 flex-1">
-                  <Text className="font-body-bold text-base text-cream">{MEMBRESIA.nombre}</Text>
-                  <Text className="font-body text-xs text-muted">
-                    {precioCOP(MEMBRESIA.precioMensual)}/mes
-                  </Text>
+          {/* Membresía — solo se muestra cuando está activa de verdad (sin botón placeholder de "activar"). */}
+          {esPro ? (
+            <FadeIn delay={100}>
+              <View className="mt-4 rounded-lg border border-border bg-card p-5">
+                <View className="flex-row items-center">
+                  <View
+                    className="h-11 w-11 items-center justify-center rounded-sm"
+                    style={{ backgroundColor: c.accent + '22' }}>
+                    <Ionicons name="star" size={22} color={c.accentText} />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text className="font-body-bold text-base text-cream">{MEMBRESIA.nombre} activa</Text>
+                    <Text className="font-body text-xs text-muted">{MEMBRESIA.beneficio}</Text>
+                  </View>
                 </View>
               </View>
-              <Text className="mt-3 font-body text-sm text-muted">{MEMBRESIA.beneficio}</Text>
-              <View className="mt-4">
-                {PAYU_CONFIGURADO ? (
-                  <GlowButton
-                    label="Activar membresía"
-                    variant="accent"
-                    icon="star-outline"
-                    onPress={() =>
-                      Alert.alert('Disponible pronto', 'La activación de membresía se habilita en breve.')
-                    }
-                  />
-                ) : (
-                  <GlowButton label="Próximamente" variant="dark" icon="time-outline" disabled />
-                )}
-              </View>
-            </View>
-          </FadeIn>
+            </FadeIn>
+          ) : null}
 
           {/* Datos de desembolso (cuenta del dueño) */}
           <FadeIn delay={130}>
@@ -332,7 +317,7 @@ export default function Finanzas() {
               <Ionicons name="information-circle-outline" size={20} color={c.muted} style={{ marginTop: 1 }} />
               <Text className="ml-2 flex-1 font-body text-xs text-muted">
                 Los ingresos por reservas pagadas en efectivo los cobrás directo en la cancha. El saldo acá
-                refleja los pagos online (próximamente con PayU).
+                refleja los pagos online de tus reservas.
               </Text>
             </View>
           </FadeIn>

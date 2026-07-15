@@ -195,7 +195,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
 
       async signInAsGuest() {
-        const p = perfilDemo({ nombre: 'Invitado', email: 'invitado@faltauno.app' });
+        // Invitado arranca en cero: nada de estadísticas ficticias que parezcan reales.
+        const p = perfilDemo({ nombre: 'Invitado', email: 'invitado@faltauno.app', partidos_jugados: 0, no_shows: 0, rating: 0 });
         await AsyncStorage.setItem(DEMO_KEY, JSON.stringify(p));
         setProfile(p);
       },

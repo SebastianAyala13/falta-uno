@@ -6,6 +6,16 @@
 import { urgencyLabel } from '@/lib/format';
 import type { PartidoConOrganizador, Post, Profile } from '@/types/database';
 
+/**
+ * Fecha relativa a hoy (YYYY-MM-DD). Mantiene el modo demo siempre "vivo":
+ * los partidos de ejemplo se muestran como próximos sin importar el día.
+ */
+function enDias(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
 export const usuarioActual: Profile = {
   id: 'mock-user-1',
   nombre: 'Santiago',
@@ -27,7 +37,7 @@ export const partidosCerca: PartidoConOrganizador[] = [
     organizador_id: 'u2',
     cancha: 'Cancha La Bombonera',
     zona: 'Cuba',
-    fecha: '2026-06-23',
+    fecha: enDias(1),
     hora: '20:00',
     formato: '5v5',
     nivel: 'Intermedio',
@@ -43,7 +53,7 @@ export const partidosCerca: PartidoConOrganizador[] = [
     organizador_id: 'u3',
     cancha: 'Sintética El Jardín',
     zona: 'Pinares',
-    fecha: '2026-06-24',
+    fecha: enDias(2),
     hora: '19:30',
     formato: '7v7',
     nivel: 'Competitivo',
@@ -59,7 +69,7 @@ export const partidosCerca: PartidoConOrganizador[] = [
     organizador_id: 'u4',
     cancha: 'Polideportivo El Centro',
     zona: 'Centro',
-    fecha: '2026-06-25',
+    fecha: enDias(3),
     hora: '21:00',
     formato: '11v11',
     nivel: 'Casual',
@@ -80,7 +90,7 @@ export const partidosDisponibles: PartidoConOrganizador[] = [
     organizador_id: 'u5',
     cancha: 'Cancha Los Álamos',
     zona: 'Álamos',
-    fecha: '2026-06-23',
+    fecha: enDias(1),
     hora: '18:00',
     formato: '5v5',
     nivel: 'Casual',
@@ -96,7 +106,7 @@ export const partidosDisponibles: PartidoConOrganizador[] = [
     organizador_id: 'u6',
     cancha: 'Mundialito Dosquebradas',
     zona: 'Dosquebradas',
-    fecha: '2026-06-26',
+    fecha: enDias(4),
     hora: '20:30',
     formato: '7v7',
     nivel: 'Intermedio',

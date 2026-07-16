@@ -242,6 +242,7 @@ export interface Reporte {
   reportado_por: string; // usuario que reporta
   motivo: MotivoReporte;
   texto: string; // copia del contenido para revisión
+  estado: 'pendiente' | 'resuelto' | 'descartado';
   created_at: string;
 }
 
@@ -386,7 +387,7 @@ export interface Database {
       };
       reportes: {
         Row: Reporte;
-        Insert: Omit<Reporte, 'id' | 'created_at'>;
+        Insert: Omit<Reporte, 'id' | 'created_at' | 'estado'>;
         Update: Partial<Reporte>;
         Relationships: [];
       };

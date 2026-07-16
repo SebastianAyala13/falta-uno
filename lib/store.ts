@@ -86,12 +86,12 @@ interface StoreState {
   // --- Moderación UGC (App Store 1.2 / Google Play) ---
   /** ¿El usuario actual bloqueó a este autor? */
   estaBloqueado: (userId: string) => boolean;
-  /** Bloquea a un usuario: deja de ver su contenido. */
-  bloquearUsuario: (userId: string) => void;
+  /** Bloquea a un usuario: deja de ver su contenido. `byUserId` = quién bloquea (para persistir). */
+  bloquearUsuario: (userId: string, byUserId?: string) => void;
   /** Quita el bloqueo de un usuario. */
-  desbloquearUsuario: (userId: string) => void;
+  desbloquearUsuario: (userId: string, byUserId?: string) => void;
   /** Registra un reporte de contenido objetable para revisión. */
-  reportarContenido: (data: Omit<Reporte, 'id' | 'created_at'>) => void;
+  reportarContenido: (data: Omit<Reporte, 'id' | 'created_at' | 'estado'>) => void;
 
   crearPartido: (data: NuevoPartido, organizador: { id: string; nombre: string }) => Promise<string>;
   /**
@@ -172,6 +172,7 @@ export const useStore = create<StoreState>()(
             { data: likesRaw },
             { data: comentRaw },
             { data: calRaw },
+            { data: bloqRaw },
           ] = await Promise.all([
             supabase.from('partidos').select('*').order('fecha', { ascending: true }),
             supabase.from('partido_jugadores').select('partido_id').eq('jugador_id', userId),
@@ -180,6 +181,7 @@ export const useStore = create<StoreState>()(
             supabase.from('post_likes').select('post_id, user_id'),
             supabase.from('comentarios').select('*').order('created_at', { ascending: true }),
             supabase.from('calificaciones').select('*').eq('autor_id', userId),
+            supabase.from('bloqueos').select('bloqueado_id').eq('usuario_id', userId),
           ]);
 
           // Organizadores: nombre/avatar/rating desde la vista pública (RLS-safe)
@@ -234,6 +236,12 @@ export const useStore = create<StoreState>()(
             posts,
             comentarios,
             calificaciones: (calRaw ?? []) as Calificacion[],
+            bloqueados: [
+              ...new Set([
+                ...get().bloqueados,
+                ...((bloqRaw ?? []) as { bloqueado_id: string }[]).map((b) => b.bloqueado_id),
+              ]),
+            ],
             hidratado: true,
           });
         } catch {
@@ -382,18 +390,26 @@ export const useStore = create<StoreState>()(
       // --- Moderación UGC ---
       estaBloqueado: (userId) => get().bloqueados.includes(userId),
 
-      bloquearUsuario: (userId) => {
+      bloquearUsuario: (userId, byUserId) => {
         set((s) => (s.bloqueados.includes(userId) ? s : { bloqueados: [...s.bloqueados, userId] }));
+        // Persistimos el bloqueo (RLS: usuario_id = auth.uid()); solo con sesión real.
+        if (supabaseConfigurado && byUserId && !byUserId.startsWith('demo')) {
+          bg(supabase.from('bloqueos').insert({ usuario_id: byUserId, bloqueado_id: userId } as never));
+        }
       },
 
-      desbloquearUsuario: (userId) => {
+      desbloquearUsuario: (userId, byUserId) => {
         set((s) => ({ bloqueados: s.bloqueados.filter((id) => id !== userId) }));
+        if (supabaseConfigurado && byUserId && !byUserId.startsWith('demo')) {
+          bg(supabase.from('bloqueos').delete().eq('usuario_id', byUserId).eq('bloqueado_id', userId));
+        }
       },
 
       reportarContenido: (data) => {
         const reporte: Reporte = {
           id: genId('rep'),
           ...data,
+          estado: 'pendiente',
           created_at: new Date().toISOString(),
         };
         set((s) => ({ reportes: [reporte, ...s.reportes] }));

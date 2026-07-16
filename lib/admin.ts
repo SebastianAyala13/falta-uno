@@ -196,3 +196,31 @@ export async function ajusteSaldo(canchaId: string, monto: number, desc?: string
   } as never);
   if (error) throw new Error('No se pudo registrar el ajuste.');
 }
+
+/**
+ * Resuelve un reporte de moderación: opcionalmente elimina el contenido reportado
+ * (post/comentario/mensaje) y marca el estado. Server-authoritative (revalida is_admin()).
+ */
+export async function resolverReporte(
+  id: string,
+  estado: 'resuelto' | 'descartado',
+  eliminar = false,
+): Promise<void> {
+  if (!supabaseConfigurado) throw new Error('Necesitás conexión.');
+  const { error } = await supabase.rpc('admin_resolver_reporte', {
+    p_reporte: id,
+    p_estado: estado,
+    p_eliminar: eliminar,
+  } as never);
+  if (error) throw new Error('No se pudo resolver el reporte.');
+}
+
+/** Suspende o reactiva a un usuario (expulsión por moderación). */
+export async function suspenderUsuario(usuarioId: string, suspendido: boolean): Promise<void> {
+  if (!supabaseConfigurado) throw new Error('Necesitás conexión.');
+  const { error } = await supabase.rpc('admin_suspender_usuario', {
+    p_usuario: usuarioId,
+    p_suspendido: suspendido,
+  } as never);
+  if (error) throw new Error('No se pudo actualizar el usuario.');
+}

@@ -74,7 +74,7 @@ export default function ModeracionBoton({
           text: 'Bloquear',
           style: 'destructive',
           onPress: () => {
-            bloquearUsuario(autorId);
+            bloquearUsuario(autorId, uid);
             Alert.alert('Listo', `Bloqueaste a ${autorNombre}.`);
           },
         },

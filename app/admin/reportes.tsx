@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import {
+  Alert,
+  Pressable,
   RefreshControl,
   ScrollView,
   Text,
@@ -8,6 +10,7 @@ import {
 } from 'react-native';
 
 import AdminGate from '@/components/AdminGate';
+import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
 import ErrorBanner from '@/components/ErrorBanner';
@@ -15,8 +18,9 @@ import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import { CardListSkeleton } from '@/components/Skeleton';
 import type { Palette } from '@/constants/themes';
-import { reportesAdmin } from '@/lib/admin';
+import { reportesAdmin, resolverReporte, suspenderUsuario } from '@/lib/admin';
 import { tiempoRelativo } from '@/lib/format';
+import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
 import type { Reporte } from '@/types/database';
 
@@ -37,6 +41,34 @@ const TIPO_CONTENIDO: Record<Reporte['tipo'], { label: string; icon: keyof typeo
 /** Id corto para mostrar en la UI (los uuid completos no aportan). */
 function idCorto(id: string): string {
   return id.slice(0, 8);
+}
+
+/** Botón compacto de acción de moderación, tonalizado por token. */
+function AccionBtn({
+  label,
+  icon,
+  tone,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  tone: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      className="flex-row items-center rounded-sm border px-3 py-2 active:opacity-70"
+      style={{ borderColor: tone + '55', backgroundColor: tone + '18', opacity: disabled ? 0.5 : 1 }}>
+      <Ionicons name={icon} size={14} color={tone} />
+      <Text className="ml-1.5 font-body-bold text-xs" style={{ color: tone }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
 }
 
 export default function AdminReportes() {
@@ -86,6 +118,46 @@ export default function AdminReportes() {
     }
   }, [cargar]);
 
+  const [procesando, setProcesando] = useState<string | null>(null);
+
+  const ejecutar = useCallback(
+    async (id: string, fn: () => Promise<void>) => {
+      setProcesando(id);
+      try {
+        await fn();
+        haptics.success();
+        await cargar(false);
+      } catch (e) {
+        Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo, parce.');
+      } finally {
+        setProcesando(null);
+      }
+    },
+    [cargar],
+  );
+
+  const eliminarContenido = (r: Reporte) => {
+    haptics.tap();
+    Alert.alert('¿Eliminar el contenido?', 'Se borra el contenido reportado de forma permanente.', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Eliminar', style: 'destructive', onPress: () => ejecutar(r.id, () => resolverReporte(r.id, 'resuelto', true)) },
+    ]);
+  };
+
+  const descartar = (r: Reporte) => {
+    haptics.tap();
+    ejecutar(r.id, () => resolverReporte(r.id, 'descartado', false));
+  };
+
+  const suspenderAutor = (r: Reporte) => {
+    if (!r.autor_id) return;
+    haptics.tap();
+    Alert.alert('¿Suspender al autor?', 'El usuario queda suspendido y no podrá seguir publicando.', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Suspender', style: 'destructive', onPress: () => ejecutar(r.id, () => suspenderUsuario(r.autor_id, true)) },
+    ]);
+  };
+
   return (
     <AdminGate>
       <Screen edges={['top']}>
@@ -108,8 +180,8 @@ export default function AdminReportes() {
                 style={{ marginTop: 1 }}
               />
               <Text className="ml-2 flex-1 font-body text-xs text-muted">
-                Revisá el contenido reportado y tomá acción con el dueño de la cancha/usuario si
-                corresponde.
+                Revisá cada reporte y actuá: eliminá el contenido, descartá el reporte o suspendé al
+                autor. Los reportes que atendés quedan marcados.
               </Text>
             </View>
           </FadeIn>
@@ -166,7 +238,7 @@ export default function AdminReportes() {
                           <View className="mr-4 flex-row items-center">
                             <Text className="font-body text-xs text-muted">Contenido de: </Text>
                             <Text className="font-body-semibold text-xs text-cream">
-                              {idCorto(r.autor_id)}
+                              {r.autor_id ? idCorto(r.autor_id) : 'anónimo'}
                             </Text>
                           </View>
                           <View className="flex-row items-center">
@@ -176,6 +248,24 @@ export default function AdminReportes() {
                             </Text>
                           </View>
                         </View>
+
+                        {/* Acciones de moderación */}
+                        {r.estado === 'pendiente' ? (
+                          <View className="mt-3 flex-row flex-wrap gap-2 border-t border-border pt-3">
+                            <AccionBtn label="Eliminar" icon="trash-outline" tone={c.danger} disabled={procesando === r.id} onPress={() => eliminarContenido(r)} />
+                            <AccionBtn label="Descartar" icon="close-circle-outline" tone={c.muted} disabled={procesando === r.id} onPress={() => descartar(r)} />
+                            {r.autor_id ? (
+                              <AccionBtn label="Suspender autor" icon="ban-outline" tone={c.warning} disabled={procesando === r.id} onPress={() => suspenderAutor(r)} />
+                            ) : null}
+                          </View>
+                        ) : (
+                          <View className="mt-3 flex-row border-t border-border pt-3">
+                            <Badge
+                              label={r.estado === 'resuelto' ? 'Resuelto' : 'Descartado'}
+                              tone={r.estado === 'resuelto' ? 'primary' : 'neutral'}
+                            />
+                          </View>
+                        )}
                       </View>
                     </FadeIn>
                   );

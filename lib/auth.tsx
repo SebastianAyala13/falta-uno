@@ -25,6 +25,8 @@ interface AuthState {
   loading: boolean;
   /** `true` cuando corre sin backend (modo demo/local). */
   demo: boolean;
+  /** `true` si es un invitado (perfil demo) corriendo contra el backend real: solo-lectura. */
+  esInvitado: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   /** Envía el correo de recuperación de contraseña. */
   resetPassword: (email: string) => Promise<void>;
@@ -130,6 +132,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       loading,
       demo: !supabaseConfigurado,
+      // Invitado real: perfil demo pero contra el backend (sus escrituras fallarían por RLS).
+      esInvitado: supabaseConfigurado && !!profile?.id?.startsWith('demo'),
 
       async signIn(email, password) {
         if (!supabaseConfigurado) {

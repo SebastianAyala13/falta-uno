@@ -176,7 +176,7 @@ export default function Register() {
                 <Text className="text-primary" onPress={() => Linking.openURL(URL_PRIVACIDAD).catch(() => {})}>
                   Política de Privacidad
                 </Text>{' '}
-                (Ley 1581 de 2012). Entiendo que Falta Uno tiene tolerancia cero con el contenido objetable y el acoso.
+                (Ley 1581 de 2012). <Text className="font-body-semibold">Confirmo que tengo 13 años o más</Text> y entiendo que Falta Uno tiene tolerancia cero con el contenido objetable y el acoso.
               </Text>
             </Pressable>
 

@@ -14,12 +14,14 @@ import { useAuth } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
+import { useGuardInvitado } from '@/lib/useGuardInvitado';
 
 export default function Calificar() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile } = useAuth();
   const c = useTheme();
+  const guardInvitado = useGuardInvitado();
 
   const partido = useStore((s) => s.getPartido(id));
   const calificarPartido = useStore((s) => s.calificarPartido);
@@ -30,6 +32,7 @@ export default function Calificar() {
   const [comentario, setComentario] = useState('');
 
   const enviar = () => {
+    if (guardInvitado('Creá una cuenta para calificar.')) return;
     if (estrellas === 0) {
       Alert.alert('Ponele estrellas', 'Calificá la experiencia del partido para enviar.');
       return;

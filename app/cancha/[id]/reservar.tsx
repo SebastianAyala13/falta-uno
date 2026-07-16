@@ -19,6 +19,7 @@ import { haptics } from '@/lib/haptics';
 import { crearCheckoutReserva } from '@/lib/payments';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
+import { useGuardInvitado } from '@/lib/useGuardInvitado';
 import type { Cancha } from '@/types/database';
 
 const hoy = () => new Date().toISOString().slice(0, 10);
@@ -42,6 +43,7 @@ export default function Reservar() {
   const { profile } = useAuth();
   const crearPartido = useStore((s) => s.crearPartido);
   const c = useTheme();
+  const guardInvitado = useGuardInvitado();
 
   const [cancha, setCancha] = useState<Cancha | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -82,6 +84,7 @@ export default function Reservar() {
   const pagaOnline = medio === 'online' && PAYU_CONFIGURADO;
 
   const reservar = async () => {
+    if (guardInvitado('Creá una cuenta para reservar una cancha.')) return;
     if (!id || !cancha || !slot || !profile) return;
     setLoading(true);
     try {

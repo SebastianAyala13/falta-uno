@@ -19,6 +19,7 @@ import { programarRecordatorio } from '@/lib/notifications';
 import { crearCheckoutOnline, procesarPago } from '@/lib/payments';
 import { genRef, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
+import { useGuardInvitado } from '@/lib/useGuardInvitado';
 import type { Pago } from '@/types/database';
 
 type Paso = 'metodo' | 'procesando' | 'listo';
@@ -28,6 +29,7 @@ export default function Checkout() {
   const router = useRouter();
   const { profile } = useAuth();
   const c = useTheme();
+  const guardInvitado = useGuardInvitado();
 
   const partido = useStore((s) => s.getPartido(id));
   const inscribirse = useStore((s) => s.inscribirse);
@@ -57,6 +59,7 @@ export default function Checkout() {
   const total = partido.precio + comision;
 
   const pagar = async () => {
+    if (guardInvitado('Creá una cuenta para unirte a un partido.')) return;
     setPaso('procesando');
     try {
       let nuevoPago: Pago;

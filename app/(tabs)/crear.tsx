@@ -19,6 +19,7 @@ import { haptics } from '@/lib/haptics';
 import { elegirImagen } from '@/lib/images';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
+import { useGuardInvitado } from '@/lib/useGuardInvitado';
 import type { Cancha } from '@/types/database';
 
 export default function Crear() {
@@ -26,6 +27,7 @@ export default function Crear() {
   const { profile } = useAuth();
   const crearPartido = useStore((s) => s.crearPartido);
   const c = useTheme();
+  const guardInvitado = useGuardInvitado();
 
   const [canchasDisponibles, setCanchasDisponibles] = useState<Cancha[]>([]);
   const [cargandoCanchas, setCargandoCanchas] = useState(true);
@@ -67,6 +69,7 @@ export default function Crear() {
   const [publicando, setPublicando] = useState(false);
 
   const onSubmit = async () => {
+    if (guardInvitado('Creá una cuenta para crear un partido.')) return;
     setError(null);
     if (!cancha || !zona || !fecha || !hora || !nivel || !precio) {
       setError('Completá cancha, zona, fecha, hora, nivel y precio.');

@@ -40,6 +40,7 @@ import { crearEstablecimiento, subirFotoCancha } from '@/lib/canchas';
 import { haptics } from '@/lib/haptics';
 import { elegirImagen } from '@/lib/images';
 import { useTheme } from '@/lib/theme';
+import { useGuardInvitado } from '@/lib/useGuardInvitado';
 import type { Amenidades } from '@/types/database';
 
 const CIUDADES = ['Pereira', 'Cali', 'Medellín', 'Bogotá', 'Manizales', 'Armenia'];
@@ -85,6 +86,7 @@ export default function RegistrarCancha() {
   const router = useRouter();
   const { profile, updateProfile } = useAuth();
   const c = useTheme();
+  const guardInvitado = useGuardInvitado();
   const scrollRef = useRef<ScrollView>(null);
 
   const [paso, setPaso] = useState(1);
@@ -184,6 +186,7 @@ export default function RegistrarCancha() {
   };
 
   const crear = async () => {
+    if (guardInvitado('Creá una cuenta para registrar tu cancha.')) return;
     const err = validarPaso();
     if (err) {
       setError(err);

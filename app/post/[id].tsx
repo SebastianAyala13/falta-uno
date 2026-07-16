@@ -18,6 +18,7 @@ import { haptics } from '@/lib/haptics';
 import { MENSAJE_BLOQUEO_FILTRO, contieneContenidoObjetable } from '@/lib/moderation';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
+import { useGuardInvitado } from '@/lib/useGuardInvitado';
 import type { Comentario } from '@/types/database';
 
 export default function PostDetalle() {
@@ -25,11 +26,13 @@ export default function PostDetalle() {
   const router = useRouter();
   const { profile } = useAuth();
   const c = useTheme();
+  const guardInvitado = useGuardInvitado();
 
   const post = useStore((s) => s.posts.find((p) => p.id === id));
   const comentariosRaw = useStore(useShallow((s) => s.getComentarios(id)));
   const bloqueados = useStore((s) => s.bloqueados);
   const comentarios = comentariosRaw.filter((com) => !bloqueados.includes(com.autor_id));
+  const postBloqueado = !!post && bloqueados.includes(post.autor_id);
   const toggleLike = useStore((s) => s.toggleLike);
   const comentar = useStore((s) => s.comentar);
   const hidratado = useStore((s) => s.hidratado);
@@ -51,8 +54,8 @@ export default function PostDetalle() {
     return () => clearTimeout(t);
   }, [hidratado, profile?.id, hidratar]);
 
-  if (!post) {
-    // Mientras hidrata → skeleton; ya resuelto y sin post → de verdad no existe.
+  if (!post || postBloqueado) {
+    // Mientras hidrata → skeleton; ya resuelto y sin post (o autor bloqueado) → no disponible.
     return (
       <Screen edges={['top']}>
         <ScreenHeader title="Publicación" titleSize="xl" borderBottom backClassName="mr-2" className="px-4 pb-3 pt-1" />
@@ -76,6 +79,7 @@ export default function PostDetalle() {
   const esRecap = post.tipo === 'recap';
 
   const enviar = () => {
+    if (guardInvitado('Creá una cuenta para comentar.')) return;
     if (!texto.trim()) return;
     if (contieneContenidoObjetable(texto)) {
       Alert.alert('Revisá tu comentario', MENSAJE_BLOQUEO_FILTRO);

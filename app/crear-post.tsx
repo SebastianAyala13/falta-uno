@@ -15,6 +15,7 @@ import { elegirImagen } from '@/lib/images';
 import { MENSAJE_BLOQUEO_FILTRO, contieneContenidoObjetable } from '@/lib/moderation';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
+import { useGuardInvitado } from '@/lib/useGuardInvitado';
 import type { PostTipo } from '@/types/database';
 
 const TIPOS: { key: Exclude<PostTipo, 'recap'>; label: string; icon: keyof typeof Ionicons.glyphMap; hint: string }[] = [
@@ -27,6 +28,7 @@ export default function CrearPost() {
   const { profile } = useAuth();
   const crearPost = useStore((s) => s.crearPost);
   const c = useTheme();
+  const guardInvitado = useGuardInvitado();
 
   const [tipo, setTipo] = useState<Exclude<PostTipo, 'recap'>>('encuentro');
   const [texto, setTexto] = useState('');
@@ -42,6 +44,7 @@ export default function CrearPost() {
   const [publicando, setPublicando] = useState(false);
 
   const publicar = async () => {
+    if (guardInvitado('Creá una cuenta para publicar en el muro.')) return;
     if (!texto.trim()) return;
     if (contieneContenidoObjetable(texto)) {
       setError(MENSAJE_BLOQUEO_FILTRO);

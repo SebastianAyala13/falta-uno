@@ -236,12 +236,9 @@ export const useStore = create<StoreState>()(
             posts,
             comentarios,
             calificaciones: (calRaw ?? []) as Calificacion[],
-            bloqueados: [
-              ...new Set([
-                ...get().bloqueados,
-                ...((bloqRaw ?? []) as { bloqueado_id: string }[]).map((b) => b.bloqueado_id),
-              ]),
-            ],
+            // Con backend, la lista del servidor es la fuente de verdad (evita que un usuario
+            // herede los bloqueos de otra cuenta que usó el mismo dispositivo).
+            bloqueados: ((bloqRaw ?? []) as { bloqueado_id: string }[]).map((b) => b.bloqueado_id),
             hidratado: true,
           });
         } catch {

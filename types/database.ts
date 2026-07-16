@@ -28,6 +28,7 @@ export interface Profile {
   politica_version?: string | null; // versión de política aceptada
   politica_aceptada_at?: string | null; // fecha/hora de aceptación
   roles?: string[]; // 'jugador' y/o 'cancha'
+  suspendido?: boolean; // moderación: cuenta expulsada por incumplir las normas
   created_at: string; // timestamptz
 }
 

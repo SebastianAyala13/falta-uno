@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Alert } from 'react-native';
 
 import { APP, POLITICA_VERSION, type Nivel, type Posicion } from '@/constants/config';
 import { supabase, supabaseConfigurado } from '@/lib/supabase';
@@ -107,6 +108,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('id', session.user.id)
       .maybeSingle();
     if (data) {
+      if ((data as Profile).suspendido) {
+        // Cuenta suspendida por moderación: cerramos sesión y avisamos (Apple 1.2: expulsar abusivos).
+        await supabase.auth.signOut();
+        setProfile(null);
+        Alert.alert(
+          'Cuenta suspendida',
+          'Tu cuenta fue suspendida por incumplir las normas de la comunidad. Si creés que es un error, escribinos.',
+        );
+        return;
+      }
       setProfile(data as Profile);
       return;
     }

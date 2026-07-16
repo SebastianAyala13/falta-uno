@@ -55,7 +55,7 @@ export default function Checkout() {
 
   // El servicio de Falta Uno solo aplica al pago online (que la app procesa).
   // En efectivo la app no cobra nada, así que no se suma comisión.
-  const comision = medio.provider === 'payu' ? Math.round(partido.precio * COMISION_SERVICIO) : 0;
+  const comision = medio.provider === 'rapyd' ? Math.round(partido.precio * COMISION_SERVICIO) : 0;
   const total = partido.precio + comision;
 
   const pagar = async () => {
@@ -64,9 +64,9 @@ export default function Checkout() {
     try {
       let nuevoPago: Pago;
       if (medio.id === 'online') {
-        // Checkout real de PayU en el navegador externo. El pago queda
+        // Checkout real de Rapyd en el navegador externo. El pago queda
         // 'pendiente' en el cliente: el estado 'aprobado' lo escribe SOLO el
-        // servidor (payu-webhook) cuando PayU confirma el cobro.
+        // servidor (rapyd-webhook) cuando Rapyd confirma el cobro.
         const referencia = genRef();
         const { url } = await crearCheckoutOnline({
           partidoId: id,

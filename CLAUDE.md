@@ -67,14 +67,15 @@ saldo, PayU), `lib/payments.ts`, `types/database.ts` (Supabase row types).
 `pnpm db:diff`), test with `pnpm db:reset` (re-applies every migration + `supabase/seed-demo.sql`).
 Merging to `main` triggers `.github/workflows/db-migrations.yml`, which runs `supabase db push` to apply
 pending migrations to prod. `db reset` is **local only**, never against prod; there is **no staging**, so
-always test locally before merging. Server logic lives in `supabase/functions/` (`payu-crear-transaccion`,
-`payu-webhook`, `delete-user`) and — together with its secrets — is **managed in the Supabase
+always test locally before merging. Server logic lives in `supabase/functions/` (`rapyd-crear-checkout`,
+`rapyd-webhook`, `delete-user`) and — together with its secrets — is **managed in the Supabase
 dashboard**, not deployed by the CLI or CI.
 
 **Payments (hard invariant)** — the client **never** marks a payment `aprobado`. Cash stays
-`pendiente` (Falta Uno holds no money). Online payments (PayU, the Colombian PSP, for both partidos and
-canchas) open an external checkout via an edge function; `aprobado` is written **only** by the server
-webhook. Secret keys live only in edge functions, never with the `EXPO_PUBLIC_` prefix.
+`pendiente` (Falta Uno holds no money). Online payments (Rapyd — the PSP that acquired PayU's LatAm
+operation in 2025 — for both partidos and canchas) open an external hosted checkout via an edge function;
+`aprobado` is written **only** by the server webhook. Secret keys live only in edge functions, never with
+the `EXPO_PUBLIC_` prefix. See `docs/RAPYD-SETUP.md`.
 
 **Styling** — NativeWind (Tailwind for RN). Brand tokens in `constants/colors.ts` + a runtime theme
 switcher in `constants/themes.ts`/`lib/theme.ts`. Wired via `babel.config.js` (`jsxImportSource: nativewind`)

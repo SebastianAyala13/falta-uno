@@ -1,18 +1,22 @@
-// Edge Function: payu-webhook
-// Recibe la confirmación de PayU (form-urlencoded). El estado 'aprobado' (pago de
-// partido) o 'confirmada' (reserva de cancha) SOLO se escribe acá, tras verificar
-// la firma con PAYU_API_KEY. Nunca se confía en el cliente.
+// Edge Function: rapyd-webhook
+// Recibe la confirmación de Rapyd (JSON). El estado 'aprobado' (pago de partido) o
+// 'confirmada' (reserva de cancha) SOLO se escribe acá, tras verificar la firma del
+// webhook con el Secret Key. Nunca se confía en el cliente.
 //
-// STUB: sin PAYU_API_KEY seteada, devuelve "Webhook no configurado".
+// STUB: sin RAPYD_SECRET_KEY, devuelve "Webhook no configurado".
 //
-// Deploy (sin verificación de JWT: PayU no manda token de Supabase; la
-// autenticidad se valida con la firma del evento):
-//   supabase functions deploy payu-webhook --no-verify-jwt
-// Secretos:  PAYU_API_KEY
+// Deploy (sin verificación de JWT: Rapyd no manda token de Supabase; la autenticidad
+// se valida con la firma del evento):
+//   supabase functions deploy rapyd-webhook --no-verify-jwt
+// Secretos:
+//   RAPYD_ACCESS_KEY, RAPYD_SECRET_KEY,
+//   RAPYD_WEBHOOK_URL  (la URL EXACTA registrada en Rapyd para este webhook — entra
+//                       en el cálculo de la firma; debe coincidir carácter por carácter,
+//                       p. ej. https://<proj>.supabase.co/functions/v1/rapyd-webhook)
 // (SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY ya vienen en el entorno.)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { createHash } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 
 /** Comisión de servicio sobre el cupo de partido (sync con constants/config.ts). */
 const COMISION_SERVICIO = 0.08;
@@ -20,42 +24,51 @@ const COMISION_SERVICIO = 0.08;
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-const md5hex = (s: string): string => createHash('md5').update(s).digest('hex');
+/**
+ * Firma del webhook de Rapyd (NO incluye el http_method):
+ *   BASE64( hexdigest( HMAC-SHA256( secret,
+ *     url_path + salt + timestamp + access_key + secret_key + body ) ) ).
+ * url_path = la URL completa registrada en Rapyd para recibir webhooks.
+ */
+function firmaWebhookRapyd(
+  urlPath: string,
+  salt: string,
+  timestamp: string,
+  accessKey: string,
+  secretKey: string,
+  body: string,
+): string {
+  const toSign = urlPath + salt + timestamp + accessKey + secretKey + body;
+  const hex = createHmac('sha256', secretKey).update(toSign).digest('hex');
+  return Buffer.from(hex).toString('base64');
+}
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
 
   try {
-    const apiKey = Deno.env.get('PAYU_API_KEY');
-    if (!apiKey) return json({ error: 'Webhook no configurado' }, 500);
+    const accessKey = Deno.env.get('RAPYD_ACCESS_KEY');
+    const secretKey = Deno.env.get('RAPYD_SECRET_KEY');
+    const webhookUrl = Deno.env.get('RAPYD_WEBHOOK_URL');
+    if (!accessKey || !secretKey || !webhookUrl) return json({ error: 'Webhook no configurado' }, 500);
 
-    const form = await req.formData();
-    const merchantId = String(form.get('merchant_id') ?? '');
-    const referencia = String(form.get('reference_sale') ?? '');
-    const value = String(form.get('value') ?? '');
-    const currency = String(form.get('currency') ?? '');
-    const statePol = String(form.get('state_pol') ?? '');
-    const sign = String(form.get('sign') ?? '');
+    // Se usa el body CRUDO (texto exacto) para la firma; no re-serializar.
+    const raw = await req.text();
+    const salt = req.headers.get('salt') ?? '';
+    const timestamp = req.headers.get('timestamp') ?? '';
+    const sign = req.headers.get('signature') ?? '';
 
-    // Firma PayU: MD5(ApiKey~merchant_id~reference_sale~new_value~currency~state_pol).
-    // new_value: PayU formatea el value con una regla de decimales (si el segundo
-    // decimal es 0, usa 1 decimal). Se computan ambas variantes y se acepta
-    // cualquiera. Validar contra la doc de PayU al conectar credenciales.
-    const num = Number(value);
-    const v1 = num.toFixed(1);
-    const v2 = num.toFixed(2);
-    const esperado1 = md5hex(`${apiKey}~${merchantId}~${referencia}~${v1}~${currency}~${statePol}`);
-    const esperado2 = md5hex(`${apiKey}~${merchantId}~${referencia}~${v2}~${currency}~${statePol}`);
-    const firmaOk =
-      sign.toLowerCase() === esperado1.toLowerCase() ||
-      sign.toLowerCase() === esperado2.toLowerCase();
-    if (!sign || !firmaOk) return json({ error: 'Firma inválida' }, 401);
+    const esperado = firmaWebhookRapyd(webhookUrl, salt, timestamp, accessKey, secretKey, raw);
+    if (!sign || sign !== esperado) return json({ error: 'Firma inválida' }, 401);
 
-    // state_pol 4 = APPROVED. Cualquier otro estado se ignora.
-    if (statePol !== '4') return json({ ok: true, ignorado: statePol });
+    const evento = JSON.parse(raw);
+    // Solo nos interesa el pago completado. Cualquier otro tipo se ignora (200 OK).
+    if (evento?.type !== 'PAYMENT_COMPLETED') return json({ ok: true, ignorado: evento?.type ?? null });
+
+    const pagoRapyd = evento.data ?? {};
+    const referencia = String(pagoRapyd.merchant_reference_id ?? '');
+    const amountInt = Math.round(Number(pagoRapyd.amount ?? 0));
     if (!referencia) return json({ error: 'Sin referencia' }, 400);
-
-    const amountInt = Math.round(num);
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -72,7 +85,7 @@ Deno.serve(async (req) => {
     if (pago) {
       if (pago.estado === 'aprobado') return json({ ok: true, duplicado: true });
       if (Math.round(pago.monto) !== amountInt) {
-        console.error('payu-webhook: monto no coincide (pago)', referencia, pago.monto, amountInt);
+        console.error('rapyd-webhook: monto no coincide (pago)', referencia, pago.monto, amountInt);
         return json({ ok: true, alerta: 'monto no coincide' });
       }
       await admin.from('pagos').update({ estado: 'aprobado' }).eq('id', pago.id);
@@ -111,7 +124,7 @@ Deno.serve(async (req) => {
     if (reserva) {
       if (reserva.estado === 'confirmada') return json({ ok: true, duplicado: true });
       if (Math.round(reserva.precio) !== amountInt) {
-        console.error('payu-webhook: monto no coincide (reserva)', referencia, reserva.precio, amountInt);
+        console.error('rapyd-webhook: monto no coincide (reserva)', referencia, reserva.precio, amountInt);
         return json({ ok: true, alerta: 'monto no coincide' });
       }
       await admin.from('reservas').update({ estado: 'confirmada' }).eq('id', reserva.id);
@@ -124,7 +137,7 @@ Deno.serve(async (req) => {
           tipo: 'ingreso_reserva',
           monto: reserva.precio,
           reserva_id: reserva.id,
-          descripcion: 'Ingreso por reserva (PayU)',
+          descripcion: 'Ingreso por reserva (Rapyd)',
         },
         {
           cancha_id: reserva.cancha_id,
@@ -139,7 +152,7 @@ Deno.serve(async (req) => {
 
     return json({ ok: true, ignorado: 'referencia desconocida' });
   } catch (e) {
-    console.error('payu-webhook:', e);
+    console.error('rapyd-webhook:', e);
     return json({ error: String(e) }, 500);
   }
 });

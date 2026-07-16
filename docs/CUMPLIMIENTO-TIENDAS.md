@@ -43,8 +43,8 @@ aceptación de Términos y Política de Privacidad (con enlaces) antes de crear 
 
 ### Pagos: solo efectivo, sin "Aprobado" falso
 El cliente **nunca** marca un pago `aprobado`. El efectivo queda `pendiente` (Falta Uno no custodia
-dinero). Los pagos online (PayU) son un flujo *stub* apagado tras `EXPO_PUBLIC_PAYU_ENABLED` +
-secretos `PAYU_*`; `aprobado` solo lo escribe el webhook del servidor. No hay comprobantes falsos.
+dinero). Los pagos online (Rapyd, sucesor de PayU) están apagados tras `EXPO_PUBLIC_PAGOS_ONLINE` +
+secretos `RAPYD_*`; `aprobado` solo lo escribe el webhook del servidor. No hay comprobantes falsos.
 
 ### Sin contenido ficticio (Apple 2.1)
 Se quitaron rosters y estadísticas inventadas: los cupos ajenos se muestran anónimos ("Cuadrado"),

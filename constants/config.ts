@@ -60,16 +60,17 @@ export const ZONAS = [
 export type Zona = (typeof ZONAS)[number];
 
 /**
- * `true` cuando PayU está habilitado para esta build. PayU es el PSP colombiano
- * (Nequi, PSE, tarjeta). La llave privada NUNCA va en el cliente: vive en las
- * Edge Functions (`payu-crear-transaccion`, `payu-webhook`), sin prefijo EXPO_PUBLIC_.
+ * `true` cuando el pago online está habilitado para esta build. El procesador es
+ * Rapyd (PSP sucesor de PayU en LatAm; PSE, tarjeta, efectivo en Colombia). La llave
+ * privada NUNCA va en el cliente: vive en las Edge Functions (`rapyd-crear-checkout`,
+ * `rapyd-webhook`), sin prefijo EXPO_PUBLIC_.
  */
-export const PAYU_CONFIGURADO = !!process.env.EXPO_PUBLIC_PAYU_ENABLED;
+export const PAGOS_ONLINE_CONFIGURADO = !!process.env.EXPO_PUBLIC_PAGOS_ONLINE;
 
 export type MedioPagoId = 'efectivo' | 'online';
 
 /**
- * `provider` marca quién procesa el pago: 'payu' abre un checkout externo real
+ * `provider` marca quién procesa el pago: 'rapyd' abre un checkout externo real
  * confirmado por webhook en el servidor; 'efectivo' es acuerdo con el organizador.
  */
 export interface MedioPago {
@@ -77,7 +78,7 @@ export interface MedioPago {
   nombre: string;
   detalle: string;
   icon: string; // nombre de Ionicons
-  provider: 'payu' | 'efectivo';
+  provider: 'rapyd' | 'efectivo';
   instantaneo: boolean;
 }
 
@@ -92,10 +93,10 @@ export const MEDIOS_PAGO: MedioPago[] = [
   },
   {
     id: 'online',
-    nombre: 'Nequi, PSE o tarjeta',
-    detalle: 'Pago seguro con PayU',
+    nombre: 'Tarjeta, PSE o efectivo',
+    detalle: 'Pago seguro en línea',
     icon: 'card',
-    provider: 'payu',
+    provider: 'rapyd',
     instantaneo: true,
   },
 ];
@@ -104,13 +105,13 @@ export const MEDIOS_PAGO: MedioPago[] = [
  * Medios de pago ACTIVOS en producción.
  *
  * "Efectivo" está siempre (pago real al organizador en la cancha). "Online"
- * (PayU) aparece solo cuando `EXPO_PUBLIC_PAYU_ENABLED` está seteada: es un
- * checkout REAL procesado por PayU y confirmado por webhook en el servidor.
- * Nunca mostramos un pago simulado que finja "Aprobado": eso es causa de rechazo
- * en App Store (2.1) y Google Play.
+ * aparece solo cuando `EXPO_PUBLIC_PAGOS_ONLINE` está seteada: es un checkout REAL
+ * procesado por Rapyd y confirmado por webhook en el servidor. Nunca mostramos un
+ * pago simulado que finja "Aprobado": eso es causa de rechazo en App Store (2.1)
+ * y Google Play.
  */
 export const MEDIOS_PAGO_ACTIVOS: MedioPago[] = MEDIOS_PAGO.filter(
-  (m) => m.id === 'efectivo' || (m.id === 'online' && PAYU_CONFIGURADO),
+  (m) => m.id === 'efectivo' || (m.id === 'online' && PAGOS_ONLINE_CONFIGURADO),
 );
 
 /** Comisión de servicio de Falta Uno (sobre el precio del cupo). */

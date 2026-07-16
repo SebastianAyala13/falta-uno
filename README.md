@@ -40,10 +40,10 @@ Construida con **React Native + Expo**, navegación basada en archivos con **Exp
 - **Fotos** — foto de **perfil** y de **cancha** con `expo-image-picker`.
 - **Reputación** — calificá el partido y al organizador con estrellas, reportá
   no-shows y dejá comentario (pantalla Calificar, desde Mis Partidos).
-- **Checkout / Pago** — **efectivo en cancha** y **pago online con PayU**
-  (Nequi, PSE o tarjeta, próximamente), con comprobante y referencia. _(El
-  online se activa con `EXPO_PUBLIC_PAYU_ENABLED`; ver
-  [`docs/PAYU-SETUP.md`](docs/PAYU-SETUP.md).)_
+- **Checkout / Pago** — **efectivo en cancha** y **pago online con Rapyd**
+  (tarjeta, PSE o efectivo), con comprobante y referencia. _(El
+  online se activa con `EXPO_PUBLIC_PAGOS_ONLINE`; ver
+  [`docs/RAPYD-SETUP.md`](docs/RAPYD-SETUP.md).)_
 - **Mis partidos** — los partidos en los que te inscribiste.
 - **Mis pagos** — historial de comprobantes con estado.
 - **Editar perfil** — actualizá nombre, ciudad, celular, posición y nivel (sincroniza

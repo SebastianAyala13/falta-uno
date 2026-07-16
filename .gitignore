@@ -37,6 +37,7 @@ yarn-error.*
 .supabase-deploy.env
 supabase/.tmp-secrets.env
 supabase/.env.payu
+supabase/.env.rapyd
 
 # typescript
 *.tsbuildinfo

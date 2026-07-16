@@ -11,7 +11,7 @@ import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { SkeletonBlock } from '@/components/Skeleton';
-import { COMISION_CANCHA_DEFAULT, PAYU_CONFIGURADO } from '@/constants/config';
+import { COMISION_CANCHA_DEFAULT, PAGOS_ONLINE_CONFIGURADO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { crearReserva, getCancha, slotsDelDia, type Slot } from '@/lib/canchas';
 import { fechaLarga, precioCOP } from '@/lib/format';
@@ -52,7 +52,7 @@ export default function Reservar() {
   const [cargandoSlots, setCargandoSlots] = useState(false);
   const [slot, setSlot] = useState<Slot | null>(null);
   const [abrirPartido, setAbrirPartido] = useState(false);
-  const [medio, setMedio] = useState<'efectivo' | 'online'>(PAYU_CONFIGURADO ? 'online' : 'efectivo');
+  const [medio, setMedio] = useState<'efectivo' | 'online'>(PAGOS_ONLINE_CONFIGURADO ? 'online' : 'efectivo');
   const [loading, setLoading] = useState(false);
   const [referencia, setReferencia] = useState<string | null>(null);
   const [online, setOnline] = useState(false); // el comprobante fue de un pago online (queda pendiente)
@@ -81,7 +81,7 @@ export default function Reservar() {
     };
   }, [id, fecha]);
 
-  const pagaOnline = medio === 'online' && PAYU_CONFIGURADO;
+  const pagaOnline = medio === 'online' && PAGOS_ONLINE_CONFIGURADO;
 
   const reservar = async () => {
     if (guardInvitado('Creá una cuenta para reservar una cancha.')) return;
@@ -242,7 +242,7 @@ export default function Reservar() {
             </View>
 
             {/* Medio de pago (online con PayU solo si está habilitado) */}
-            {PAYU_CONFIGURADO ? (
+            {PAGOS_ONLINE_CONFIGURADO ? (
               <View className="mt-4">
                 <Text className="mb-2 font-body-semibold text-sm text-cream">¿Cómo pagás?</Text>
                 <View className="flex-row gap-3">

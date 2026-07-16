@@ -1,75 +1,105 @@
 # Cumplimiento App Store + Play Store — Falta Uno
 
-> Auditoría del código al 25 de junio de 2026. Revisa: chat, muro social, pagos, fotos, cuentas, eliminar cuenta, permisos, manifiestos.
+> Auditoría del código al **16 de julio de 2026**. Cubre: chat, muro social, pagos, fotos, cuentas,
+> eliminar cuenta, permisos, moderación UGC, manifiestos.
+> _(La versión anterior, del 25-jun, listaba 3 bloqueantes de código; todos se resolvieron — ver historial.)_
 
 ## Veredicto rápido
 
-La app **NO está lista para enviar todavía**. Lo reglamentario de config (eliminar cuenta, privacy manifest, páginas legales, recuperar contraseña) ya está. Pero hay **3 bloqueantes que causan rechazo casi seguro** en ambas tiendas, todos derivados de tener **chat + muro público** (contenido generado por usuarios, UGC) con **edad mínima 13**.
+**El código ya no tiene bloqueantes de tienda.** Los 3 bloqueantes de la auditoría anterior
+(UGC sin moderación accionable, sin aceptación de Términos/EULA, pagos falsos "Aprobado") están
+**resueltos**. Lo que falta para *enviar* es **trabajo de consola/cuenta** (fuera del repo): keys,
+despliegues, cuestionarios de las tiendas y assets.
 
 | Estado | Cantidad |
 |---|---|
-| 🔴 Bloqueante (rechazo casi seguro) | 3 |
-| 🟡 Riesgo / a confirmar | 4 |
-| 🟢 Ya cumple | 8 |
+| 🔴 Bloqueante de **código** | 0 |
+| 🟠 Bloqueante de **consola/cuenta** (solo lo hace el dueño) | 6 |
+| 🟡 Riesgo / a confirmar | 3 |
+| 🟢 Ya cumple (código) | 12 |
 
 ---
 
-## 🔴 Bloqueantes — hay que resolver antes de enviar
+## 🟢 Resuelto en código (antes bloqueante)
 
-### 1. UGC sin moderación (Apple 1.2 / Google UGC) — el más grave
-La app tiene **chat de partido** (`app/chat/[id].tsx`) y **muro público** (`app/(tabs)/muro.tsx`, `crear-post.tsx`) donde los usuarios publican texto y comentarios. La búsqueda en todo el código **no encontró nada** de reportar, bloquear ni filtrar contenido.
+### UGC con moderación **accionable** (Apple 1.2 / Google UGC)
+La app tiene chat de partido y muro público. Ahora cumple las 4 exigencias:
+1. **Filtro** de contenido objetable al publicar (groserías/insultos).
+2. **Reportar** contenido/usuario (`components/ModeracionBoton.tsx`, tabla `reportes` con `estado`).
+3. **Bloquear** usuarios — persistido en la tabla `bloqueos` (fuente de verdad del servidor al
+   hidratar) y el contenido del bloqueado se oculta (posts, comentarios, muro).
+4. **EULA / tolerancia cero** aceptada en el registro.
 
-Apple actualizó la Guideline 1.2 en junio 2026 dejándolo más estricto. Ambas tiendas exigen **las 4 cosas** para apps con UGC:
+El panel de admin (`app/admin/reportes.tsx`) **actúa** sobre los reportes en ≤24h: eliminar el
+contenido y **suspender** al autor, vía las RPC `admin_resolver_reporte` y `admin_suspender_usuario`
+(SECURITY DEFINER, migración `20260715120000_moderacion_accionable.sql`). La suspensión se hace
+efectiva en el cliente (cierre de sesión en `lib/auth.tsx`) **y** a nivel de base de datos con un
+trigger que rechaza inserts de suspendidos en posts/comentarios/mensajes/partidos
+(`20260716120000_trigger_bloquear_suspendidos.sql`).
 
-1. **Filtro de contenido objetable** (lista de palabras prohibidas o moderación).
-2. **Botón de reportar** contenido/usuario, con acción en ≤24h.
-3. **Bloquear usuarios** abusivos.
-4. **EULA** que prohíba expresamente contenido objetable y abuso (aceptado por el usuario).
+### Aceptación de Términos + edad mínima (age-gate 13+)
+`app/(auth)/register.tsx` exige una casilla obligatoria: "Confirmo que tengo 13 años o más" +
+aceptación de Términos y Política de Privacidad (con enlaces) antes de crear la cuenta.
 
-> **Sin esto Apple rechaza con 1.2 y Google con "User Generated Content policy".** Es el motivo #1 de rechazo de apps sociales.
+### Pagos: solo efectivo, sin "Aprobado" falso
+El cliente **nunca** marca un pago `aprobado`. El efectivo queda `pendiente` (Falta Uno no custodia
+dinero). Los pagos online (PayU) son un flujo *stub* apagado tras `EXPO_PUBLIC_PAYU_ENABLED` +
+secretos `PAYU_*`; `aprobado` solo lo escribe el webhook del servidor. No hay comprobantes falsos.
 
-**Qué hacer (mínimo viable):**
-- Agregar en cada post/comentario/mensaje un menú "⋯ → Reportar" y "Bloquear a este usuario".
-- Una tabla `reportes` y `bloqueos` en Supabase + ocultar contenido de usuarios bloqueados.
-- Filtro básico de groserías/insultos al publicar.
-- Checkbox de aceptación de Términos en el registro (ver punto 2).
+### Sin contenido ficticio (Apple 2.1)
+Se quitaron rosters y estadísticas inventadas: los cupos ajenos se muestran anónimos ("Cuadrado"),
+el invitado arranca en cero, y no hay tarjetas de membresía "Próximamente" muertas.
 
-### 2. No se aceptan Términos ni EULA en el registro
-`app/(auth)/register.tsx` pide nombre, correo, posición, nivel, celular y contraseña — pero **no hay casilla de "Acepto Términos y Política de Privacidad"** ni mención de tolerancia cero a contenido abusivo. Es requisito directo de la 1.2 y de Google.
+### Invitado solo-lectura
+El modo invitado puede explorar pero no escribir: los 7 CTA (crear partido, publicar, comentar,
+reservar, calificar, registrar cancha, checkout) piden crear una cuenta real.
 
-**Qué hacer:** checkbox obligatorio con enlaces a `/terminos` y `/privacidad` antes de crear la cuenta.
+---
 
-### 3. Pagos simulados que dicen "Aprobado"
-`lib/payments.ts` **siempre devuelve `aprobado`** para Nequi/PSE/Tarjeta sin pasarela real (es un mock con `setTimeout`). Apple (2.1) y Google rechazan funciones placeholder o no funcionales, y un comprobante de pago falso es especialmente sensible.
+## 🟠 Bloqueantes de consola / cuenta (solo el dueño puede hacerlos)
 
-**Qué hacer — elegí una:**
-- **(A) Recomendada para v1:** dejar solo **"Efectivo — le pagás al organizador en la cancha"** (ese flujo sí es real) y ocultar Nequi/PSE/Tarjeta hasta integrar PayU. Pasás revisión sin backend de pagos.
-- **(B)** Integrar PayU de verdad (pasarela real con llave en backend) antes de enviar.
+Ninguno es programar; son pasos en Supabase / EAS / consolas de las tiendas.
 
-> Nota buena: la **comisión "Servicio Falta Uno"** sobre un partido presencial es un **servicio del mundo real**, exento de IAP de Apple y de Play Billing. Eso está bien — no necesitás compras dentro de la app.
+1. **Google Maps Android API key** — `app.json` tiene el placeholder `TU_GOOGLE_MAPS_ANDROID_API_KEY`.
+   Sin ella el mapa sale gris **en Android** (en iOS usa Apple Maps y funciona sin key). Crear en
+   Google Cloud (Maps SDK for Android), restringir a `com.faltauno.app` + SHA-1, y reemplazar.
+2. **Desplegar la Edge Function `delete-user`** en el dashboard de Supabase. Si no, "Eliminar cuenta"
+   falla → rechazo por Apple 5.1.1(v) / Google.
+3. **Variables de entorno de producción en EAS** (`EXPO_PUBLIC_SUPABASE_URL`,
+   `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_SITE_URL`) en el environment `production`, para que
+   el build móvil no salga en modo demo y los enlaces legales resuelvan.
+4. **Hostear las 3 páginas legales del marketplace** (mandato-recaudo, terminos-marketplace,
+   cancelaciones) donde apunte `SITE_URL`, o subirlas al mirror; hoy dan 404 en el fallback.
+5. **Cuentas de tienda:** Apple Developer ($99) + Google Play ($25).
+6. **Cuestionarios y assets:** App Privacy (Apple) / Data Safety (Google) / Content Rating /
+   Age Rating (17+ en Apple por UGC), capturas, ficha, y **closed testing de Play (12 testers / 14 días)**.
 
 ---
 
 ## 🟡 Riesgos / a confirmar
 
-- **Edad 13 + chat social = más escrutinio.** Con menores y chat, Apple pide controles reforzados y la clasificación por edad sube. Reconsiderá **18** salvo que implementes moderación sólida (punto 1). En las tiendas hay que declarar correctamente la audiencia (Apple Age Rating con "Unrestricted Web/UGC"; Google "Target Audience" + "Families"/contenido infantil si incluís <13).
-- **Link de privacidad hardcodeado.** `app/(tabs)/perfil.tsx` abre `https://faltauno.app/privacidad`. Si hosteás en otra URL, el botón lleva a un 404 → Apple rechaza por enlace roto. Hay que poner la URL real.
-- **Eliminar cuenta en modo demo no borra backend.** En `lib/auth.tsx`, sin Supabase configurado, `eliminarCuenta` solo limpia el dispositivo. Para revisión debés enviar el build con Supabase real para que la Edge Function `delete-user` borre de verdad. Verificá que esté **desplegada** (`supabase functions deploy delete-user`).
-- **Notificaciones (Android 13+).** `expo-notifications` requiere permiso `POST_NOTIFICATIONS`. El plugin lo maneja, pero confirmá que en el build el permiso aparezca y que el flujo de pedirlo exista. Declaralo en Data Safety si mandás push.
+- **Rotar los secretos de producción expuestos.** Se pegaron llaves de prod en una sesión anterior;
+  hay que rotarlas en Supabase. `.supabase-deploy.env` debe seguir en `.gitignore` (verificado).
+- **`delete-user` no borra archivos de Storage** (avatares/fotos quedan huérfanos). No bloquea
+  revisión, pero conviene ampliarlo para higiene de datos (Ley 1581 / derecho de supresión).
+- **Notificaciones (Android 13+).** `expo-notifications` requiere `POST_NOTIFICATIONS`; el plugin lo
+  maneja. Declararlo en Data Safety si se manda push.
 
 ---
 
-## 🟢 Ya cumple
+## 🟢 Ya cumple (config y plataforma)
 
-- ✅ **Eliminar cuenta** en la app (`Perfil → Eliminar cuenta`) + Edge Function `delete-user` (Apple 5.1.1(v) y Google).
+- ✅ **Eliminar cuenta** en la app + Edge Function `delete-user` (falta desplegarla — punto 2).
 - ✅ **Recuperar contraseña** (`recuperar.tsx` + `resetPasswordForEmail`).
-- ✅ **Privacy Manifest iOS** completo en `app.json` (UserDefaults, FileTimestamp, BootTime, DiskSpace con razones).
-- ✅ **Permisos mínimos:** solo fotos (`READ_MEDIA_IMAGES` / `NSPhotoLibraryUsageDescription`). **No** usa ubicación del dispositivo (el mapa usa coords estáticas en `geo.ts`), así que no hace falta permiso de ubicación.
-- ✅ **Login propio** (email/contraseña). Al no usar login de terceros, **no** se exige Sign in with Apple (4.8).
-- ✅ **Aviso de pago transparente** ("Falta Uno no custodia tu dinero") en checkout y legales.
-- ✅ **Páginas legales** privacidad/términos/eliminar-cuenta (Ley 1581 Colombia) — faltan rellenar placeholders y hostear.
+- ✅ **Privacy Manifest iOS** completo en `app.json`.
+- ✅ **Permisos mínimos:** solo fotos. No pide ubicación del dispositivo.
+- ✅ **Login propio** (email/contraseña) — no exige Sign in with Apple (4.8).
+- ✅ **Aviso de pago transparente** ("Falta Uno no custodia tu dinero").
+- ✅ **Páginas legales** privacidad/términos/eliminar-cuenta con datos reales (Vasecom S.A.S.,
+  NIT 902.072.598) y enlaces **relativos** (no rompen si cambia el dominio).
 - ✅ **Cifrado declarado** (`ITSAppUsesNonExemptEncryption: false`).
-- ✅ **Modo invitado** (`signInAsGuest`) — útil para que el revisor entre sin crear cuenta.
+- ✅ **`eas.json`** con `environment: production` en el perfil de producción.
+- ✅ **Migraciones versionadas** aplicadas por CI (`db push` al mergear a main) + validadas en local.
 
 ---
 
@@ -79,33 +109,27 @@ Apple actualizó la Guideline 1.2 en junio 2026 dejándolo más estricto. Ambas 
 - Cuenta personal nueva: **closed testing con 12 testers opt-in por 14 días** continuos antes de producción.
 - **Target API 35 hoy**; desde **31-ago-2026** obligatorio **API 36 (Android 16)**.
 - Subir **.aab** (App Bundle), no APK.
-- Antes de aprobar: URL de privacidad, **Data Safety**, **Content Rating**, **Target Audience**, credenciales de prueba en *App access*.
+- Antes de aprobar: URL de privacidad, **Data Safety**, **Content Rating**, **Target Audience**,
+  credenciales de prueba en *App access*.
 
 **Apple App Store**
-- Build con **Xcode 26 / SDK iOS 18+** (obligatorio en 2026).
+- Build con **Xcode 26 / SDK iOS 18+**.
 - **App Privacy** ("nutrition labels") completo.
-- **Age Rating** con el nuevo sistema (13+/16+/18+); UGC sin moderar sube la clasificación.
+- **Age Rating** 17+ por UGC.
 - Datos de demo para el revisor + descripción de que hay chat/muro.
 
 ---
 
-## Plan de acción priorizado
+## Plan de acción priorizado (lo que queda)
 
-**Para pasar revisión (bloqueantes):**
-1. Implementar reportar + bloquear + filtro básico en chat y muro.
-2. Checkbox de aceptación de Términos/Privacidad en el registro.
-3. Dejar solo pago en efectivo (o integrar PayU real).
-4. Decidir edad final (18 recomendado si no hay moderación robusta).
+**Código:** ✅ sin bloqueantes. Follow-ups opcionales de hardening: Storage cleanup en `delete-user`.
 
-**Datos a rellenar (no es programar):**
-5. Placeholders en `legal/*.html`: nombre legal, correo, fecha, URL, edad, días.
-6. URL real de privacidad en `perfil.tsx`.
-7. Google Maps API key en `app.json`.
-8. `.env` con credenciales Supabase reales.
-
-**Consolas (fuera del repo):**
-9. Crear cuentas Apple ($99) y Google ($25).
-10. Hostear las 3 páginas legales.
-11. Desplegar `delete-user`.
-12. Llenar App Privacy / Data Safety / Content Rating.
-13. Capturas, ficha y clasificación por edad.
+**Consola / cuenta (en orden):**
+1. Rotar secretos de prod expuestos.
+2. Desplegar `delete-user`.
+3. Env vars de producción en EAS.
+4. Google Maps Android key.
+5. Hostear las 3 legales del marketplace (o setear `SITE_URL`).
+6. Cuentas Apple + Google.
+7. App Privacy / Data Safety / Content Rating / Age Rating.
+8. Capturas + ficha + closed testing de Play.

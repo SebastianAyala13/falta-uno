@@ -18,7 +18,7 @@
 //   RAPYD_COMPLETE_URL, RAPYD_CANCEL_URL (opcional; páginas de retorno tras pagar/cancelar)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -40,6 +40,8 @@ const json = (body: unknown, status = 200) =>
  *   http_method + url_path + salt + timestamp + access_key + secret_key + body ) ) ).
  * OJO: se base64-codifica el HEX (no los bytes crudos). Es el error #1 de estas
  * integraciones. http_method va en minúsculas; body es el JSON exacto ("" si vacío).
+ * btoa(hex) == Buffer.from(hex).toString('base64') porque el hex es ASCII, y btoa
+ * es nativo de Deno (Buffer no es global en el runtime de Edge Functions).
  */
 function firmarRapyd(
   method: string,
@@ -52,7 +54,7 @@ function firmarRapyd(
 ): string {
   const toSign = method + path + salt + timestamp + accessKey + secretKey + body;
   const hex = createHmac('sha256', secretKey).update(toSign).digest('hex');
-  return Buffer.from(hex).toString('base64');
+  return btoa(hex);
 }
 
 Deno.serve(async (req) => {
@@ -125,7 +127,7 @@ Deno.serve(async (req) => {
       description: tipo === 'partido' ? 'Cupo de partido - Falta Uno' : 'Reserva de cancha - Falta Uno',
     };
     const body = JSON.stringify(bodyObj);
-    const salt = randomBytes(12).toString('hex');
+    const salt = crypto.randomUUID().replace(/-/g, ''); // salt aleatorio (Web Crypto, nativo de Deno)
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const signature = firmarRapyd(method, path, salt, timestamp, accessKey, secretKey, body);
 

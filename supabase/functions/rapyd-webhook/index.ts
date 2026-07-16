@@ -40,7 +40,7 @@ function firmaWebhookRapyd(
 ): string {
   const toSign = urlPath + salt + timestamp + accessKey + secretKey + body;
   const hex = createHmac('sha256', secretKey).update(toSign).digest('hex');
-  return Buffer.from(hex).toString('base64');
+  return btoa(hex); // == Buffer.from(hex).toString('base64'); btoa es nativo de Deno
 }
 
 Deno.serve(async (req) => {

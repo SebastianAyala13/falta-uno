@@ -67,7 +67,12 @@ export default function Checkout() {
         // Checkout real de Rapyd en el navegador externo. El pago queda
         // 'pendiente' en el cliente: el estado 'aprobado' lo escribe SOLO el
         // servidor (rapyd-webhook) cuando Rapyd confirma el cobro.
+        //
+        // Creamos la inscripción + pago 'pendiente' ANTES de abrir el checkout: así
+        // el webhook siempre encuentra la fila por `referencia` (evita la carrera en
+        // la que Rapyd confirma antes de que exista el registro).
         const referencia = genRef();
+        nuevoPago = await inscribirse(id, profile?.id ?? 'demo', medio.id, 'pendiente', referencia);
         const { url } = await crearCheckoutOnline({
           partidoId: id,
           jugadorId: profile?.id ?? 'demo',
@@ -76,7 +81,6 @@ export default function Checkout() {
           email: profile?.email,
         });
         await WebBrowser.openBrowserAsync(url);
-        nuevoPago = await inscribirse(id, profile?.id ?? 'demo', medio.id, 'pendiente', referencia);
       } else {
         const res = await procesarPago(medio.id, total);
         nuevoPago = await inscribirse(id, profile?.id ?? 'demo', medio.id, res.estado);

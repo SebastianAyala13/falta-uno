@@ -88,7 +88,7 @@ export default function Reservar() {
     if (!id || !cancha || !slot || !profile) return;
     setLoading(true);
     try {
-      // Online: la reserva nace 'pendiente' y PayU la confirma por webhook.
+      // Online: la reserva nace 'pendiente' y Rapyd la confirma por webhook.
       // Efectivo: queda 'confirmada' (se paga en la cancha).
       const comision = Math.round(slot.precio * (cancha.comision_pct ?? COMISION_CANCHA_DEFAULT));
       const r = await crearReserva({

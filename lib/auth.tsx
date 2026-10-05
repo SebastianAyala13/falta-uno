@@ -275,7 +275,12 @@ function traducirError(msg: string): string {
   if (m.includes('invalid login')) return 'Correo o contraseña incorrectos, parce.';
   if (m.includes('already registered') || m.includes('already exists'))
     return 'Ese correo ya está registrado. Entrá con tu cuenta.';
-  // Límite de tasa de Supabase Auth (registro/emails muy seguidos)
+  // Cuota de correos agotada: el SMTP que trae Supabase por defecto manda muy
+  // pocos por hora. No es que el usuario esté apurado, es que no se puede enviar
+  // el correo ahora — mezclarlo con el mensaje de "esperá un minuto" despista.
+  if (m.includes('email rate limit') || m.includes('over_email_send_rate_limit'))
+    return 'No pudimos enviarte el correo de confirmación en este momento. Probá más tarde o escribinos.';
+  // Límite de tasa de Supabase Auth (registro/logins muy seguidos)
   if (
     m.includes('for security purposes') ||
     m.includes('rate limit') ||

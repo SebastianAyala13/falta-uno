@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import { ScreenHeader } from '@/components/BackButton';
 import Badge from '@/components/Badge';
 import EmptyState from '@/components/EmptyState';
 import ErrorBanner from '@/components/ErrorBanner';
@@ -96,11 +97,7 @@ export default function PanelCancha() {
   // Header una sola vez; el body cambia por estado (evita repetir el título ×3).
   return (
     <Screen edges={['top']}>
-      <View className="px-6 pb-2 pt-2">
-        <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
-          Mi cancha
-        </Text>
-      </View>
+      <ScreenHeader title="Mi cancha" className="px-6 pb-2 pt-2" />
 
       {loading ? (
         <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>

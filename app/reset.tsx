@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 
+import { ScreenHeader } from '@/components/BackButton';
 import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
@@ -66,6 +67,9 @@ export default function Reset() {
 
   return (
     <Screen edges={['top', 'bottom']}>
+      {/* Sin volver: acá se llega desde el enlace del correo, no hay pantalla
+          anterior. El inicio sí tiene sentido como salida. */}
+      <ScreenHeader showBack={false} className="px-6 pt-2" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 40, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           <FadeIn delay={40}>

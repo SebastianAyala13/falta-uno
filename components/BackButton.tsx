@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import HomeButton from '@/components/HomeButton';
 import { cx } from '@/lib/cx';
 import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
@@ -98,6 +99,8 @@ type ScreenHeaderProps = {
   /** Clases del botón de volver (o del placeholder). Default: `mr-3` en `left`,
    * sin margen en `center` (para no romper el centrado real por `justify-between`). */
   backClassName?: string;
+  /** Muestra el botón de ir al inicio de la sección. Default: `true`. */
+  home?: boolean;
   /** Clases externas de la fila (padding, ancho) — el componente NO las gestiona. */
   className?: string;
 };
@@ -121,6 +124,7 @@ export function ScreenHeader({
   onBack,
   showBack = true,
   backClassName,
+  home = true,
   className = '',
 }: ScreenHeaderProps) {
   const spec = TITLE_SPEC[titleSize];
@@ -131,9 +135,24 @@ export function ScreenHeader({
   // En `left` el default sigue siendo `mr-3` — los 21 sitios estándar no cambian.
   const effectiveBackClass = backClassName ?? (titleAlign === 'center' ? '' : 'mr-3');
 
+  const homeNode = home ? <HomeButton /> : null;
+
+  // El inicio y las acciones propias de la pantalla viajan juntos a la derecha.
+  // Con solo el inicio ese lado mide lo mismo que el botón de volver (w-10), así
+  // que los títulos centrados siguen centrados de verdad.
+  const rightGroup =
+    homeNode != null || right != null ? (
+      <View className="flex-row items-center gap-2">
+        {homeNode}
+        {right}
+      </View>
+    ) : titleAlign === 'center' ? (
+      <View className="w-10" />
+    ) : null;
+
   const rowClass = cx(
     'flex-row items-center',
-    (right != null || titleAlign === 'center') && 'justify-between',
+    rightGroup != null && 'justify-between',
     borderBottom && 'border-b border-border',
     className,
   );
@@ -158,13 +177,22 @@ export function ScreenHeader({
       </Text>
     ) : null);
 
-  const rightNode = right ?? (titleAlign === 'center' ? <View className="w-10" /> : null);
-
   return (
     <View className={rowClass}>
-      {back}
-      {titleNode}
-      {rightNode}
+      {titleAlign === 'center' ? (
+        <>
+          {back}
+          {titleNode}
+        </>
+      ) : (
+        // Agrupados: con `justify-between`, el botón de volver y el título deben
+        // viajar juntos a la izquierda o el título quedaría flotando en el centro.
+        <View className="min-w-0 flex-1 flex-row items-center">
+          {back}
+          {titleNode}
+        </View>
+      )}
+      {rightGroup}
     </View>
   );
 }

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
 import { ScreenHeader } from '@/components/BackButton';
@@ -14,6 +14,7 @@ import { SkeletonBlock } from '@/components/Skeleton';
 import { COMISION_CANCHA_DEFAULT, PAGOS_ONLINE_CONFIGURADO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { crearReserva, getCancha, slotsDelDia, type Slot } from '@/lib/canchas';
+import { dialogo } from '@/lib/dialogo';
 import { fechaLarga, precioCOP } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { crearCheckoutReserva } from '@/lib/payments';
@@ -131,7 +132,7 @@ export default function Reservar() {
       setOnline(pagaOnline);
       setReferencia(r.referencia);
     } catch (e) {
-      Alert.alert('No se pudo reservar', e instanceof Error ? e.message : 'Probá de nuevo.');
+      dialogo.mostrar('No se pudo reservar', e instanceof Error ? e.message : 'Probá de nuevo.');
     } finally {
       setLoading(false);
     }

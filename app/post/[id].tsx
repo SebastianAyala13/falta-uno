@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -13,6 +13,7 @@ import ModeracionBoton from '@/components/ModeracionBoton';
 import Screen from '@/components/Screen';
 import { CardListSkeleton } from '@/components/Skeleton';
 import { useAuth } from '@/lib/auth';
+import { dialogo } from '@/lib/dialogo';
 import { tiempoRelativo } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { MENSAJE_BLOQUEO_FILTRO, contieneContenidoObjetable } from '@/lib/moderation';
@@ -82,7 +83,7 @@ export default function PostDetalle() {
     if (guardInvitado('Creá una cuenta para comentar.')) return;
     if (!texto.trim()) return;
     if (contieneContenidoObjetable(texto)) {
-      Alert.alert('Revisá tu comentario', MENSAJE_BLOQUEO_FILTRO);
+      dialogo.mostrar('Revisá tu comentario', MENSAJE_BLOQUEO_FILTRO);
       return;
     }
     comentar(id, { id: uid, nombre: profile?.nombre ?? 'Vos', avatar_url: profile?.avatar_url }, texto);

@@ -2,18 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  Switch,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 
 import AmenidadPicker from '@/components/AmenidadPicker';
 import { BackButton } from '@/components/BackButton';
@@ -37,6 +26,7 @@ import {
 } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { crearEstablecimiento, subirFotoCancha } from '@/lib/canchas';
+import { dialogo } from '@/lib/dialogo';
 import { haptics } from '@/lib/haptics';
 import { elegirImagen } from '@/lib/images';
 import { useTheme } from '@/lib/theme';
@@ -135,7 +125,7 @@ export default function RegistrarCancha() {
       const url = await subirFotoCancha(uri);
       setCanchas((prev) => prev.map((cancha, j) => (j === i ? { ...cancha, fotos: [...cancha.fotos, url] } : cancha)));
     } catch (e) {
-      Alert.alert('Ups', e instanceof Error ? e.message : 'No pudimos subir la foto. Probá de nuevo.');
+      dialogo.mostrar('Ups', e instanceof Error ? e.message : 'No pudimos subir la foto. Probá de nuevo.');
     } finally {
       setSubiendo(null);
     }

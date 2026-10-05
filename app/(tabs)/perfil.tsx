@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 
 import Avatar from '@/components/Avatar';
 import Badge from '@/components/Badge';
@@ -10,6 +10,7 @@ import Screen from '@/components/Screen';
 import StatCard from '@/components/StatCard';
 import { URL_PRIVACIDAD } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
+import { dialogo } from '@/lib/dialogo';
 import { haptics } from '@/lib/haptics';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -27,7 +28,7 @@ export default function Perfil() {
   };
   const borrarCuenta = () => {
     haptics.tap();
-    Alert.alert(
+    dialogo.mostrar(
       '¿Eliminar tu cuenta?',
       'Se borrarán tu perfil y tus datos. Esta acción no se puede deshacer, parce.',
       [
@@ -40,7 +41,7 @@ export default function Perfil() {
               await eliminarCuenta();
               router.replace('/(auth)/welcome');
             } catch (e) {
-              Alert.alert('No se pudo eliminar', e instanceof Error ? e.message : 'Intentá de nuevo, parce.');
+              dialogo.mostrar('No se pudo eliminar', e instanceof Error ? e.message : 'Intentá de nuevo, parce.');
             }
           },
         },

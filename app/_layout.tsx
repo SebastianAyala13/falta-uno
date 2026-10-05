@@ -17,6 +17,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import Dialogo from '@/components/Dialogo';
 import { AuthProvider } from '@/lib/auth';
 import { configurarNotificaciones } from '@/lib/notifications';
 import { useTheme, useThemeMeta, useThemeVars } from '@/lib/theme';
@@ -95,6 +96,8 @@ export default function RootLayout() {
             <Stack.Screen name="admin/usuarios" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="admin/reportes" options={{ animation: 'slide_from_right' }} />
           </Stack>
+          {/* Una sola instancia para toda la app, por encima del Stack. */}
+          <Dialogo />
         </AuthProvider>
       </SafeAreaProvider>
       </View>

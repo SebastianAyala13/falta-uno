@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Avatar from '@/components/Avatar';
@@ -20,6 +20,7 @@ import StatCard from '@/components/StatCard';
 import UrgencyPill from '@/components/UrgencyPill';
 import { COMISION_SERVICIO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
+import { dialogo } from '@/lib/dialogo';
 import { fechaLarga, precioCOP, urgencyLabel } from '@/lib/format';
 import { coordsDePartido } from '@/lib/geo';
 import { cancelarRecordatorio } from '@/lib/notifications';
@@ -109,7 +110,7 @@ export default function PartidoDetalle() {
   };
 
   const confirmarSalida = () => {
-    Alert.alert('¿Salir del partido?', 'Tu cupo queda libre para otro jugador.', [
+    dialogo.mostrar('¿Salir del partido?', 'Tu cupo queda libre para otro jugador.', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Salir',

@@ -1,13 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import AdminGate from '@/components/AdminGate';
 import Badge from '@/components/Badge';
@@ -19,6 +12,7 @@ import Screen from '@/components/Screen';
 import { CardListSkeleton } from '@/components/Skeleton';
 import type { Palette } from '@/constants/themes';
 import { reportesAdmin, resolverReporte, suspenderUsuario } from '@/lib/admin';
+import { dialogo } from '@/lib/dialogo';
 import { tiempoRelativo } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
@@ -128,7 +122,7 @@ export default function AdminReportes() {
         haptics.success();
         await cargar(false);
       } catch (e) {
-        Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo, parce.');
+        dialogo.mostrar('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo, parce.');
       } finally {
         setProcesando(null);
       }
@@ -138,7 +132,7 @@ export default function AdminReportes() {
 
   const eliminarContenido = (r: Reporte) => {
     haptics.tap();
-    Alert.alert('¿Eliminar el contenido?', 'Se borra el contenido reportado de forma permanente.', [
+    dialogo.mostrar('¿Eliminar el contenido?', 'Se borra el contenido reportado de forma permanente.', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Eliminar', style: 'destructive', onPress: () => ejecutar(r.id, () => resolverReporte(r.id, 'resuelto', true)) },
     ]);
@@ -152,7 +146,7 @@ export default function AdminReportes() {
   const suspenderAutor = (r: Reporte) => {
     if (!r.autor_id) return;
     haptics.tap();
-    Alert.alert('¿Suspender al autor?', 'El usuario queda suspendido y no podrá seguir publicando.', [
+    dialogo.mostrar('¿Suspender al autor?', 'El usuario queda suspendido y no podrá seguir publicando.', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Suspender', style: 'destructive', onPress: () => ejecutar(r.id, () => suspenderUsuario(r.autor_id, true)) },
     ]);

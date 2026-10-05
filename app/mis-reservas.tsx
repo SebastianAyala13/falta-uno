@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
@@ -12,6 +12,7 @@ import { CardListSkeleton } from '@/components/Skeleton';
 import type { Palette } from '@/constants/themes';
 import { useAuth } from '@/lib/auth';
 import { cancelarReserva, listarCanchas, misReservas } from '@/lib/canchas';
+import { dialogo } from '@/lib/dialogo';
 import { fechaLarga, precioCOP } from '@/lib/format';
 import { useTheme } from '@/lib/theme';
 import type { EstadoReserva, Reserva } from '@/types/database';
@@ -69,7 +70,7 @@ export default function MisReservas() {
   };
 
   const confirmarCancelacion = (reserva: Reserva) => {
-    Alert.alert('Cancelar reserva', '¿Seguro que querés cancelar esta reserva?', [
+    dialogo.mostrar('Cancelar reserva', '¿Seguro que querés cancelar esta reserva?', [
       { text: 'No', style: 'cancel' },
       {
         text: 'Sí, cancelar',
@@ -79,7 +80,7 @@ export default function MisReservas() {
             await cancelarReserva(reserva.id);
             await cargar(false);
           } catch (e) {
-            Alert.alert('No se pudo cancelar', e instanceof Error ? e.message : 'Probá de nuevo.');
+            dialogo.mostrar('No se pudo cancelar', e instanceof Error ? e.message : 'Probá de nuevo.');
           }
         },
       },

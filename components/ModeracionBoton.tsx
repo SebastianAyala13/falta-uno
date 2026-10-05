@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Alert, Pressable } from 'react-native';
+import { Pressable } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
+import { dialogo } from '@/lib/dialogo';
 import { haptics } from '@/lib/haptics';
 import { MOTIVOS_REPORTE } from '@/lib/moderation';
 import { useStore } from '@/lib/store';
@@ -52,21 +53,21 @@ export default function ModeracionBoton({
       motivo,
       texto,
     });
-    Alert.alert(
+    dialogo.mostrar(
       'Gracias, parce',
       'Recibimos tu reporte. Lo revisamos en menos de 24 horas y tomamos acción si incumple las normas de la comunidad.',
     );
   };
 
   const menuReportar = () => {
-    Alert.alert('Reportar contenido', '¿Por qué lo estás reportando?', [
+    dialogo.mostrar('Reportar contenido', '¿Por qué lo estás reportando?', [
       ...MOTIVOS_REPORTE.map((m) => ({ text: m.label, onPress: () => confirmarReporte(m.id) })),
       { text: 'Cancelar', style: 'cancel' as const },
     ]);
   };
 
   const confirmarBloqueo = () => {
-    Alert.alert(
+    dialogo.mostrar(
       `¿Bloquear a ${autorNombre}?`,
       'No volverás a ver sus publicaciones, comentarios ni mensajes.',
       [
@@ -76,7 +77,7 @@ export default function ModeracionBoton({
           style: 'destructive',
           onPress: () => {
             bloquearUsuario(autorId, uid);
-            Alert.alert('Listo', `Bloqueaste a ${autorNombre}.`);
+            dialogo.mostrar('Listo', `Bloqueaste a ${autorNombre}.`);
           },
         },
       ],
@@ -84,7 +85,7 @@ export default function ModeracionBoton({
   };
 
   const abrirMenu = () => {
-    Alert.alert('Opciones', undefined, [
+    dialogo.mostrar('Opciones', undefined, [
       { text: 'Reportar contenido', onPress: menuReportar },
       { text: `Bloquear a ${autorNombre}`, style: 'destructive', onPress: confirmarBloqueo },
       { text: 'Cancelar', style: 'cancel' },

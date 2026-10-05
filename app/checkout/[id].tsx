@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { ScreenHeader } from '@/components/BackButton';
@@ -13,6 +13,7 @@ import Screen from '@/components/Screen';
 import { COMISION_SERVICIO, MEDIOS_PAGO_ACTIVOS, type MedioPago } from '@/constants/config';
 import { Duration, MotionEasing } from '@/constants/motion';
 import { useAuth } from '@/lib/auth';
+import { dialogo } from '@/lib/dialogo';
 import { precioCOP } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { programarRecordatorio } from '@/lib/notifications';
@@ -92,7 +93,7 @@ export default function Checkout() {
       setPaso('listo');
     } catch (e) {
       setPaso('metodo');
-      Alert.alert(
+      dialogo.mostrar(
         'No se pudo procesar el pago',
         e instanceof Error ? e.message : 'Intentá de nuevo en un momento, parce.',
       );

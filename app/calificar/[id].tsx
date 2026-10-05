@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Switch, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Switch, Text, View } from 'react-native';
 
 import Avatar from '@/components/Avatar';
 import { ScreenHeader } from '@/components/BackButton';
@@ -11,6 +11,7 @@ import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import StarRating from '@/components/StarRating';
 import { useAuth } from '@/lib/auth';
+import { dialogo } from '@/lib/dialogo';
 import { haptics } from '@/lib/haptics';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -34,7 +35,7 @@ export default function Calificar() {
   const enviar = () => {
     if (guardInvitado('Creá una cuenta para calificar.')) return;
     if (estrellas === 0) {
-      Alert.alert('Ponele estrellas', 'Calificá la experiencia del partido para enviar.');
+      dialogo.mostrar('Ponele estrellas', 'Calificá la experiencia del partido para enviar.');
       return;
     }
     calificarPartido(id, profile?.id ?? 'demo', {
@@ -44,7 +45,7 @@ export default function Calificar() {
       comentario,
     });
     haptics.success();
-    Alert.alert('¡Gracias, parce! 🙌', 'Tu calificación ayuda a que la comunidad juegue mejor.', [
+    dialogo.mostrar('¡Gracias, parce! 🙌', 'Tu calificación ayuda a que la comunidad juegue mejor.', [
       { text: 'Listo', onPress: () => router.back() },
     ]);
   };

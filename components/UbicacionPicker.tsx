@@ -5,6 +5,7 @@ import MapView, { Marker } from 'react-native-maps';
 
 import Field from '@/components/Field';
 import { CIUDAD_COORDS, PEREIRA, reverseGeocode } from '@/lib/geo';
+import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
 
 export interface Ubicacion {
@@ -32,6 +33,9 @@ export default function UbicacionPicker({ value, ciudad, onChange }: Props) {
       : (CIUDAD_COORDS[ciudad] ?? PEREIRA);
 
   const mover = async (lat: number, lng: number) => {
+    // Un solo embudo para el toque en el mapa y el arrastre del pin: el háptico
+    // va acá y cubre los dos. `select` porque es un cambio de valor.
+    haptics.select();
     onChange({ ...value, lat, lng });
     setBuscando(true);
     const dir = await reverseGeocode(lat, lng);

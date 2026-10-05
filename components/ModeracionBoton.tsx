@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Alert, Pressable } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
+import { haptics } from '@/lib/haptics';
 import { MOTIVOS_REPORTE } from '@/lib/moderation';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -91,7 +92,13 @@ export default function ModeracionBoton({
   };
 
   return (
-    <Pressable onPress={abrirMenu} hitSlop={10} accessibilityLabel="Opciones de moderación">
+    <Pressable
+      onPress={() => {
+        haptics.tap();
+        abrirMenu();
+      }}
+      hitSlop={10}
+      accessibilityLabel="Opciones de moderación">
       <Ionicons name="ellipsis-horizontal" size={size} color={col} />
     </Pressable>
   );

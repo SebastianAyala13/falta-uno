@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
 import { AMENIDADES } from '@/constants/config';
+import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
 import type { Amenidades } from '@/types/database';
 
@@ -14,6 +15,8 @@ interface AmenidadPickerProps {
 export default function AmenidadPicker({ value, onChange }: AmenidadPickerProps) {
   const c = useTheme();
   const toggle = (id: string) => {
+    // `select`: esto cambia un valor, no dispara una acción (§ lib/haptics).
+    haptics.select();
     const key = id as keyof Amenidades;
     onChange({ ...value, [key]: !value[key] });
   };

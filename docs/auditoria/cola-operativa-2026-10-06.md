@@ -238,3 +238,23 @@ Requiere cambio de cliente sólo si Claude incorpora este estado al panel:
 lib/admin.ts:45 y app/admin/index.ts: invocar estado_conciliacion como admin,
 mostrar última ejecución/alarma/deuda; no sustituye monitor externo ni hacer
 llamadas al scheduler con el secreto desde el navegador.
+
+## 5. Declaraciones de privacidad contrastadas
+
+Problema: declaración de julio excluía finanzas y ubicación por completo, usaba
+PayU, asumía token push remoto y solo fotos de cancha. Inventario y discrepancias
+en privacidad-codigo-2026-10-06.md, con pantallas, almacén, destinatarios,
+retención, borrado y referencias de código. No se editaron el cliente ni el
+archivo de declaraciones fuera de este territorio.
+
+Ensayo privacy_retention.py: 11 verificaciones SQL reales pasaron; JSON adjunto.
+Snapshots de denuncias y referencias de devolución sobreviven a borrar jugador;
+eliminar dueño borra ledger/retiros. Auth/Storage de proveedor no se probaron.
+Se corrigió además el generador: sus denuncias no pueden apuntar al propio
+reportante, caso encontrado con pocos jugadores y muchos posts. No se relajó
+ninguna regla SQL.
+
+Controles reales: 52 unitarias, todos los grupos database.py, TypeScript y Expo
+lint pasaron. Pendientes: actualizar formularios y política, definir TTL y
+salvaguarda financiera, verificar proveedores/binario y borrar cuenta en staging.
+Cambios potenciales de cliente con línea están en el inventario; ninguno aplicado.

@@ -1,0 +1,17 @@
+{
+  "scope": "PostgreSQL 17 local, actual migrations; Auth ID stubs only, no Auth HTTP/Storage blobs",
+  "passed": {
+    "posts_removed": true,
+    "profile_removed": true,
+    "payments_removed": true,
+    "auth_stub_removed": true,
+    "reservations_removed": true,
+    "report_snapshot_retained": true,
+    "refund_reference_retained": true,
+    "owner_ledger_retained_unlinked": true,
+    "deleted_owner_court_removed": true,
+    "deleted_owner_ledger_removed": true,
+    "deleted_owner_withdrawals_removed": true
+  },
+  "deletions": "Only synthetic Auth fixtures, specifically to test deletion semantics; no migration workaround"
+}

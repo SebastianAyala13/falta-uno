@@ -106,6 +106,13 @@ def main():
         assert sql(preflight, database="preflight_fixture").stdout.strip()==output
         sql("begin read only; update public.reservas set precio=0;", database="preflight_fixture",ok=False)
         print("PASS idempotent read-only preflight with intentional conflicts:\n"+output,flush=True)
+        sql(f"""insert into public.reservas(id,cancha_id,jugador_id,fecha,hora_inicio,hora_fin,precio,comision,estado,medio,referencia)
+          values ('{uid(204)}','{uid(200)}','{uid(1)}','2099-10-06','09:00','10:00',50000,5000,'confirmada','online','LEGACY-ATTACK');
+          update public.reservas set precio=0 where id='{uid(204)}';
+          update public.reservas set comision=0 where id='{uid(204)}';""",user=uid(1),database="preflight_fixture")
+        assert scalar(f"select estado||'|'||precio||'|'||comision from public.reservas where id='{uid(204)}'",database="preflight_fixture")=="confirmada|0|0"
+        print("PASS isolated pre-migration reproduction: forged online confirmation, price and commission",flush=True)
+
         for path in sorted((ROOT / "supabase/migrations").glob("*.sql")):
             migration = path.read_text().replace('CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";', '-- Unused Vault extension unavailable in vanilla PostgreSQL test image.')
             sql(migration)
@@ -159,7 +166,7 @@ def main():
         sql(f"insert into public.canchas(id,owner_id,nombre,direccion,zona) values ('{cancha}','{uid(1)}','Cancha','Dirección','Centro'); insert into public.cancha_disponibilidad(cancha_id,dia_semana,hora_apertura,hora_cierre,duracion_min,precio) values ('{cancha}',extract(dow from date '2099-10-05'),'08:00','23:00',60,50000);")
 
         def reserve(n, start="09:00", end="10:00", medio="efectivo", ok=True):
-            return sql(f"insert into public.reservas(cancha_id,jugador_id,fecha,hora_inicio,hora_fin,precio,comision,estado,medio,referencia) values ('{cancha}','{uid(n)}','2099-10-05','{start}','{end}',1,0,'confirmada','{medio}','RES-{uuid.uuid4().hex}') returning id,precio,comision,estado;", user=uid(n), ok=ok)
+            return sql(f"insert into public.reservas(cancha_id,jugador_id,fecha,hora_inicio,hora_fin,precio,comision,estado,medio,referencia) values ('{cancha}','{uid(n)}','2099-10-05','{start}','{end}',1,0,'{"pendiente" if medio == "online" else "confirmada"}','{medio}','RES-{uuid.uuid4().hex}') returning id,precio,comision,estado;", user=uid(n), ok=ok)
 
         def reservations():
             first = reserve(2)
@@ -216,6 +223,33 @@ def main():
             assert scalar(f"select sum(monto) from public.movimientos_cancha where reserva_id=(select id from public.reservas where referencia='{rref}')") == '45000'
             sql(f"update public.reservas set estado='confirmada' where referencia='{rref}'",user=uid(4),ok=False)
         check("parallel webhooks verify amount/currency, confirm membership, book ledger exactly once", webhook)
+
+        def negative_security():
+            # Exact production-reported attacks, now with authenticated JWT GUCs.
+            forged=f"insert into public.reservas(cancha_id,jugador_id,fecha,hora_inicio,hora_fin,precio,comision,estado,medio,referencia) values ('{cancha}','{uid(2)}','2099-10-05','13:00','14:00',0,0,'confirmada','online','FORGED-ONLINE')"
+            result=sql(forged,user=uid(2),ok=False)
+            assert 'sólo lo confirma' in result.stderr
+            rid=reserve(2,'13:00','14:00','online').stdout.strip().split('|')[0]
+            for column in ['precio','comision']:
+                result=sql(f"update public.reservas set {column}=0 where id='{rid}'",user=uid(2),ok=False)
+                assert 'permission denied' in result.stderr
+            sql(f"update public.reservas set estado='confirmada' where id='{rid}'",user=uid(2),ok=False)
+            assert scalar(f"select precio||'|'||comision||'|'||estado from public.reservas where id='{rid}'")=='50000|5000|pendiente'
+            sql(f"update public.profiles set roles=ARRAY['admin','jugador'] where id='{uid(2)}'",user=uid(2),ok=False)
+            pid=scalar(f"select id from public.pagos where jugador_id='{uid(2)}' limit 1")
+            sql(f"update public.pagos set estado='aprobado' where id='{pid}'",user=uid(2),ok=False)
+            sql(f"select public.admin_procesar_retiro((select id from public.retiros limit 1),'pagado')",user=uid(2),ok=False)
+            # Own withdrawal too: neither the owner nor an unrelated player can approve it.
+            sql(f"update public.retiros set estado='pagado' where cancha_id='{cancha}'",user=uid(1),ok=False)
+            sql(f"insert into public.canchas(owner_id,nombre,direccion,zona) values ('{uid(1)}','Fake','Fake','Centro')",user=uid(2),ok=False)
+            sql(f"update public.canchas set owner_id='{uid(2)}' where id='{cancha}'",user=uid(1),ok=False)
+            # RLS SELECT correctly filters to zero rows; PostgreSQL need not raise.
+            assert scalar(f"select count(*) from public.reservas where id='{rid}'",user=uid(3))=='0'
+            assert scalar(f"select count(*) from public.reservas where id='{rid}'",user=uid(1))=='1'
+            assert scalar(f"select owner_id from public.canchas where id='{cancha}'")==uid(1)
+            assert scalar(f"select 'admin'=any(roles) from public.profiles where id='{uid(2)}'")=='f'
+        check("authenticated attacks cannot forge confirmation/prices/commission/admin/payment/withdrawal/owner or read another reservation",negative_security)
+
 
         def chat_access():
             p = uid(102)

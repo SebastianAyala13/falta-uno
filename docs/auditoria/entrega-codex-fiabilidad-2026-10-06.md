@@ -160,3 +160,25 @@ El test conserva todos los ids completos en su salida, verifica salida idéntica
 al repetir y que PostgreSQL rechaza UPDATE en READ ONLY. Los fixtures están en
 una base desechable distinta; no se borran conflictos para aplicar migraciones.
 No requiere cambio de cliente.
+
+## Punto 2 — ataques autenticados
+
+Reproducción antes de fiabilidad en base aislada: INSERT online confirmada y
+UPDATE de precio/comisión a cero se aceptan. Después de las migraciones, los
+intentos se rechazan: precios/comisión por permisos de columna; confirmación
+online por trigger/validación. Se añade una migración que rechaza expresamente
+INSERT online con estado distinto a pendiente y revoca UPDATE/DELETE de pagos
+ y retiros al cliente, además de RLS. Efectivo puede reservar confirmado, pero
+no acredita un pago ni crea un ingreso online.
+
+Pruebas JWT/rol authenticated: los tres ataques exactos, UPDATE de estado a
+confirmada, autoascenso a admin, autoaprobación de pago/retiro, falsificación de
+owner por INSERT/UPDATE y lectura de reserva ajena. RLS SELECT niega lectura
+filtrando a cero filas; no debe esperarse una excepción SQL en ese caso. Se
+comprueba también que dueño legítimo ve su reserva y los datos no cambian.
+
+Archivos: tests/database.py y
+supabase/migrations/20261006150000_reservas_permisos_negativos.sql.
+No cambio de cliente necesario para el uso normal: reservas online ya envían
+pendiente; efectivo conserva su flujo. No se verificó producción: el esquema
+antiguo se reprodujo exclusivamente en el contenedor de prueba.

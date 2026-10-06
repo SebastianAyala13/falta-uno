@@ -119,9 +119,12 @@ jobs:
           version: 2.109.1
 
       # Preflight: los conflictos en los datos que ya existen son la causa más
-      # probable de que una migración falle a mitad. El script lo escribe quien
-      # trae la migración; su contrato es fallar (exit distinto de 0) cuando
-      # encuentra conflictos, para que esto corte acá y no a mitad del push.
+      # probable de que una migración falle a mitad.
+      #
+      # El script es de solo lectura y SOLO INFORMA: devuelve una fila por tipo
+      # de conflicto con su cantidad, y termina bien aunque encuentre alguno. La
+      # decisión de cortar es de acá, para que el corte ocurra antes del push y
+      # no a mitad de una migración.
       - name: Preflight de conflictos
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
@@ -134,7 +137,20 @@ jobs:
             echo "psql no está disponible en el runner; no se pudo correr el preflight."
             exit 1
           fi
-          psql -v ON_ERROR_STOP=1 -f scripts/preflight-fiabilidad.sql "$SUPABASE_DB_URL"
+          # -qAt: una línea por tipo, campos separados por '|' -> tipo|cantidad|detalles
+          SALIDA=$(psql -X -qAt -v ON_ERROR_STOP=1 -f scripts/preflight-fiabilidad.sql "$SUPABASE_DB_URL")
+          {
+            echo "## Preflight de conflictos"
+            echo '```'
+            echo "$SALIDA"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if printf '%s\n' "$SALIDA" | awk -F'|' 'NF>1 && $2+0>0 {hay=1} END {exit !hay}'; then
+            echo "El preflight encontró conflictos en los datos. No se aplica nada."
+            echo "Resolvelos con sus responsables; no se borran registros automáticamente."
+            exit 1
+          fi
+          echo "Sin conflictos."
 
       # Ensayo: muestra qué migraciones se aplicarían, sin tocar nada.
       - name: Ensayo (dry run)

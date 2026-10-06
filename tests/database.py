@@ -377,6 +377,48 @@ def main():
             assert scalar("select count(*) from public.conciliaciones_pago",user=uid(2))=='0'
             assert scalar("select count(*) from public.conciliaciones_pago",user=uid(53))=='3'
         check("expiry/late-webhook race frees seats and slots, queues refunds once, leases debt and preserves exact ledger",expiry_and_late_confirmation)
+
+        def atomic_establishment_and_reservation():
+            data={'direccion':'Fixture','zona':'Centro','ciudad':'Pereira','amenidades':{},'legal_version':'2026-07-07','canchas':[{'nombre':'Atomic One','formato':'5v5','precio':50000,'duracion':60,'fotos':[]},{'nombre':'Atomic Two','formato':'7v7','precio':70000,'duracion':60,'fotos':[]}],'horarios':[{'dia_semana':int(scalar("select extract(dow from date '2099-10-05')")),'hora_apertura':'08:00','hora_cierre':'23:00'}]}
+            call=f"select public.crear_establecimiento('ATOMIC-ESTABLISHMENT','{json.dumps(data)}'::jsonb)"
+            results=parallel([lambda:sql(call,user=uid(3)) for _ in range(6)])
+            courts=[json.loads(r.stdout) for r in results]
+            assert all(courts[0]==c for c in courts) and len(courts[0])==2
+            assert scalar(f"select count(*) from public.canchas where owner_id='{uid(3)}'")=='2'
+            assert scalar(f"select 'cancha'=any(roles) from public.profiles where id='{uid(3)}'")=='t'
+            changed=json.loads(json.dumps(data));changed['canchas'][1]['duracion']=0
+            sql(f"select public.crear_establecimiento('ATOMIC-FAIL','{json.dumps(changed)}')",user=uid(3),ok=False)
+            assert scalar(f"select count(*) from public.canchas where owner_id='{uid(3)}'")=='2'
+            assert scalar("select count(*) from public.operaciones_idempotentes where referencia='ATOMIC-FAIL'")=='0'
+            sql(f"select public.crear_establecimiento('ATOMIC-ESTABLISHMENT','{json.dumps(changed)}')",user=uid(3),ok=False)
+            court=courts[0][0]['id']
+            def book(ref,start='09:00',end='10:00',medio='efectivo'):
+                return f"select public.reservar_con_partido('{ref}','{court}','2099-10-05','{start}','{end}','{medio}','{{\"formato\":\"5v5\",\"nivel\":\"Casual\"}}')"
+            receipts=parallel([lambda:sql(book('ATOMIC-BOOK'),user=uid(2)) for _ in range(6)])
+            rows=[json.loads(r.stdout) for r in receipts]
+            assert all(rows[0]['id']==r['id'] and rows[0]['partido_id']==r['partido_id'] for r in rows)
+            assert rows[0]['precio']==50000 and rows[0]['partido_id']
+            assert scalar(f"select precio from public.partidos where id='{rows[0]['partido_id']}'")=='5000'
+            sql(book('ATOMIC-BOOK','10:00','11:00'),user=uid(2),ok=False)
+            sql(book('ATOMIC-BOOK'),user=uid(5),ok=False) # cannot take another caller's receipt
+            # Failure in party insertion rolls the preceding reservation and journal back.
+            sql("""create function public.test_fail_party() returns trigger language plpgsql as $$begin if new.cancha='Atomic One' then raise exception 'test intermediate failure'; end if; return new; end$$;
+              create trigger zz_test_fail_party before insert on public.partidos for each row execute function public.test_fail_party();""")
+            sql(book('ATOMIC-BOOK-FAIL','11:00','12:00'),user=uid(2),ok=False)
+            assert scalar("select count(*) from public.reservas where referencia='ATOMIC-BOOK-FAIL'")=='0'
+            assert scalar("select count(*) from public.operaciones_idempotentes where referencia='ATOMIC-BOOK-FAIL'")=='0'
+            sql("drop trigger zz_test_fail_party on public.partidos; drop function public.test_fail_party()")
+            recovered=json.loads(scalar(book('ATOMIC-BOOK-FAIL','11:00','12:00'),user=uid(2)))
+            assert recovered['partido_id']
+            pending=json.loads(scalar(book('ATOMIC-ONLINE','13:00','14:00','online'),user=uid(2)))
+            assert pending['estado']=='pendiente' and pending['partido_id'] is None
+            parallel([lambda:sql("select public.confirmar_pago_online('ATOMIC-ONLINE',50000,'COP','provider-atomic')",user=uid(2),role='service_role') for _ in range(4)])
+            confirmed=json.loads(scalar(book('ATOMIC-ONLINE','13:00','14:00','online'),user=uid(2)))
+            assert confirmed['id']==pending['id'] and confirmed['estado']=='confirmada' and confirmed['partido_id']
+            assert scalar(f"select count(*) from public.partidos where id='{confirmed['partido_id']}'")=='1'
+            assert scalar(f"select count(*) from public.movimientos_cancha where reserva_id='{confirmed['id']}'")=='2'
+            sql(f"update public.reservas set partido_id='{rows[0]['partido_id']}' where id='{recovered['id']}'",user=uid(2),ok=False)
+        check("atomic establishment and reservation-party retry/failure rollback; online publication waits for actual confirmation",atomic_establishment_and_reservation)
         print("All database regression groups passed", flush=True)
     finally:
         subprocess.run(["docker", "stop", CONTAINER], capture_output=True, check=False)

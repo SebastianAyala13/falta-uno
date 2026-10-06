@@ -244,3 +244,45 @@ permitir nueva referencia al reintentar y no celebrar un pago reembolso_pendient
 app/mis-pagos.tsx y app/mis-reservas.tsx deben representar devolución/caducidad.
 lib/payments.ts debe interpretar esos estados y actualizar desde servidor, sin
 confirmación cliente. Líneas concretas se adjuntan en el inventario final.
+
+## Punto 4 — transacciones idempotentes
+
+`crear_establecimiento(p_referencia,p_datos)` recibe el formato actual de
+NuevoEstablecimiento (canchas/horarios/dirección/amenidades/legal_version).
+Deriva owner de auth.uid, requiere perfil activo y aceptación legal vigente;
+crea todas las canchas y horarios y agrega rol cancha en una transacción.
+Referencia por usuario/tipo, payload idéntico obligatorio, respuesta almacenada:
+reintentos concurrentes devuelven las mismas filas. Error de segunda cancha
+revierte la primera, horarios, rol y operación; no deja un alta parcial.
+
+`reservar_con_partido(p_referencia,p_cancha,p_fecha,p_inicio,p_fin,p_medio,p_partido)`
+deriva jugador y precios del servidor; partido opcional es JSON con formato/nivel.
+En efectivo crea y vincula ambos en una transacción. Online conserva intención
+pero no publica hasta que el webhook confirma realmente: el trigger crea/vincula
+partido junto a confirmación y ledger en la misma transacción. Pago vencido no
+publica partido. Reintentar la misma referencia devuelve reserva original con
+estado actual, no duplica ni reclama un horario liberado como nueva reserva.
+Cambiar datos con la misma referencia falla. Un usuario distinto no obtiene el
+comprobante. INSERT cliente sólo admite columnas normales: no puede falsificar
+partido_id/partido_solicitado/caduca_at/estado_pago. RPC controla esas columnas.
+
+El precio por plaza se deriva de la reserva/precio congelado; formato de la
+intención se valida al solicitar y no depende de cambios posteriores de formatos.
+Una pérdida de respuesta HTTP se recupera consultando la misma referencia. Si
+falló transacción de alta/reserva, no hubo comprobante confirmado: se reintenta.
+Si falla publicación al webhook, se revierte confirmación/ledger y el proveedor
+recibe 500 para reintentar. Si vence mientras tanto, el cobro pasa a devolución.
+No se elimina una reserva confirmada preexistente para simular recuperación.
+
+Requiere cambio de cliente (Claude): lib/canchas.ts crearEstablecimiento y
+crearReserva deben consumir estas RPC con referencia estable por intención;
+app/cancha/[id]/reservar.tsx debe quitar la creación separada mediante crearPartido
+(y no publicar después de cerrar el navegador del checkout). Renderizar el
+comprobante de respuesta y consultar estado para online. No enviar partido_id
+ni siquiera null por INSERT antiguo; ese campo deja de tener permiso cliente.
+app/cancha/registrar.tsx debe conservar referencia durante reintentos. Tipos RPC
+nuevos en types/database.ts. No se han editado esos archivos, conforme al reparto.
+
+Preflight adicional antes de esta migración:
+`select partido_id,array_agg(id) from public.reservas where partido_id is not null group by partido_id having count(*)>1;`
+La unicidad falla ante conflictos existentes; no se borran filas.

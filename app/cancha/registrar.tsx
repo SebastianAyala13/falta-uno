@@ -26,7 +26,7 @@ import {
   type Formato,
 } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
-import { crearEstablecimiento, subirFotoCancha } from '@/lib/canchas';
+import { crearEstablecimiento, genRefEstablecimiento, subirFotoCancha } from '@/lib/canchas';
 import { haptics } from '@/lib/haptics';
 import { elegirImagen } from '@/lib/images';
 import { useTheme } from '@/lib/theme';
@@ -74,7 +74,7 @@ const nuevaCancha = (i: number): CanchaForm => ({
 /** Wizard de onboarding: registra un establecimiento con N canchas en 8 pasos. */
 export default function RegistrarCancha() {
   const router = useRouter();
-  const { profile, updateProfile } = useAuth();
+  const { refrescarPerfil } = useAuth();
   const c = useTheme();
   const guardInvitado = useGuardInvitado();
   const scrollRef = useRef<ScrollView>(null);
@@ -175,6 +175,11 @@ export default function RegistrarCancha() {
     arriba();
   };
 
+  // Igual que al reservar: la RPC es idempotente por referencia, así que un
+  // reintento con la misma devuelve el establecimiento ya creado en vez de
+  // cargarlo dos veces. Por eso vive fuera de la función y no se regenera.
+  const referenciaAlta = useRef<string | null>(null);
+
   const crear = async () => {
     if (guardInvitado('Creá una cuenta para registrar tu cancha.')) return;
     const err = validarPaso();
@@ -189,7 +194,8 @@ export default function RegistrarCancha() {
         .map((h, dia) => ({ dia_semana: dia, ...h }))
         .filter((h) => h.abierto)
         .map((h) => ({ dia_semana: h.dia_semana, hora_apertura: h.apertura, hora_cierre: h.cierre }));
-      await crearEstablecimiento(profile!.id, {
+      if (!referenciaAlta.current) referenciaAlta.current = genRefEstablecimiento();
+      await crearEstablecimiento({
         direccion: ubicacion.direccion,
         zona: zona!,
         ciudad,
@@ -207,10 +213,11 @@ export default function RegistrarCancha() {
         horarios: horariosActivos,
         legal_version: LEGAL_CANCHA_VERSION,
         legal_aceptado_at: new Date().toISOString(),
-      });
-      if (!profile?.roles?.includes('cancha')) {
-        await updateProfile({ roles: Array.from(new Set([...(profile?.roles ?? ['jugador']), 'cancha'])) });
-      }
+      }, referenciaAlta.current);
+      // El rol `cancha` lo agrega la propia RPC dentro de su transacción: un
+      // trigger impide que la app se cambie los roles por su cuenta. Acá solo
+      // releemos el perfil para que la navegación ya lo vea como dueño.
+      await refrescarPerfil();
       router.replace(yaTienePartidos ? '/cancha/agenda' : '/cancha/panel');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos crear tu cancha.');

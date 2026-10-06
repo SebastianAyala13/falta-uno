@@ -65,6 +65,16 @@ interface AuthState {
   /** Elimina la cuenta y sus datos (requerido por App Store y Play Store). */
   eliminarCuenta: () => Promise<void>;
   updateProfile: (cambios: Partial<Profile>) => Promise<void>;
+  /**
+   * Relee el perfil desde el servidor.
+   *
+   * Hace falta cuando el rol lo cambia el servidor y no el cliente: al dar de
+   * alta un establecimiento, la RPC agrega el rol `cancha` dentro de su misma
+   * transacción, y un trigger impide que la app toque `roles` por su cuenta.
+   * Sin esto, el dueño recién registrado seguiría viendo la app como jugador
+   * hasta volver a entrar.
+   */
+  refrescarPerfil: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -319,6 +329,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .eq('id', profile.id);
         if (error) throw new Error(traducirError(error.message));
         if (actual === version.current && perfilActual.current?.id === profile.id) aplicarPerfil({...profile,...guardados});
+      },
+
+      async refrescarPerfil() {
+        if (!supabaseConfigurado || !profile) return;
+        const actual = version.current;
+        const { data, error } = await supabase.from('profiles').select('*').eq('id', profile.id).maybeSingle();
+        if (error || !data) return; // no es crítico: el perfil viejo sigue sirviendo
+        // Si mientras tanto se cambió de cuenta, esta lectura ya no corresponde.
+        if (actual === version.current && perfilActual.current?.id === profile.id) aplicarPerfil(data as Profile);
       },
     }),
     [profile, loading, aplicarPerfil, cargarPerfil],

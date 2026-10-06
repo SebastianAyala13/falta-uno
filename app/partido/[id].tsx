@@ -49,12 +49,11 @@ export default function PartidoDetalle() {
     if (cargando) return <PartidoSkeleton />;
     return (
       <Screen edges={['top']}>
-        <ErrorBanner message={error} className="mx-6 mt-2" />
         <EmptyState
-          icon="alert-circle-outline"
-          titulo="Este partido ya no existe"
-          texto="Puede que lo hayan cancelado o que el cupo ya se haya cerrado."
-          cta={error ? {label:'Reintentar',onPress:reintentar} : {label:'Volver',icon:'arrow-back',onPress:() => router.back()}}
+          icon={error ? 'cloud-offline-outline' : 'alert-circle-outline'}
+          titulo={error ? 'No pudimos cargar el partido' : 'Este partido ya no existe'}
+          texto={error ?? 'Puede que lo hayan cancelado o que el cupo ya se haya cerrado.'}
+          cta={error ? {label:'Reintentar',icon:'refresh',onPress:reintentar} : {label:'Volver',icon:'arrow-back',onPress:() => router.back()}}
         />
       </Screen>
     );

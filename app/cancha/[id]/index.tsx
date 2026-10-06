@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/BackButton';
 import CanchaMap from '@/components/CanchaMap';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
@@ -23,13 +24,24 @@ export default function PerfilCancha() {
 
   const [cancha, setCancha] = useState<Cancha | null>(null);
   const [cargando, setCargando] = useState(true);
+  // Sin este estado, un fallo de red terminaba en la pantalla de "Cancha no
+  // encontrada", que le dice al usuario que la dieron de baja. Son dos cosas
+  // muy distintas y la segunda lo hace irse.
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const cargar = useCallback(() => {
     if (!id) return;
+    setError(null);
+    setCargando(true);
     getCancha(id)
       .then(setCancha)
+      .catch(() => setError('No pudimos cargar la cancha. Revisá tu conexión e intentá de nuevo.'))
       .finally(() => setCargando(false));
   }, [id]);
+
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
 
   const activas = cancha
     ? AMENIDADES.filter((a) => (cancha.amenidades as Record<string, boolean | undefined>)?.[a.id])
@@ -51,6 +63,10 @@ export default function PerfilCancha() {
             <SkeletonBlock height={36} width={72} radius={999} />
             <SkeletonBlock height={36} width={72} radius={999} />
           </View>
+        </View>
+      ) : error ? (
+        <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
+          <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: cargar }} />
         </View>
       ) : !cancha ? (
         <EmptyState

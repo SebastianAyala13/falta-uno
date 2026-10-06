@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
 import { ScreenHeader } from '@/components/BackButton';
 import DateTimeField from '@/components/DateTimeField';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
@@ -58,21 +59,43 @@ export default function Reservar() {
   const [referencia, setReferencia] = useState<string | null>(null);
   const [online, setOnline] = useState(false); // el comprobante fue de un pago online (queda pendiente)
 
-  useEffect(() => {
+  // Un fallo de red terminaba en "Cancha no encontrada", que le dice al usuario
+  // que la dieron de baja. No es lo mismo y lo hace irse.
+  const [error, setError] = useState<string | null>(null);
+  // Y un fallo al traer los horarios se veía como "no hay horarios ese día".
+  const [errorSlots, setErrorSlots] = useState<string | null>(null);
+
+  const cargarCancha = useCallback(() => {
     if (!id) return;
+    setError(null);
+    setCargando(true);
     getCancha(id)
       .then(setCancha)
+      .catch(() => setError('No pudimos cargar la cancha. Revisá tu conexión e intentá de nuevo.'))
       .finally(() => setCargando(false));
   }, [id]);
 
   useEffect(() => {
-    if (!id || !fecha) return;
+    cargarCancha();
+  }, [cargarCancha]);
+
+  // Devuelve el cancelador para que el efecto ignore respuestas viejas al
+  // cambiar de fecha rápido; el botón de reintentar lo llama y ya.
+  const cargarSlots = useCallback(() => {
+    if (!id || !fecha) return () => {};
     let vigente = true;
     setCargandoSlots(true);
     setSlot(null);
+    setErrorSlots(null);
     slotsDelDia(id, fecha)
       .then((s) => {
         if (vigente) setSlots(s);
+      })
+      .catch(() => {
+        if (vigente) {
+          setSlots([]);
+          setErrorSlots('No pudimos traer los horarios de ese día.');
+        }
       })
       .finally(() => {
         if (vigente) setCargandoSlots(false);
@@ -81,6 +104,8 @@ export default function Reservar() {
       vigente = false;
     };
   }, [id, fecha]);
+
+  useEffect(() => cargarSlots(), [cargarSlots]);
 
   const pagaOnline = medio === 'online' && PAGOS_ONLINE_CONFIGURADO;
 
@@ -181,6 +206,10 @@ export default function Reservar() {
           <View style={{ height: 12 }} />
           <SlotsGridSkeleton />
         </View>
+      ) : error ? (
+        <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
+          <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: cargarCancha }} />
+        </View>
       ) : !cancha ? (
         <EmptyState
           icon="alert-circle-outline"
@@ -197,6 +226,11 @@ export default function Reservar() {
             <Text className="mb-2 font-body-semibold text-sm text-cream">Horarios</Text>
             {cargandoSlots ? (
               <SlotsGridSkeleton />
+            ) : errorSlots ? (
+              <ErrorBanner
+                message={errorSlots}
+                action={{ label: 'Reintentar', onPress: cargarSlots }}
+              />
             ) : slots.length === 0 ? (
               <Text className="py-4 font-body text-sm text-muted">
                 La cancha no tiene horarios para ese día. Probá con otra fecha.

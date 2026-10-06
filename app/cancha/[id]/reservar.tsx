@@ -13,14 +13,13 @@ import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { SkeletonBlock } from '@/components/Skeleton';
-import { COMISION_CANCHA_DEFAULT, CUPOS_POR_FORMATO, PAGOS_ONLINE_CONFIGURADO } from '@/constants/config';
+import { PAGOS_ONLINE_CONFIGURADO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
-import { crearReserva, getCancha, slotsDelDia, type Slot } from '@/lib/canchas';
+import { crearReserva, genRefReserva, getCancha, slotsDelDia, type Slot } from '@/lib/canchas';
 import { hoyColombia } from '@/lib/data-utils';
 import { fechaLarga, precioCOP } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { crearCheckoutReserva } from '@/lib/payments';
-import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import { useGuardInvitado } from '@/lib/useGuardInvitado';
 import type { Cancha } from '@/types/database';
@@ -44,7 +43,6 @@ export default function Reservar() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useAuth();
-  const crearPartido = useStore((s) => s.crearPartido);
   const c = useTheme();
   const guardInvitado = useGuardInvitado();
 
@@ -85,6 +83,15 @@ export default function Reservar() {
 
   const pagaOnline = medio === 'online' && PAGOS_ONLINE_CONFIGURADO;
 
+  // La RPC es idempotente por referencia: si el primer intento llegó al
+  // servidor pero la respuesta se perdió, reintentar con la MISMA referencia
+  // devuelve esa reserva en vez de crear otra. Por eso la referencia vive acá y
+  // no se regenera en cada intento; se limpia al cambiar de turno o de fecha.
+  const referenciaIntento = useRef<string | null>(null);
+  useEffect(() => {
+    referenciaIntento.current = null;
+  }, [slot?.hora_inicio, fecha]);
+
   const reservar = async () => {
     if (guardInvitado('Creá una cuenta para reservar una cancha.')) return;
     if (!id || !cancha || !slot || !profile || reservarPendiente.current) return;
@@ -93,17 +100,21 @@ export default function Reservar() {
     try {
       // Online: la reserva nace 'pendiente' y Rapyd la confirma por webhook.
       // Efectivo: queda 'confirmada' (se paga en la cancha).
-      const comision = Math.round(slot.precio * (cancha.comision_pct ?? COMISION_CANCHA_DEFAULT));
+      // El precio, la comisión y el estado los pone el servidor desde la franja
+      // horaria; el cliente ya no los manda.
+      if (!referenciaIntento.current) referenciaIntento.current = genRefReserva();
+      const formato = cancha.formatos[0] ?? '5v5';
       const r = await crearReserva({
+        referencia: referenciaIntento.current,
         canchaId: id,
-        jugadorId: profile.id,
         fecha,
         horaInicio: slot.hora_inicio,
         horaFin: slot.hora_fin,
-        precio: slot.precio,
-        comision: pagaOnline ? comision : 0,
         medio: pagaOnline ? 'online' : 'efectivo',
-        estado: pagaOnline ? 'pendiente' : 'confirmada',
+        // El partido viaja con la reserva: o quedan los dos, o ninguno. Si la
+        // reserva es online, el servidor lo publica recién cuando el pago se
+        // confirma, no antes.
+        partido: abrirPartido ? { nivel: 'Casual', formato } : null,
       });
 
       setOnline(pagaOnline);
@@ -117,24 +128,7 @@ export default function Reservar() {
         await WebBrowser.openBrowserAsync(url);
       }
 
-      if (abrirPartido) {
-        try { await crearPartido(
-          {
-            cancha: cancha.nombre,
-            zona: cancha.zona,
-            fecha,
-            hora: slot.hora_inicio,
-            formato: cancha.formatos[0] ?? '5v5',
-            nivel: 'Casual',
-            precio: Math.ceil(slot.precio / CUPOS_POR_FORMATO[cancha.formatos[0] ?? '5v5']),
-            descripcion: `Reserva en ${cancha.nombre}`,
-            foto_url: cancha.foto_portada,
-          },
-          { id: profile.id, nombre: profile.nombre ?? 'Vos' },
-        ); } catch { Alert.alert('Reserva confirmada', 'Tu reserva está confirmada, pero no pudimos publicar el partido. Podés crearlo desde Crear partido.'); }
-      }
-      setOnline(pagaOnline);
-      setReferencia(r.referencia);
+
     } catch (e) {
       Alert.alert('No se pudo completar', e instanceof Error ? e.message : 'Probá de nuevo.');
     } finally {

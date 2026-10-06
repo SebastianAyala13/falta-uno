@@ -27,6 +27,8 @@ const SIN_CONEXION = 'Necesitás conexión para gestionar canchas.';
 
 /** Referencia legible de reserva tipo FU-RXXXXX. */
 export const genRefReserva = () => 'FU-R' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2,12).toUpperCase();
+/** Referencia del alta de un establecimiento. Ver `crearEstablecimiento`. */
+export const genRefEstablecimiento = () => 'FU-E' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2,12).toUpperCase();
 
 // ---------------------------------------------------------------------------
 // Canchas (CRUD)
@@ -171,44 +173,69 @@ export async function slotsDelDia(canchaId: string, fecha: string): Promise<Slot
 // ---------------------------------------------------------------------------
 export interface NuevaReserva {
   canchaId: string;
-  jugadorId: string;
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  precio: number;
-  comision?: number;
-  medio?: string; // 'efectivo' | 'online'
-  estado?: 'pendiente' | 'confirmada';
-  partidoId?: string | null;
+  medio?: 'efectivo' | 'online';
+  /**
+   * Intención de publicar el partido junto con la reserva. Va en la misma
+   * transacción: o quedan las dos cosas, o no queda ninguna. Antes eran dos
+   * operaciones separadas y un fallo en la segunda dejaba la reserva huérfana.
+   */
+  partido?: { nivel: string; formato: string } | null;
+  /**
+   * Referencia de la operación. **Conservala entre reintentos**: la RPC es
+   * idempotente por referencia, así que reintentar con la misma devuelve la
+   * reserva que ya se creó en vez de crear otra. Una referencia nueva en un
+   * reintento sí duplica.
+   */
   referencia?: string;
 }
 
+/**
+ * Reserva un horario y, si se pide, publica el partido en la misma transacción.
+ *
+ * El precio, la comisión y el estado los decide el servidor a partir de la
+ * franja horaria: el cliente ya no los manda ni podría, porque la migración de
+ * fiabilidad le quitó el permiso de escribir esas columnas. Una reserva en
+ * efectivo nace confirmada; una online nace pendiente y solo la confirma el
+ * webhook de la pasarela.
+ */
 export async function crearReserva(data: NuevaReserva): Promise<Reserva> {
   if (!supabaseConfigurado) throw new Error(SIN_CONEXION);
   const referencia = data.referencia ?? genRefReserva();
-  const { data: fila, error } = await supabase
-    .from('reservas')
-    .insert({
-      cancha_id: data.canchaId,
-      jugador_id: data.jugadorId,
-      fecha: data.fecha,
-      hora_inicio: data.horaInicio,
-      hora_fin: data.horaFin,
-      precio: data.precio,
-      comision: data.comision ?? 0,
-      estado: data.estado ?? (data.medio === 'online' ? 'pendiente' : 'confirmada'),
-      medio: data.medio ?? 'efectivo',
-      partido_id: data.partidoId ?? null,
-      referencia,
-    } as never)
-    .select()
-    .single();
-  if (error) {
-    if (error.code === '23505' || error.code === '23P01') throw new Error('Ese horario ya está reservado, parce. Elegí otro.');
-    throw new Error('No pudimos reservar. Probá de nuevo.');
-  }
+  const { data: fila, error } = await supabase.rpc('reservar_con_partido', {
+    p_referencia: referencia,
+    p_cancha: data.canchaId,
+    p_fecha: data.fecha,
+    p_inicio: data.horaInicio,
+    p_fin: data.horaFin,
+    p_medio: data.medio ?? 'efectivo',
+    p_partido: data.partido ?? null,
+  } as never);
+  if (error) throw new Error(mensajeDeReserva(error));
   if (!fila) throw new Error('No pudimos confirmar el registro de la reserva.');
-  return fila as Reserva;
+  return fila as unknown as Reserva;
+}
+
+/**
+ * Traduce el fallo de la RPC a algo que el jugador entienda.
+ *
+ * Las validaciones del servidor llegan como mensaje de excepción, no como
+ * código, así que se reconocen por su texto. Lo que no reconocemos no se
+ * inventa: se devuelve un mensaje genérico en vez de mostrar un error de
+ * base de datos.
+ */
+function mensajeDeReserva(error: { code?: string; message?: string }): string {
+  const codigo = error.code ?? '';
+  if (codigo === '23505' || codigo === '23P01') return 'Ese horario ya está reservado, parce. Elegí otro.';
+  const m = (error.message ?? '').toLowerCase();
+  if (m.includes('horario no disponible')) return 'Ese horario no está disponible en esta cancha.';
+  if (m.includes('ya pasó') || m.includes('ya paso')) return 'Ese horario ya pasó. Elegí uno más adelante.';
+  if (m.includes('cancha no disponible')) return 'Esta cancha no está recibiendo reservas ahora mismo.';
+  if (m.includes('cuenta activa')) return 'Necesitás una cuenta activa para reservar.';
+  if (m.includes('referencia reutilizada')) return 'Esa reserva ya se había hecho con otros datos. Empezá de nuevo.';
+  return 'No pudimos reservar. Probá de nuevo.';
 }
 
 export async function misReservas(jugadorId: string): Promise<Reserva[]> {
@@ -231,13 +258,34 @@ export async function reservasDeCancha(canchaId: string, fecha?: string): Promis
   return (data ?? []) as Reserva[];
 }
 
+/**
+ * Cancela una reserva.
+ *
+ * Dos cuidados que no son obvios:
+ *
+ * 1. Pedimos `select()` y comprobamos que vuelva la fila. Un `update` que no
+ *    afecta ninguna fila —porque RLS la filtró, o porque esa reserva no es de
+ *    quien pide— **no devuelve error**. Sin esta comprobación la app diría
+ *    "cancelada" sin haber cancelado nada.
+ * 2. Una reserva online ya confirmada el servidor la rechaza a propósito:
+ *    liberar el horario sin devolver la plata deja el dinero en el aire. Eso no
+ *    es un fallo, es una regla, y el jugador merece que se lo digamos así.
+ */
 export async function cancelarReserva(reservaId: string): Promise<void> {
   if (!supabaseConfigurado) throw new Error(SIN_CONEXION);
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('reservas')
     .update({ estado: 'cancelada' } as never)
-    .eq('id', reservaId);
-  if (error) throw new Error('No pudimos cancelar la reserva.');
+    .eq('id', reservaId)
+    .select('id');
+  if (error) {
+    const m = error.message?.toLowerCase() ?? '';
+    if (m.includes('gestión del servidor') || m.includes('gestion del servidor')) {
+      throw new Error('Esta reserva ya está pagada: escribinos y la cancelamos nosotros, para devolverte la plata.');
+    }
+    throw new Error('No pudimos cancelar la reserva.');
+  }
+  if (!data?.length) throw new Error('No pudimos cancelar la reserva. Volvé a abrirla y probá de nuevo.');
 }
 
 // ---------------------------------------------------------------------------
@@ -348,44 +396,63 @@ export interface NuevoEstablecimiento {
  * establecimiento con la duración y el precio de cada cancha). Devuelve las canchas
  * creadas. No rompe nada: cada cancha sigue siendo una fila reservable normal.
  */
+/**
+ * Da de alta un establecimiento con todas sus canchas y sus horarios, en una
+ * sola transacción.
+ *
+ * Antes esto era un bucle: creaba una cancha, sus horarios, la siguiente... Si
+ * fallaba a mitad, el dueño quedaba con medio establecimiento cargado y sin
+ * forma de saber cuánto se había guardado. Ahora o queda todo, o no queda nada.
+ *
+ * Es idempotente por `referencia`: reintentar con la misma devuelve las canchas
+ * que ya se crearon en vez de duplicarlas, así que **la referencia hay que
+ * conservarla entre reintentos**. El dueño pasa a tener el rol de cancha dentro
+ * de la misma transacción.
+ */
 export async function crearEstablecimiento(
-  ownerId: string,
   data: NuevoEstablecimiento,
+  referencia: string,
 ): Promise<Cancha[]> {
   if (!supabaseConfigurado) throw new Error(SIN_CONEXION);
-  const creadas: Cancha[] = [];
-  for (const c of data.canchas) {
-    const cancha = await crearCancha(ownerId, {
-      nombre: c.nombre,
+  const { data: filas, error } = await supabase.rpc('crear_establecimiento', {
+    p_referencia: referencia,
+    p_datos: {
       direccion: data.direccion,
       zona: data.zona,
       ciudad: data.ciudad,
       lat: data.lat ?? null,
       lng: data.lng ?? null,
-      descripcion: data.descripcion ?? null,
       telefono: data.telefono ?? null,
-      formatos: [c.formato],
+      descripcion: data.descripcion ?? null,
       amenidades: data.amenidades,
-      fotos: c.fotos,
-      foto_portada: c.fotos[0] ?? null,
       legal_version: data.legal_version ?? null,
-      legal_aceptado_at: data.legal_aceptado_at ?? null,
-    });
-    if (data.horarios.length) {
-      await setDisponibilidad(
-        cancha.id,
-        data.horarios.map((h) => ({
-          dia_semana: h.dia_semana,
-          hora_apertura: h.hora_apertura,
-          hora_cierre: h.hora_cierre,
-          duracion_min: c.duracion,
-          precio: c.precio,
-        })),
-      );
-    }
-    creadas.push(cancha);
-  }
-  return creadas;
+      canchas: data.canchas.map((c) => ({
+        nombre: c.nombre,
+        formato: c.formato,
+        duracion: c.duracion,
+        precio: c.precio,
+        fotos: c.fotos,
+      })),
+      horarios: data.horarios.map((h) => ({
+        dia_semana: h.dia_semana,
+        hora_apertura: h.hora_apertura,
+        hora_cierre: h.hora_cierre,
+      })),
+    },
+  } as never);
+  if (error) throw new Error(mensajeDeAlta(error));
+  return (filas ?? []) as unknown as Cancha[];
+}
+
+/** Traduce el fallo del alta a algo que el dueño entienda. Ver `mensajeDeReserva`. */
+function mensajeDeAlta(error: { message?: string }): string {
+  const m = (error.message ?? '').toLowerCase();
+  if (m.includes('cuenta activa')) return 'Necesitás una cuenta activa para registrar un establecimiento.';
+  if (m.includes('dirección') || m.includes('direccion')) return 'Faltan la dirección, la zona o la aceptación de los términos.';
+  if (m.includes('cancha inválida') || m.includes('cancha invalida')) return 'Revisá el nombre y el formato de cada cancha.';
+  if (m.includes('cantidad inválida') || m.includes('cantidad invalida')) return 'Cargá entre 1 y 20 canchas, y hasta 21 franjas horarias.';
+  if (m.includes('referencia reutilizada')) return 'Este registro ya se había enviado con otros datos. Empezá de nuevo.';
+  return 'No pudimos registrar el establecimiento. Probá de nuevo.';
 }
 
 // ---------------------------------------------------------------------------

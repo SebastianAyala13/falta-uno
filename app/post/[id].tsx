@@ -72,11 +72,17 @@ export default function PostDetalle() {
     return (
       <Screen edges={['top']}>
         <ScreenHeader title="Publicación" titleSize="xl" borderBottom backClassName="mr-2" className="px-4 pb-3 pt-1" />
-        <ErrorBanner message={error} className="mx-6 mt-2" action={{label:"Reintentar",onPress:() => setRevision(r => r+1)}} />
         {cargando ? (
           <View style={{ padding: 16 }}>
             <CardListSkeleton rows={3} />
           </View>
+        ) : error ? (
+          <EmptyState
+            icon="cloud-offline-outline"
+            titulo="No pudimos cargar la publicación"
+            texto={error}
+            cta={{ label: 'Reintentar', icon: 'refresh', onPress: () => setRevision(r => r+1) }}
+          />
         ) : (
           <EmptyState
             icon="document-outline"

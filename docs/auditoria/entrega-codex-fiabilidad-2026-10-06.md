@@ -142,6 +142,8 @@ no crea objetos, modifica filas ni elimina registros. Requiere el esquema Falta 
 Un fallo de esquema/permisos es error, nunca informe vacío de éxito. Ejecutar con
 `psql -X -f scripts/preflight-fiabilidad.sql`, configurando la conexión por un medio
 seguro (p. ej. PGSERVICE/PGPASSFILE); no imprimir credenciales en la línea de comandos.
+Usar una conexión autorizada con lectura completa y bypass de RLS; una conexión
+de jugador filtraría registros y no sirve para el preflight administrativo.
 Cada fila entrega tipo, cantidad e ids. Cero en las cuatro filas es requisito de
 preflight, no autorización de despliegue. La transacción es consistente durante
 las cuatro comprobaciones; repetir justo antes del despliegue evita cambios entre
@@ -331,3 +333,129 @@ estados de carga/reintento y cursor por filtro. Tipos RPC en types/database.ts.
 
 Este commit entrega la capa servidor. Los historiales de la app NO quedan
 integrados hasta que Claude adapte esos archivos; no se editaron por el reparto.
+
+## Punto 6 — moderar-contenido lista para desplegar
+
+Código en supabase/functions/moderar-contenido/index.ts. Solicitud POST con JWT
+de usuario válido: getUser valida identidad y RPC is_admin valida rol. Body:
+{reporte: UUID, estado: 'resuelto'|'descartado', eliminar: boolean}. Rechaza JSON
+malformado/objetos inválidos con 400 y métodos distintos a POST con 405; OPTIONS
+sólo sirve CORS. Usuario inválido 401 y sin rol admin 403, sin acceso privilegiado.
+
+La función inventaría únicamente archivos propios identificados por
+archivos_reporte, los elimina por bucket en lotes de 100 y resuelve el reporte
+con el JWT del moderador, no con service_role: SQL vuelve a validar autorización.
+Si Storage falla, no resuelve. Si SQL falla después de limpiar archivos, retorna
+500, no éxito; la limpieza se puede repetir (el borrado físico y SQL no son una
+transacción distribuida). Logs genéricos: no se imprime el objeto de error del
+proveedor ni cabeceras/tokens/rutas privadas. Contenido externo/cachés no puede
+borrarse mediante Storage propio. Reintentar después de comprobar estado real.
+
+### Despliegue exacto, a cargo de Claude
+
+1. Integrar rama y validar staging Supabase real. Ensayar backup/restauración y
+   preflight. Aplicar toda la cadena en orden, incluidas las migraciones de media,
+   moderación completa y archivos_moderacion. Nunca instalar los stubs del test.
+2. Autenticar CLI mediante acceso seguro (no imprimir token). Definir PROJECT_REF
+   con el proyecto de staging verificado. Desde la raíz del repo ejecutar:
+
+```bash
+./node_modules/.bin/supabase functions deploy moderar-contenido --project-ref "$PROJECT_REF"
+```
+
+Mantener verify_jwt=true; NO usar --no-verify-jwt para moderación. El comando de
+conciliación es diferente porque autentica un secreto de tarea y no un usuario.
+No desplegar accidentalmente todas las funciones ni inferir proyecto por una
+vinculación local antigua. Repetir la misma operación con el ref de producción
+sólo tras ensayo y coordinación de cliente/migraciones aprobada por el responsable.
+
+3. Variables necesarias, inyectadas normalmente por Supabase Edge del proyecto:
+   SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY. No requiere secretos
+   Rapyd ni otro secreto custom. Verificar su disponibilidad sin mostrar valores;
+   service_role sólo vive en servidor y nunca entra en EXPO_PUBLIC ni navegador.
+4. Prueba en staging con admin real, jugador real y JWT inválido: reportar una
+   imagen propia de usuario de pruebas, resolver con eliminar=true y comprobar
+   200 {ok:true}, archivo inaccesible y reporte resuelto. Jugador debe recibir 403,
+   JWT inválido 401. Simular fallo Storage: reporte conserva estado pendiente.
+   Descartar sin eliminación no debe usar Storage. Verificar luego HTTP/RLS reales;
+   los tests locales sólo simulan las fronteras de Auth y Storage.
+5. Publicar cliente después de tener función/migraciones operativas; confirmar que
+   lib/admin.ts resolverReporte llama functions.invoke('moderar-contenido'), valida
+   error/data.ok y muestra el fallo. Revalidar por navegador y Android/iOS.
+
+Pruebas unitarias extendidas: JWT ausente/vencido, no admin, lookup de rol fallido,
+GET/OPTIONS, JSON inválido, UUID/estado/boolean inválidos, descartar sin Storage,
+205 archivos media + un archivo canchas en lotes 100/100/5/1 y fallo final SQL.
+No se desplegó ninguna función ni se accedió al Supabase de producción.
+
+## Referencias exactas de cambios de cliente requeridos
+
+Líneas de la rama codex/fiabilidad (pueden cambiar al integrar con main):
+
+| Archivo / línea | Comportamiento esperado por Claude |
+|---|---|
+| lib/canchas.ts:351 | crearEstablecimiento → RPC crear_establecimiento; referencia estable, payload idéntico al reintentar |
+| app/cancha/registrar.tsx:192 | Conservar referencia de alta mientras se reintenta; no duplicar intentos por nueva referencia |
+| lib/canchas.ts:186 | crearReserva → reservar_con_partido; quitar INSERT con partido_id incluso si null; usar respuesta server |
+| app/cancha/[id]/reservar.tsx:97 | Solicitar reserva e intención opcional de partido en una RPC; conservar referencia y comprobante |
+| app/cancha/[id]/reservar.tsx:121 | Quitar crearPartido separado tras cerrar checkout; publicación online sólo tras webhook |
+| types/database.ts:95 | Reserva: caduca_at, estado_pago y partido_solicitado derivados del servidor |
+| types/database.ts:273 | EstadoPago: incluir caducado, reembolso_pendiente y reembolsado |
+| types/database.ts:415 | Registrar nuevas firmas RPC, Args/Returns y cursor de historial |
+| app/checkout/[id].tsx:228 | Representar pendiente/vencido/devolución; no tratar retorno del navegador como aprobación |
+| app/mis-pagos.tsx:34 | Etiquetas/seguimiento de nuevos estados financieros y paginación |
+| app/mis-reservas.tsx:116 | Mostrar caducidad/estado_pago y consultar confirmación real; paginación |
+| lib/payments.ts:54 | Checkout de reserva debe manejar vencimiento y leer estado real; sin escrituras de aprobación |
+| lib/store.ts:210 | Hidratación inicial acotada; sustituir lecturas completas de pagos/partidos/inscripciones/calificaciones/bloqueos por primera página y carga bajo demanda |
+| lib/canchas.ts:84 | misCanchas paginado; no limitar selección de canchas a primera página silenciosamente |
+| lib/canchas.ts:214 | misReservas con cursor y estados de carga/reintento |
+| lib/canchas.ts:225 | reservasDeCancha con ámbito cancha y p_fecha para agenda; no presentar una página como agenda completa |
+| lib/canchas.ts:252 | movimientos paginados; saldo sigue en saldo_cancha, no suma de página |
+| lib/canchas.ts:263 | retirosDeCancha paginados por solicitado_at,id |
+| lib/admin.ts:55 | listarUsuarios con cursor; búsqueda servidor por nombre (email/ciudad requieren extensión deliberada) |
+| lib/admin.ts:71 | listarCanchasAdmin con ámbito admin |
+| lib/admin.ts:78 | listarReservasAdmin con estado/cursor |
+| lib/admin.ts:87 | listarPagosAdmin con estado/cursor |
+| lib/admin.ts:96 | retirosTodos con cursor |
+| lib/admin.ts:107 | reportesAdmin con cursor |
+| lib/admin.ts:118 | movimientosCancha con ámbito admin/cancha y cursor |
+| lib/admin.ts:173 | resolverReporte mantiene invoke moderar-contenido y exige data.ok |
+| app/admin/** | Cargar siguiente página; reiniciar cursor al cambiar filtros; métricas usan admin_metricas |
+| app/cancha/finanzas.tsx y app/cancha/agenda.tsx | Historiales bajo demanda; saldo exacto SQL independiente; día completo de agenda |
+
+No se han modificado estos archivos después de la tarea 0. La decisión de
+unificar lib/alert.ts/AlertProvider con lib/dialogo.ts/Dialogo queda a Claude.
+
+## Commits publicados por punto
+
+| Punto | Commit | Archivos |
+|---|---|---|
+| Tarea 0 | cb14b02 | 120 archivos: lista completa al principio |
+| 1 | ec4882a | scripts/preflight-fiabilidad.sql, tests/database.py, este informe |
+| 2 | d8e81f0 | 20261006150000_reservas_permisos_negativos.sql, tests/database.py, este informe |
+| 3 | 958d045 | 20261006160000_caducidad_conciliacion.sql; funciones conciliar-pagos, rapyd-crear-checkout, rapyd-webhook; tests/database.py, tests/webhook.test.cjs, tests/reconciliation.test.cjs; este informe |
+| 4 | 2765bcc | 20261006170000_operaciones_transaccionales.sql, tests/database.py, este informe |
+| 5 | 7ac7d23 | 20261006180000_historiales_cursor.sql, tests/database.py, planes-historiales-2026-10-06.md, este informe |
+| 6 | Commit final de esta entrega | función moderar-contenido, tests/moderation-edge.test.cjs, este informe |
+
+Todas las migraciones citadas están bajo supabase/migrations/. Todas las funciones
+citadas están bajo supabase/functions/<nombre>/index.ts. Cada punto pasó sus
+controles antes de publicarse; fallos de desarrollo se corrigieron y se repitió
+SQL antes del commit. El punto 3 amplió a 47 pruebas unitarias; el 6 a 52.
+
+Estado final verificado: 52 pruebas unitarias, 17 grupos funcionales SQL, aplicación
+de todas las migraciones y dos comprobaciones adicionales de preflight/esquema
+antiguo, tipos/lint/diff: todos pasaron en la comprobación final.
+Pruebas aisladas, no equivalen a Auth/Storage/Realtime/pasarela real ni carga.
+
+Pendiente de Claude: integrar cliente, ensayar y desplegar backend/funciones/tareas,
+probar Rapyd sandbox antes de activar devoluciones/pagos, publicar legales del
+segundo repo, medir carga y compilar/probar binarios de tiendas. Mantener main
+sin estas migraciones hasta preparar promoción coordinada: el workflow actual
+las aplica directamente a producción. No ejecutar merge/push a main a ciegas.
+
+La rama remota main avanzó por el trabajo paralelo de Claude durante esta tarea;
+no se hizo push a main, rebase sobre su trabajo ni modificación de sus archivos
+tras la tarea 0. Integrar en rama de ensayo y resolver conflictos explícitamente.
+Los planes SQL publicados corresponden a la prueba validada del punto 5; la suite
+final volvió a producir planes válidos sin reemplazar esa evidencia histórica.

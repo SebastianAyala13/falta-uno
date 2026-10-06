@@ -13,7 +13,10 @@ Deno.serve(async req => {
     if (authError || !user) return json({error:'No autorizado'},401);
     const {data:admin,error:roleError}=await userClient.rpc('is_admin');
     if (roleError || !admin) return json({error:'No autorizado'},403);
-    const {reporte,estado,eliminar}=await req.json();
+    let body;
+    try { body=await req.json(); } catch { return json({error:'Solicitud inválida'},400); }
+    if (!body || typeof body!=='object' || Array.isArray(body)) return json({error:'Solicitud inválida'},400);
+    const {reporte,estado,eliminar}=body;
     if (typeof reporte!=='string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reporte)
       || !['resuelto','descartado'].includes(estado) || typeof eliminar!=='boolean') return json({error:'Solicitud inválida'},400);
     if (eliminar) {
@@ -34,7 +37,7 @@ Deno.serve(async req => {
     if (error) throw error;
     return json({ok:true});
   } catch (error) {
-    console.error('moderar-contenido:',error);
+    console.error('moderar-contenido: operación incompleta');
     return json({error:'No pudimos completar la moderación. Reintentá.'},500);
   }
 });

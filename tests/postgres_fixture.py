@@ -8,10 +8,13 @@ import uuid
 
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 class Postgres:
-    def __init__(self):
+    def __init__(self,capacity=False):
         self.container='faltauno-isolated-'+uuid.uuid4().hex[:10]
+        self.capacity=capacity
     def __enter__(self):
-        subprocess.run(['docker','run','--rm','--label','faltauno.isolated-test=true','--name',self.container,'-e','POSTGRES_HOST_AUTH_METHOD=trust','-d','postgres:17-alpine'],check=True,capture_output=True)
+        extra=['-p','127.0.0.1::5432'] if self.capacity else []
+        postgres_options=['postgres','-c','max_connections=650','-c','shared_buffers=128MB','-c','statement_timeout=15000'] if self.capacity else []
+        subprocess.run(['docker','run','--rm','--label','faltauno.isolated-test=true','--name',self.container,'-e','POSTGRES_HOST_AUTH_METHOD=trust','-d']+extra+['postgres:17-alpine']+postgres_options,check=True,capture_output=True)
         for _ in range(100):
             if subprocess.run(['docker','exec',self.container,'pg_isready','-h','127.0.0.1','-U','postgres'],capture_output=True).returncode==0: break
             time.sleep(.1)

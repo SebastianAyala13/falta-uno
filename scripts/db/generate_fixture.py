@@ -17,7 +17,7 @@ def generate(db,courts=40,players=1000,reservations=15000,matches=2000,payments=
       select md5('fixture-user-'||n)::uuid,'Jugador fixture '||n,'fixture-'||n||'@example.test',case when n%2=0 then 'Pereira' else 'Dosquebradas' end,'Portero','Casual',
         case when n={players} then array['admin','jugador'] when n<={courts} then array['cancha','jugador'] else array['jugador'] end,n%17=0 and n<>{players},now()-(n%365)*interval '1 day' from generate_series(1,{players}) n;
     insert into public.canchas(id,owner_id,nombre,direccion,zona,ciudad,formatos,estado,oculto,created_at)
-      select md5('fixture-court-'||n)::uuid,md5('fixture-user-'||n)::uuid,'Cancha fixture '||n,'Dirección ficticia '||n,'Centro','Pereira',array['5v5','7v7'],case when n%7=0 then 'pausada' else 'activa' end,n%13=0,now()-(n%365)*interval '1 day' from generate_series(1,{courts}) n;
+      select md5('fixture-court-'||n)::uuid,md5('fixture-user-'||n)::uuid,'Cancha fixture '||n,'Dirección ficticia '||n,'Centro','Pereira',array['5v5','7v7'],case when n%7=0 then 'pausada' else 'activa' end,false,now()-(n%365)*interval '1 day' from generate_series(1,{courts}) n;
     insert into public.cancha_disponibilidad(cancha_id,dia_semana,hora_apertura,hora_cierre,duracion_min,precio)
       select id,d,'08:00','23:00',60,50000 from public.canchas cross join generate_series(0,6) d;
     insert into public.reservas(id,cancha_id,jugador_id,fecha,hora_inicio,hora_fin,precio,comision,medio,estado,referencia,created_at)
@@ -28,6 +28,7 @@ def generate(db,courts=40,players=1000,reservations=15000,matches=2000,payments=
       from generate_series(1,{reservations}) n;
     update public.reservas set estado_pago=case estado when 'cancelada' then 'caducado' when 'pendiente' then 'pendiente' else 'confirmado' end,
       caduca_at=case when estado in ('cancelada','pendiente') then now()-interval '1 day' else created_at+interval '15 minutes' end where medio='online';
+    update public.canchas set oculto=true where id in (select md5('fixture-court-'||n)::uuid from generate_series(1,{courts}) n where n%13=0);
     insert into public.partidos(id,organizador_id,cancha,zona,fecha,hora,formato,nivel,precio,cupos_totales,created_at)
       select md5('fixture-match-'||n)::uuid,md5('fixture-user-'||(((n-1)%{courts})+1))::uuid,'Cancha fixture '||(((n-1)%{courts})+1),'Centro',date '2026-10-06'+(n%365)-180,'20:00','5v5','Casual',10000,10,now()-(n%8760)*interval '1 hour' from generate_series(1,{matches}) n;
     insert into public.partido_jugadores(partido_id,jugador_id,posicion,confirmado)

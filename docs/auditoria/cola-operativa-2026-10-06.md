@@ -90,3 +90,75 @@ filas se insertan como backend confiable para generar volumen y estados históri
 No simula un recorrido de producto ni constituye evidencia de la pasarela.
 No requiere cambio de cliente. La carga usa >=500 actores activos de este dataset;
 si se solicitan menos jugadores, el benchmark debe rechazar ese escalón.
+
+## 3. Capacidad: POSTGRESQL LOCAL, NO USUARIOS SOPORTADOS NI SLA
+
+`python3 tests/capacity_local.py` crea PostgreSQL 17 aislado con max_connections
+650 y shared_buffers 128 MB; no cambia configuración de Supabase. Dataset default
+40 canchas/1.000 jugadores/15.000 reservas/2.000 partidos/50.000 pagos/10.000 posts.
+500 actores activos, identidad JWT emulada vía GUC, SET LOCAL ROLE authenticated;
+se usan libpq y sockets reales, no llamadas Python serializadas de SQL.
+No hay 500 usuarios Auth reales ni sesiones móviles. Todas las conexiones nuevas
+se sincronizan antes de empezar cada escalón. Cada actor ejecuta siete operaciones:
+feed, búsqueda, historial propio, agenda de dueño, lista admin, inscripción y
+reserva. Dueño/admin son identidades de prueba separadas; no se concede admin al
+actor jugador. No es una mezcla de tráfico inferida de usuarios reales.
+
+Se adjuntan EXPLAIN ANALYZE BUFFERS con RLS de consultas equivalentes de feed,
+búsqueda de partidos/canchas, historial largo, agenda por día y listas admin de
+pagos/reservas/reportes. Feed RPC SECURITY DEFINER se mide también como RPC real:
+su plan exterior no revela el interior; no se afirma que RLS filtre dentro de esa
+función, que deriva explícitamente el filtro de bloqueos. El rol invocante de la
+medición sigue authenticated. Otros planes corresponden a filtros/orden usados
+por el cliente/servidor; no se desactiva RLS para acelerar medidas.
+
+Primera corrida: capacidad-postgres-local-primer-ensayo-2026-10-06.json.
+
+| Sesiones SQL | Solicitudes | p50 ms | p95 ms | p99 ms | Error inesperado | Rechazos de negocio |
+|---|---:|---:|---:|---:|---:|---:|
+| 50 | 350 | 133,521 | 425,878 | 615,778 | 0 % | 35 |
+| 100 | 700 | 199,864 | 898,293 | 1.443,881 | 0 % | 85 |
+| 500 | 3.500 | 675,404 | 4.482,444 | 6.566,945 | 0 % | 805 |
+
+Segunda corrida instrumentada: capacidad-postgres-local-2026-10-06.json.
+Se agregó muestreo de espera/CPU/memoria; hubo controles de regresión en paralelo
+en el mismo runner durante parte del ensayo. No es una comparación controlada
+entre optimizaciones; no elegir sólo el número más favorable. A 50/100/500:
+p95 457,699 / 1.362,713 / 7.951,877 ms; p99 552,965 / 2.019,99 / 10.724,613 ms;
+p50 117,209 / 284,745 / 649,378 ms. Error inesperado 0 % y mismas cantidades de
+rechazos de negocio. Todas las conexiones fueron admitidas (50/100/500); latencia
+de conexión se informa por separado en JSON. Los percentiles incluyen éxito y
+rechazo esperado, más BEGIN/SET ROLE/GUC/COMMIT y transporte local.
+
+Contención provocada deliberadamente: todos compiten por 15 turnos de una cancha
+y 20 partidos con 9 plazas libres cada uno. En 500 sesiones se rechazan 485
+reservas y 320 inscripciones por regla de negocio; no son caídas del servidor.
+En cada escalón exactamente 15 turnos se reservaron y ningún partido sobrepasó
+cupos_totales. Los errores SQL inesperados y sus SQLSTATE se calculan aparte.
+No sustituye carrera de confirmación/caducidad, ya cubierta por regresión SQL.
+
+Cuello de botella observado: feed es el mayor p95 (hasta varios segundos),
+y al escalar hay CPU próxima a cuatro núcleos y contención de locks interna:
+picos de 405 esperas LWLock:LockManager, 191 BufferContent, 189 Lock:tuple y
+62 Lock:transactionid. Memoria muestreada del contenedor alcanzó 1,529 GiB.
+Es saturación/contención bajo demasiados backends simultáneos y escrituras sobre
+las mismas filas; no sólo una consulta sin índice. Los JSON contienen tiempos,
+planes, buffers, contadores por operación y muestras; no se concluye causalidad
+única de CPU a partir de una muestra. Runner: cuota 4 CPU, límite memoria 32 GiB;
+Docker no tuvo un límite adicional de CPU/memoria configurado.
+
+Límites: dos ráfagas cortas, etapas secuenciales con caché calentándose, concurrencia
+SQL elevada artificialmente, muestreo agrega overhead, sin ensayo sostenido,
+sin Auth/Storage/Realtime HTTP, latencia móvil, CDN, SMTP ni pasarela. PostgreSQL
+local con 650 conexiones no representa el pool PostgREST/plan de Supabase.
+No se puede convertir esto a usuarios soportados, coste mensual ni SLA.
+
+Próximo paso real: carga en staging vía Data API/Auth/Realtime con pool/plan real,
+medir recursos y egress allí. No subir max_connections a 650 en producción por
+este ensayo. Reducir consultas repetidas/coste de feed e investigar sus planes
+internos, y acotar/poolizar concurrencia en servidor; no quitar locks financieros.
+El generador se ajustó para crear reservas históricas antes de ocultar canchas,
+porque el trigger (correctamente) no permite sembrar reservas en una cancha ya
+retirada. Default de 40 canchas fue generado y medido exitosamente después del ajuste.
+No se modificó cliente; lib/store.ts:216/222 y lib/canchas.ts:110 quedan como
+referencias para controlar frecuencia/caché y consultas del feed/búsqueda con Claude.

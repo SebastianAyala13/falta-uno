@@ -1,0 +1,30 @@
+{
+  "parameters": {
+    "courts": 12,
+    "players": 600,
+    "reservations": 2400,
+    "matches": 300,
+    "payments": 12000,
+    "posts": 1200
+  },
+  "counts": {
+    "pagos": 12000,
+    "posts": 1200,
+    "canchas": 12,
+    "partidos": 300,
+    "reportes": 200,
+    "reservas": 2400,
+    "caducados": 1333,
+    "jugadores": 600,
+    "turnos_08": 168,
+    "turnos_23": 156,
+    "suspendidos": 35,
+    "retiros_pendientes": 12
+  },
+  "seconds": 6.475,
+  "anchor_date": "2026-10-06",
+  "fake_only": true,
+  "preflight_zero": true,
+  "rejects_nonempty": true,
+  "social_counters_exact": true
+}

@@ -258,13 +258,34 @@ export async function reservasDeCancha(canchaId: string, fecha?: string): Promis
   return (data ?? []) as Reserva[];
 }
 
+/**
+ * Cancela una reserva.
+ *
+ * Dos cuidados que no son obvios:
+ *
+ * 1. Pedimos `select()` y comprobamos que vuelva la fila. Un `update` que no
+ *    afecta ninguna fila —porque RLS la filtró, o porque esa reserva no es de
+ *    quien pide— **no devuelve error**. Sin esta comprobación la app diría
+ *    "cancelada" sin haber cancelado nada.
+ * 2. Una reserva online ya confirmada el servidor la rechaza a propósito:
+ *    liberar el horario sin devolver la plata deja el dinero en el aire. Eso no
+ *    es un fallo, es una regla, y el jugador merece que se lo digamos así.
+ */
 export async function cancelarReserva(reservaId: string): Promise<void> {
   if (!supabaseConfigurado) throw new Error(SIN_CONEXION);
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('reservas')
     .update({ estado: 'cancelada' } as never)
-    .eq('id', reservaId);
-  if (error) throw new Error('No pudimos cancelar la reserva.');
+    .eq('id', reservaId)
+    .select('id');
+  if (error) {
+    const m = error.message?.toLowerCase() ?? '';
+    if (m.includes('gestión del servidor') || m.includes('gestion del servidor')) {
+      throw new Error('Esta reserva ya está pagada: escribinos y la cancelamos nosotros, para devolverte la plata.');
+    }
+    throw new Error('No pudimos cancelar la reserva.');
+  }
+  if (!data?.length) throw new Error('No pudimos cancelar la reserva. Volvé a abrirla y probá de nuevo.');
 }
 
 // ---------------------------------------------------------------------------

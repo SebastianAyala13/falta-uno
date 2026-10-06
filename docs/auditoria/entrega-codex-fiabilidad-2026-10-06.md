@@ -286,3 +286,48 @@ nuevos en types/database.ts. No se han editado esos archivos, conforme al repart
 Preflight adicional antes de esta migración:
 `select partido_id,array_agg(id) from public.reservas where partido_id is not null group by partido_id having count(*)>1;`
 La unicidad falla ante conflictos existentes; no se borran filas.
+
+## Punto 5 — historiales con cursor
+
+`historial_paginado` es SECURITY INVOKER: conserva RLS y añade ámbito propio,
+cancha del dueño o admin verificado, sin aceptar usuario objetivo del cliente.
+Tipos permitidos: pagos, reservas, movimientos, retiros, canchas, usuarios,
+reportes, inscripciones, partidos, calificaciones y bloqueos. Reportes propios
+siguen sujetos a su política actual (sólo lectura admin); esta RPC no amplía RLS.
+
+Entrada: p_tipo; p_ambito ('propio' por defecto/'cancha'/'admin'); p_cancha para
+historial del establecimiento; p_antes y p_antes_id juntos; p_limite 1–100
+(default 50); p_estado/p_fecha según tabla; p_busqueda literal de nombre para
+usuarios/canchas (escapa comodines). Salida: filas, hay_mas, cursor {fecha,id}.
+Pasar cursor.fecha como p_antes y cursor.id como p_antes_id. Orden descendente
+por created_at e id; retiros usa solicitado_at e id. No usa OFFSET para navegar.
+La búsqueda de nombre de esta RPC no incluye email; conservar o adaptar el
+buscador admin deliberadamente, sin descargar perfiles completos para filtrar.
+
+Consulta limit+1 para saber si hay más y devuelve máximo p_limite filas en JSON,
+independiente del límite de filas de Data API. Índices para filtros/orden tanto
+personales/dueño como administrativos y estados. Saldo/contadores continúan en
+SQL exacto. El cursor estable evita desplazamiento por nuevas inserciones;
+no representa una instantánea inmutable si alguien cambia/borrar registros entre
+páginas. Una lista refrescada reinicia cursor; no mezclar cursores de otros filtros.
+
+Prueba con 20.000 pagos, 1.200 propios y timestamps empatados: 12 páginas de 100
+sin duplicados/faltantes/filas ajenas. Prueba acceso admin/propio/dueño, cursores
+incompletos/límites inválidos/tipo malicioso y ledger de más de 2.000 movimientos.
+EXPLAIN ANALYZE/BUFFERS con RLS activa se adjunta en
+planes-historiales-2026-10-06.md (primera página, cursor profundo, admin por estado,
+movimientos de cancha). Son medidas PostgreSQL local, no carga ni SLA real.
+
+Requiere cambio de cliente (Claude): lib/admin.ts listas de usuarios/canchas/
+reservas/pagos/retiros/reportes/movimientos; lib/canchas.ts misCanchas,
+misReservas,reservasDeCancha,movimientos,retirosDeCancha; lib/store.ts hidratar
+no debe recorrer todas las páginas privadas al iniciar. Sustituir por primera
+página y carga bajo demanda. Historial por created_at cambia el orden previo de
+reservas por fecha de juego: si agenda filtra por día usar p_fecha y ordenar su
+página visible por hora, evitando interpretar una página como toda la agenda.
+Pantallas app/admin/**, app/mis-pagos.tsx, app/mis-reservas.tsx,
+app/cancha/finanzas.tsx y app/cancha/agenda.tsx requieren controles de paginación,
+estados de carga/reintento y cursor por filtro. Tipos RPC en types/database.ts.
+
+Este commit entrega la capa servidor. Los historiales de la app NO quedan
+integrados hasta que Claude adapte esos archivos; no se editaron por el reparto.

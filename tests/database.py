@@ -419,6 +419,63 @@ def main():
             assert scalar(f"select count(*) from public.movimientos_cancha where reserva_id='{confirmed['id']}'")=='2'
             sql(f"update public.reservas set partido_id='{rows[0]['partido_id']}' where id='{recovered['id']}'",user=uid(2),ok=False)
         check("atomic establishment and reservation-party retry/failure rollback; online publication waits for actual confirmation",atomic_establishment_and_reservation)
+
+        def paginated_histories_and_plans():
+            # 20,000 rows and many equal timestamps, not an empty EXPLAIN fixture.
+            p=partido(30)
+            sql(f"insert into public.pagos(partido_id,jugador_id,medio,monto,comision,estado,referencia,created_at) select '{p}',case when n<=1200 then '{uid(50)}'::uuid else '{uid(6)}'::uuid end,'efectivo',10000,0,'pendiente','HISTORY-'||n,'2026-10-01T12:00:00Z'::timestamptz+(n/10)*interval '1 second' from generate_series(1,20000) n; analyze public.pagos;")
+            seen=set();cursor=None;pages=0
+            while True:
+                params=f"p_tipo=>'pagos',p_limite=>100"+(f",p_antes=>'{cursor['fecha']}',p_antes_id=>'{cursor['id']}'" if cursor else '')
+                result=json.loads(scalar(f"select public.historial_paginado({params})",user=uid(50)))
+                ids={r['id'] for r in result['filas']}
+                assert not seen & ids and all(r['jugador_id']==uid(50) for r in result['filas'])
+                seen|=ids;pages+=1
+                if not result['hay_mas']: break
+                cursor=result['cursor'];assert cursor
+            assert len(seen)==1200 and pages==12
+            first=json.loads(scalar("select public.historial_paginado('pagos',p_limite=>50)",user=uid(53)))
+            assert first['filas']==[] # admin's 'propio' does not become a global list
+            admin=json.loads(scalar("select public.historial_paginado('pagos','admin',p_limite=>100,p_estado=>'pendiente')",user=uid(53)))
+            assert len(admin['filas'])==100 and admin['hay_mas']
+            sql("select public.historial_paginado('pagos','admin')",user=uid(50),ok=False)
+            sql("select public.historial_paginado('pagos',p_limite=>101)",user=uid(50),ok=False)
+            sql(f"select public.historial_paginado('pagos',p_antes_id=>'{uid(1)}')",user=uid(50),ok=False)
+            sql("select public.historial_paginado('pagos; drop table pagos')",user=uid(50),ok=False)
+            sql(f"select public.historial_paginado('reservas','cancha','{uid(300)}')",user=uid(50),ok=False)
+            assert json.loads(scalar(f"select public.historial_paginado('reservas','cancha','{uid(300)}')",user=uid(1)))['filas']
+            users=json.loads(scalar("select public.historial_paginado('usuarios','admin',p_busqueda=>'Jugador 5')",user=uid(53)))
+            assert users['filas'] and all('Jugador 5' in r['nombre'] for r in users['filas'])
+            # RLS-aware plans of the actual RPC queries, including a deep cursor.
+            pivot=scalar(f"select created_at||'|'||id from public.pagos where jugador_id='{uid(50)}' order by created_at desc,id desc offset 900 limit 1").split('|')
+            queries={
+              'private_first':f"select * from public.pagos where jugador_id='{uid(50)}' order by created_at desc,id desc limit 101",
+              'private_deep':f"select * from public.pagos where jugador_id='{uid(50)}' and (created_at,id)<('{pivot[0]}','{pivot[1]}') order by created_at desc,id desc limit 101",
+              'admin_state':"select * from public.pagos where estado='pendiente' order by created_at desc,id desc limit 101"
+            }
+            plans=[]
+            for label,query in queries.items():
+                owner=uid(53) if label=='admin_state' else uid(50)
+                raw=scalar('explain (analyze,buffers,format json) '+query,user=owner)
+                plan=json.loads(raw)[0]
+                def nodes(node):
+                    return [node]+[n for child in node.get('Plans',[]) for n in nodes(child)]
+                assert any('Index' in node['Node Type'] for node in nodes(plan['Plan'])),raw
+                plans.append('### '+label+'\n\n```json\n'+json.dumps(plan,indent=2)+'\n```\n')
+            metrics=json.loads(scalar("select public.admin_metricas()",user=uid(53)))
+            assert metrics['usuarios']==int(scalar('select count(*) from public.profiles'))
+            assert metrics['gmv']==int(scalar("select coalesce(sum(monto),0) from public.pagos where estado='aprobado'"))
+            # Large ledger saldo stays exact irrespective of API page size.
+            sql(f"insert into public.movimientos_cancha(cancha_id,tipo,monto) select '{uid(300)}','ajuste',1 from generate_series(1,2000); analyze public.movimientos_cancha")
+            expected=int(scalar(f"select sum(monto) from public.movimientos_cancha where cancha_id='{uid(300)}'"))
+            assert int(scalar(f"select public.saldo_cancha('{uid(300)}')",user=uid(1)))==expected
+            ledger=json.loads(scalar(f"select public.historial_paginado('movimientos','cancha','{uid(300)}',p_limite=>50)",user=uid(1)))
+            assert len(ledger['filas'])==50 and ledger['hay_mas']
+            ledger_query=f"select * from public.movimientos_cancha where cancha_id='{uid(300)}' order by created_at desc,id desc limit 51"
+            raw=scalar('explain (analyze,buffers,format json) '+ledger_query,user=uid(1));plans.append('### court_ledger\n\n```json\n'+json.dumps(json.loads(raw)[0],indent=2)+'\n```\n')
+            output=ROOT/'docs/auditoria/planes-historiales-2026-10-06.md'
+            output.write_text('# EXPLAIN ANALYZE de historiales\n\nPostgreSQL 17 aislado, 20.000 pagos (1.200 del usuario de pruebas),\n2.000 movimientos nuevos, RLS authenticated/JWT simulado activa.\nConsultas con los filtros/orden/cursor ejecutados por historial_paginado.\nTiempos locales: no constituyen SLA de producción. Regenerado por tests/database.py.\n\n'+ '\n'.join(plans))
+        check("keyset private/admin/owner histories exceed 1000 rows, reject invalid access and use indexed EXPLAIN on representative data",paginated_histories_and_plans)
         print("All database regression groups passed", flush=True)
     finally:
         subprocess.run(["docker", "stop", CONTAINER], capture_output=True, check=False)

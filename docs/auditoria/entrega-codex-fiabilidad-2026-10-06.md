@@ -182,3 +182,65 @@ supabase/migrations/20261006150000_reservas_permisos_negativos.sql.
 No cambio de cliente necesario para el uso normal: reservas online ya envían
 pendiente; efectivo conserva su flujo. No se verificó producción: el esquema
 antiguo se reprodujo exclusivamente en el contenedor de prueba.
+
+## Punto 3 — caducidad y conciliación
+
+Un pendiente online vencía nunca y ocupaba indefinidamente. Ahora el servidor
+fija un máximo de 15 minutos (o inicio del servicio si es anterior), ignorando
+caducidad enviada por el cliente. Efectivo no caduca como pago online.
+`caducar_pagos_pendientes(100)` es una RPC sólo service_role, invocable y con
+registro de cada ejecución en ejecuciones_caducidad. Libera membresías no
+confirmadas y cancela reservas pendientes bajo lock, sin tocar pagos aprobados.
+Un consumidor debe programarla cada minuto en staging/producción: la migración
+no instala cron ni ejecuta tareas en producción por sí misma.
+
+La confirmación comprobada usa el mismo orden de locks. Vencido/cancelado,
+servicio iniciado o retirado de disponibilidad: no resucita inscripción/reserva,
+no registra ingreso en cancha, crea una deuda única de devolución en
+conciliaciones_pago. Incluso antes de correr la tarea, el webhook comprueba
+la fecha límite. Estados pagos: caducado, reembolso_pendiente, reembolsado;
+reserva mantiene estado cancelada y expone estado_pago para el seguimiento.
+El webhook conserva ID de pago del proveedor. Un duplicado aprobado no vuelve
+a insertar una membresía eliminada. Checkout no admite pendientes vencidos y
+envía referencia estable en el header idempotency del proveedor; su eficacia
+real debe verificarse en sandbox (la base no puede garantizarla por sí sola).
+
+`conciliar-pagos` autentica un secreto exclusivo de tarea, caduca y procesa una
+devolución por invocación. Devoluciones desactivadas salvo
+RAPYD_REEMBOLSOS_ACTIVOS=true. POST /v1/refunds usa payment y amount; luego GET
+por ID para pendientes. Sólo COM con ID/pago/importe/COP concordantes acredita
+reembolsado. PEN/NEW permanece pendiente. Timeout, respuesta inconsistente o
+lease de ejecución vencida queda revision_manual: un operador debe consultar
+Rapyd y corregir la cola mediante backend confiable antes de repetir. Nunca
+se reintenta un POST ambiguo automáticamente. El plazo de tarea es dos minutos;
+HTTP tiene timeout de 20 s. Leases/tokens evitan dos consumidores del mismo caso.
+
+Esto implementa devolución y trazabilidad, pero NO certifica respuesta real de
+Rapyd ni garantiza que todas las deudas se liquiden sin operación humana. Antes
+de habilitar: validar contrato/status/refund e idempotencia en sandbox, disponer
+fondos, configurar tarea/alertas y responsable de revision_manual. Si no, mantener
+pagos online desactivados. No se aplicó nada a producción.
+
+Despliegue por Claude, después de migraciones y ensayo:
+`supabase functions deploy conciliar-pagos --project-ref "$PROJECT_REF" --no-verify-jwt`.
+La función verifica CONCILIACION_JOB_SECRET (aleatorio y secreto, nunca EXPO_PUBLIC).
+JWT de usuario no autoriza esta tarea. Configurar secreto por panel/Vault sin
+imprimirlo, y scheduler que envíe Authorization: Bearer <secreto-de-tarea>.
+SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY son inyectadas por Supabase. Secretos Rapyd:
+RAPYD_ACCESS_KEY, RAPYD_SECRET_KEY, RAPYD_BASE_URL (sandbox por defecto), y
+RAPYD_REEMBOLSOS_ACTIVOS. Actualizar también rapyd-webhook y rapyd-crear-checkout.
+Alertar si falta ejecución reciente, hay pendientes vencidos o deudas sin cerrar;
+SELECT administrativos de las dos tablas son privados. Repetir lotes si hay backlog.
+
+Pruebas: vencimiento/confirmación concurrentes en partido y reserva, nueva persona
+ocupando el cupo liberado, webhook tardío repetido, sin ingreso ficticio, consumidores
+paralelos, token inválido y cierre de deuda. Dobles de frontera comprueban secreto,
+devolución pendiente/completada, GET, timeout y discordancia de importe/moneda.
+Son pruebas PostgreSQL/HTTP simulado; falta sandbox real del proveedor.
+
+Requiere cambio de cliente (Claude): types/database.ts, tipos Pago/Reserva, nuevos
+estados y campos caduca_at/estado_pago; app/checkout/[id].tsx debe mostrar vencimiento,
+permitir nueva referencia al reintentar y no celebrar un pago reembolso_pendiente;
+app/mis-pagos.tsx y app/mis-reservas.tsx deben representar devolución/caducidad.
+lib/payments.ts debe interpretar esos estados y actualizar desde servidor, sin
+confirmación cliente. Líneas concretas se adjuntan en el inventario final.

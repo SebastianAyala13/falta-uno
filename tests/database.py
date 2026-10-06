@@ -333,6 +333,50 @@ def main():
             assert scalar(f"select count(*) from public.canchas where id='{court}'",user='',role='anon')=='0'
             sql(f"update public.canchas set oculto=false where id='{court}'",user=uid(1),ok=False)
         check("Reports derive actual author; moderation hides matches/courts without deleting payments and suspends profiles", complete_moderation)
+
+        def expiry_and_late_confirmation():
+            p=partido(20,2)
+            old=json.loads(enroll(p,2,'online','EXPIRY-OLD').stdout)['pago']
+            sql(f"update public.pagos set caduca_at=now()-interval '1 minute' where id='{old['id']}'")
+            sql("select public.caducar_pagos_pendientes()",user=uid(2),ok=False)
+            sql("select public.caducar_pagos_pendientes()",user=uid(2),role='service_role')
+            assert scalar(f"select estado from public.pagos where id='{old['id']}'")=='caducado'
+            assert scalar(f"select cupos_ocupados from public.partidos where id='{p}'")=='1'
+            enroll(p,3,'efectivo','EXPIRY-NEW')
+            parallel([lambda:sql("select public.confirmar_pago_online('EXPIRY-OLD',10800,'COP','provider-old')",user=uid(2),role='service_role') for _ in range(6)])
+            assert scalar(f"select cupos_ocupados from public.partidos where id='{p}'")=='2'
+            assert scalar(f"select count(*) from public.partido_jugadores where partido_id='{p}' and jugador_id='{uid(2)}'")=='0'
+            assert scalar("select count(*) from public.conciliaciones_pago where referencia='EXPIRY-OLD'")=='1'
+            assert scalar("select estado from public.pagos where referencia='EXPIRY-OLD'")=='reembolso_pendiente'
+            # Race at an already elapsed deadline must always queue a refund,
+            # regardless of which transaction acquires the match lock first.
+            race=partido(21,2)
+            payment=json.loads(enroll(race,2,'online','EXPIRY-RACE').stdout)['pago']
+            sql(f"update public.pagos set caduca_at=now()-interval '1 minute' where id='{payment['id']}'")
+            parallel([lambda:sql("select public.caducar_pagos_pendientes()",user=uid(2),role='service_role'),lambda:sql("select public.confirmar_pago_online('EXPIRY-RACE',10800,'COP','provider-race')",user=uid(2),role='service_role')])
+            assert scalar(f"select cupos_ocupados from public.partidos where id='{race}'")=='1'
+            assert scalar("select estado from public.pagos where referencia='EXPIRY-RACE'")=='reembolso_pendiente'
+            court=uid(300)
+            sql(f"insert into public.canchas(id,owner_id,nombre,direccion,zona) values ('{court}','{uid(1)}','Expiry','Fixture','Centro'); insert into public.cancha_disponibilidad(cancha_id,dia_semana,hora_apertura,hora_cierre,duracion_min,precio) values ('{court}',extract(dow from date '2099-10-05'),'08:00','23:00',60,50000)")
+            rid=scalar(f"insert into public.reservas(cancha_id,jugador_id,fecha,hora_inicio,hora_fin,precio,medio,referencia) values ('{court}','{uid(2)}','2099-10-05','09:00','10:00',50000,'online','RES-EXPIRY') returning id",user=uid(2))
+            sql(f"update public.reservas set caduca_at=now()-interval '1 minute' where id='{rid}'")
+            parallel([lambda:sql("select public.caducar_pagos_pendientes()",user=uid(2),role='service_role'),lambda:sql("select public.confirmar_pago_online('RES-EXPIRY',50000,'COP','provider-res')",user=uid(2),role='service_role')])
+            assert scalar(f"select estado||'|'||estado_pago from public.reservas where id='{rid}'")=='cancelada|reembolso_pendiente'
+            assert scalar(f"select count(*) from public.movimientos_cancha where reserva_id='{rid}'")=='0'
+            sql(f"insert into public.reservas(cancha_id,jugador_id,fecha,hora_inicio,hora_fin,precio,medio,estado,referencia) values ('{court}','{uid(3)}','2099-10-05','09:00','10:00',50000,'efectivo','confirmada','RES-AFTER-EXPIRY')",user=uid(3))
+            # Independent refund consumers cannot claim the same debt.
+            claims=parallel([lambda:sql("select public.tomar_reembolso()",user=uid(2),role='service_role') for _ in range(6)])
+            jobs=[json.loads(r.stdout) for r in claims if r.stdout.strip()]
+            assert len(jobs)==3 and len({j['id'] for j in jobs})==3
+            for j in jobs:
+                sql(f"select public.registrar_reembolso('{j['id']}','{uid(999)}','reembolsado','fake')",user=uid(2),role='service_role',ok=False)
+                sql(f"select public.registrar_reembolso('{j['id']}','{j['lease_token']}','reembolsado','refund-{j['id']}')",user=uid(2),role='service_role')
+            assert scalar("select estado_pago from public.reservas where referencia='RES-EXPIRY'")=='reembolsado'
+            assert scalar("select estado from public.pagos where referencia='EXPIRY-OLD'")=='reembolsado'
+            assert int(scalar("select count(*) from public.ejecuciones_caducidad"))>=3
+            assert scalar("select count(*) from public.conciliaciones_pago",user=uid(2))=='0'
+            assert scalar("select count(*) from public.conciliaciones_pago",user=uid(53))=='3'
+        check("expiry/late-webhook race frees seats and slots, queues refunds once, leases debt and preserves exact ledger",expiry_and_late_confirmation)
         print("All database regression groups passed", flush=True)
     finally:
         subprocess.run(["docker", "stop", CONTAINER], capture_output=True, check=False)

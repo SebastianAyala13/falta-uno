@@ -79,11 +79,12 @@ Deno.serve(async (req) => {
     // the corresponding match/reservation and handles parallel retries safely.
     const {data,error} = await admin.rpc('confirmar_pago_online', {
       p_referencia:referencia,p_monto:amountInt,p_moneda:pagoRapyd.currency,
+      p_proveedor_pago_id:typeof pagoRapyd.id === 'string' ? pagoRapyd.id : null,
     });
     if (error) throw error; // Return 500 so the provider retries a failed transaction.
     return json({ok:true,...data});
   } catch (e) {
-    console.error('rapyd-webhook:', e);
+    console.error('rapyd-webhook: transacción incompleta');
     return json({ error: 'No se pudo confirmar el pago' }, 500);
   }
 });

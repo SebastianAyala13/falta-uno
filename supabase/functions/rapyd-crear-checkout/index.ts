@@ -90,22 +90,22 @@ Deno.serve(async (req) => {
     if (tipo === 'partido') {
       if (typeof partidoId !== 'string' || !partidoId) return json({ error: 'partidoId inválido' }, 400);
       const {data:p,error} = await userClient.from('pagos')
-        .select('monto,estado,medio,jugador_id').eq('referencia',referencia)
+        .select('monto,estado,medio,jugador_id,caduca_at').eq('referencia',referencia)
         .eq('partido_id',partidoId).eq('jugador_id',user.id).single();
       if (error || !p) return json({error:'Pago no encontrado'},404);
-      if (p.estado !== 'pendiente' || p.medio !== 'online') return json({error:'Pago no disponible'},409);
+      if (p.estado !== 'pendiente' || p.medio !== 'online' || !p.caduca_at || Date.parse(p.caduca_at) <= Date.now()) return json({error:'Pago no disponible'},409);
       // Frozen price comes from the atomic enrollment RPC, never the request body.
       amount = p.monto;
     } else if (tipo === 'reserva') {
       if (typeof reservaId !== 'string' || !reservaId) return json({ error: 'reservaId inválido' }, 400);
       const { data: r, error } = await userClient
         .from('reservas')
-        .select('precio,jugador_id,referencia,estado,medio')
+        .select('precio,jugador_id,referencia,estado,medio,caduca_at')
         .eq('id', reservaId)
         .single();
       if (error || !r) return json({ error: 'Reserva no encontrada' }, 404);
       if (r.jugador_id !== user.id) return json({ error: 'No autorizado' }, 403);
-      if (r.referencia !== referencia || r.medio !== 'online' || r.estado !== 'pendiente') return json({error:'Reserva no disponible'},409);
+      if (r.referencia !== referencia || r.medio !== 'online' || r.estado !== 'pendiente' || !r.caduca_at || Date.parse(r.caduca_at) <= Date.now()) return json({error:'Reserva no disponible'},409);
       amount = r.precio; // el jugador paga el precio del turno; la comisión sale del ledger de la cancha
     } else {
       return json({ error: 'Tipo inválido' }, 400);
@@ -138,19 +138,20 @@ Deno.serve(async (req) => {
         salt,
         timestamp,
         signature,
+        idempotency: referencia,
       },
       body,
     });
     const out = await resp.json();
     const redirectUrl = out?.data?.redirect_url;
     if (!resp.ok || out?.status?.status !== 'SUCCESS' || !redirectUrl) {
-      console.error('rapyd-crear-checkout: respuesta Rapyd', JSON.stringify(out?.status ?? out));
+      console.error('rapyd-crear-checkout: respuesta no válida del proveedor');
       return json({ error: 'No se pudo crear el checkout' }, 502);
     }
 
     return json({ url: redirectUrl });
   } catch (e) {
-    console.error('rapyd-crear-checkout:', e);
+    console.error('rapyd-crear-checkout: operación incompleta');
     return json({ error: 'No se pudo iniciar el checkout' }, 500);
   }
 });

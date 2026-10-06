@@ -34,3 +34,20 @@ El cliente todavía oculta el mensaje contextual y no muestra archivo contable;
 Claude debe adaptar eso y consentimiento antes de publicar coordinadamente.
 El script SQL del purgador instalado dos veces produjo un solo job en dobles;
 no se instaló cron real.
+
+## Punto 3 · Verificación humana de conciliación
+
+Problema: instalar horario y obtener cron success no acreditaba llamada Edge,
+caducidad ni devolución; una deuda podía pasar desapercibida. Guía
+COMPROBAR-CONCILIACION.md con pasos antes/después, tres ciclos, interpretación
+de primeros lotes y tabla de alarmas/responsables. verificar_conciliacion.sql
+es solo lectura y no devuelve secretos. Se explicita gateway JWT de función
+con clave propia y se distingue de delete-user con JWT habilitado.
+
+Pruebas ejecutadas: scheduler_sql.py ejecutó consultas READ ONLY, alarma por
+heartbeat viejo y recuperación, 500, sin respuesta, config ausente, conteos y
+permisos; PostgreSQL real con cron/net/Vault simulados, no worker/HTTP real.
+54 unitarias, todas las regresiones database.py, tsc, Expo lint y diff --check
+pasaron. Pendientes: operador completa guía en staging, configura monitor externo
+y prueba pausa/recuperación y gateway/PSP reales antes de producción. Dashboard
+opcional requiere lib/admin.ts:45 y app/admin/index.ts; sin cambios de cliente.

@@ -15,11 +15,11 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 CONTAINER = f"faltauno-regression-{uuid.uuid4().hex[:8]}"
 
 
-def sql(query, user=None, role="authenticated", ok=True):
+def sql(query, user=None, role="authenticated", ok=True, database="postgres"):
     if user is not None:
         query = f"set role {role}; set request.jwt.claim.sub = '{user}'; set request.jwt.claim.role = '{role}';\n" + query
     result = subprocess.run(
-        ["docker", "exec", "-i", CONTAINER, "psql", "-h", "127.0.0.1", "-X", "-qAt", "-U", "postgres", "-v", "ON_ERROR_STOP=1"],
+        ["docker", "exec", "-i", CONTAINER, "psql", "-h", "127.0.0.1", "-X", "-qAt", "-U", "postgres", "-v", "ON_ERROR_STOP=1", "-d", database],
         input=query, text=True, capture_output=True,
     )
     if ok and result.returncode:
@@ -65,7 +65,7 @@ def main():
           alter table storage.objects enable row level security;
           create function storage.foldername(name text) returns text[] language sql immutable as $$
             select (string_to_array(name,'/'))[1:array_length(string_to_array(name,'/'),1)-1] $$;
-          
+
           create role anon; create role authenticated; create role service_role bypassrls;
           create table auth.users(id uuid primary key);
           create function auth.uid() returns uuid language sql stable as $$
@@ -79,6 +79,33 @@ def main():
           grant execute on function storage.foldername(text) to anon,authenticated,service_role;
           create publication supabase_realtime;
         """)
+        # A separate disposable database keeps conflicting preflight fixtures out of
+        # the regression database. No production records are deleted or altered.
+        sql("create database preflight_fixture template postgres")
+        for path in sorted((ROOT / "supabase/migrations").glob("*.sql")):
+            if path.name >= "20261005200000":
+                break
+            migration = path.read_text().replace('CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";', '-- Test-only Vault stub.')
+            sql(migration, database="preflight_fixture")
+        sql(f"""
+          insert into auth.users values ('{uid(1)}');
+          insert into public.profiles(id,nombre,email,posicion,nivel) values ('{uid(1)}','Fixture','fixture@example.test','Portero','Casual');
+          insert into public.canchas(id,owner_id,nombre,direccion,zona) values ('{uid(200)}','{uid(1)}','Fixture','Fixture','Centro');
+          insert into public.reservas(id,cancha_id,jugador_id,fecha,hora_inicio,hora_fin,precio,referencia) values
+            ('{uid(201)}','{uid(200)}','{uid(1)}','2099-10-05','09:00','10:00',50000,'DUPLICATE'),
+            ('{uid(202)}','{uid(200)}','{uid(1)}','2099-10-05','09:30','10:30',50000,'DUPLICATE'),
+            ('{uid(203)}','{uid(200)}','{uid(1)}','2099-10-05','12:00','11:00',50000,'INVALID');
+          insert into public.cancha_disponibilidad(cancha_id,dia_semana,hora_apertura,hora_cierre,duracion_min,precio)
+            values ('{uid(200)}',1,'10:00','09:00',0,-1);
+        """, database="preflight_fixture")
+        preflight = (ROOT / "scripts/preflight-fiabilidad.sql").read_text()
+        output = sql(preflight, database="preflight_fixture").stdout.strip()
+        rows = [row.split("|",2) for row in output.splitlines()]
+        assert len(rows)==4 and all(row[1]=='1' for row in rows), output
+        assert uid(201) in output and uid(203) in output
+        assert sql(preflight, database="preflight_fixture").stdout.strip()==output
+        sql("begin read only; update public.reservas set precio=0;", database="preflight_fixture",ok=False)
+        print("PASS idempotent read-only preflight with intentional conflicts:\n"+output,flush=True)
         for path in sorted((ROOT / "supabase/migrations").glob("*.sql")):
             migration = path.read_text().replace('CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";', '-- Unused Vault extension unavailable in vanilla PostgreSQL test image.')
             sql(migration)

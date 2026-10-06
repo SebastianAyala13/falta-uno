@@ -258,3 +258,43 @@ Controles reales: 52 unitarias, todos los grupos database.py, TypeScript y Expo
 lint pasaron. Pendientes: actualizar formularios y política, definir TTL y
 salvaguarda financiera, verificar proveedores/binario y borrar cuenta en staging.
 Cambios potenciales de cliente con línea están en el inventario; ninguno aplicado.
+
+## 6. Páginas legales y URLs
+
+Problema: los siete archivos coinciden localmente, pero origin/main del mirror
+en b52bb31 sólo contiene tres HTML desactualizados y le faltan cuatro. Se
+preservaron todos sus cambios de trabajo sin editar ni publicar ese repositorio.
+Comparación exacta y rutas en legal-sincronizacion-2026-10-06.md.
+
+Prueba real legal_pages.py: siete GET locales anónimos 200 con contenido exacto,
+ningún enlace relativo roto y ruta inexistente 404. Se intentaron 14 GET públicos;
+todos rechazados por el proxy CONNECT 403 antes de llegar al servidor. No se
+conoce el status de origen; se registra null, no un 403 inventado del hosting.
+JSON legal-urls-2026-10-06.json conserva review_ready:false. No se certifica
+accesibilidad pública ni valores reales de fichas de tienda que no se vieron.
+
+Controles comunes ejecutados: 52 unitarias, todos los grupos database.py,
+TypeScript y Expo lint pasaron; diff --check sin errores. Sólo pruebas/docs
+en este punto, ningún despliegue ni cambio de cliente. Pendiente: publicar mirror
+coordinadamente, habilitar acceso de red y repetir GET, verificar URLs efectivas
+del binario y consolas. Posible ajuste a cargo de Claude: constants/config.ts:20
+normalizar slash final para evitar //legal; detalles en auditoría.
+
+## Commits publicados y continuidad
+
+| Punto | Commit en codex/fiabilidad | Evidencia principal |
+|---|---|---|
+| 1 Respaldo | 40ad139 | respaldo-ensayo-2026-10-06.json |
+| 2 Datos | 14bbb0c | datos-representativos-2026-10-06.json |
+| 3 Capacidad LOCAL | 772328a | capacidad-postgres-local*.json (dos ensayos) |
+| 4 Conciliación preparada | 776401b | conciliacion-programacion-2026-10-06.json |
+| 5 Privacidad | 97360f4 | privacidad-codigo / privacidad-retencion |
+| 6 Legal | commit que añade esta sección, indicado en entrega final | legal-sincronizacion / legal-urls |
+
+No se fusionó ni empujó main. No se desplegaron migrations, funciones ni cron.
+La medición de PostgreSQL local no es una cifra de usuarios soportados ni SLA.
+Los puntos auditados con discrepancias quedan documentados como tales, no
+aprobados para tienda por haber terminado la auditoría. Prioridad siguiente:
+retención financiera y snapshots → publicación legal coordinada → formularios
+actualizados → backup/Auth/Storage y cron reales en staging → API/SDK carga
+representativa de staging → pruebas nativas/dispositivos → revisión de tiendas.

@@ -1,0 +1,108 @@
+{
+  "backup": {
+    "ok": true,
+    "bytes": 188124,
+    "seconds": 0.392,
+    "scope": "public schema/data incl. RLS/ACL; excludes Auth/Storage/Vault/globals"
+  },
+  "restore": {
+    "ok": true,
+    "seconds": 0.865,
+    "scope": "application only; no Auth users, Storage files or secrets restored"
+  },
+  "equal_rows_catalog_acl": true,
+  "refuses_nonempty": true,
+  "refuses_corruption": true,
+  "tables": {
+    "bloqueos": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "calificaciones": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "cancha_disponibilidad": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "canchas": {
+      "rows": 1,
+      "sha256": "cd3710938616cb8d69a4c2b915e67dce8412149d8da927a45a95dd95f38abb96"
+    },
+    "comentarios": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "conciliaciones_pago": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "datos_desembolso": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "ejecuciones_caducidad": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "membresias_cancha": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "mensajes": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "movimientos_cancha": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "operaciones_idempotentes": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "pagos": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "partido_jugadores": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "partidos": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "post_likes": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "posts": {
+      "rows": 1,
+      "sha256": "56fa3c6e2402689ab0f4252775b473199c7ca20b2797e42701566fe8ae7651d9"
+    },
+    "profiles": {
+      "rows": 1,
+      "sha256": "43e124954c4b51a646fd6ae956ddc81f106a08f3da825bd24afbcfdc39d193b3"
+    },
+    "reportes": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "reservas": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "retiros": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  },
+  "limits": [
+    "Auth credentials/sessions not backed up",
+    "Storage metadata and bytes not backed up",
+    "Vault/global roles/extensions require separate preparation",
+    "Replica/Realtime publication and cron not covered"
+  ]
+}

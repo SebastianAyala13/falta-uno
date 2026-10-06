@@ -23,8 +23,6 @@ export async function procesarPago(
   if (medio !== 'efectivo') {
     throw new Error('Este medio se paga en línea, no desde la app.');
   }
-  // Pequeña pausa para que el usuario vea la confirmación del registro
-  await new Promise((r) => setTimeout(r, 1200));
   return { estado: 'pendiente', mensaje: 'Le pagás al organizador en la cancha.' };
 }
 

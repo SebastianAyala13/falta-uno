@@ -44,40 +44,9 @@ const VACIO: MetricasAdmin = {
 
 export async function metricas(): Promise<MetricasAdmin> {
   if (!supabaseConfigurado) return VACIO;
-  const [u, c, r, pagos, retiros, ciudades] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
-    supabase.from('canchas').select('*', { count: 'exact', head: true }),
-    supabase.from('reservas').select('*', { count: 'exact', head: true }),
-    supabase.from('pagos').select('monto').eq('estado', 'aprobado'),
-    supabase.from('retiros').select('*', { count: 'exact', head: true }).eq('estado', 'solicitado'),
-    supabase.from('canchas').select('ciudad'),
-  ]);
-
-  // supabase-js no lanza ante errores de servidor/RLS: los devuelve en `.error`.
-  // Sin este chequeo, un fallo se disfrazaría de "plataforma vacía" (todo en cero).
-  for (const res of [u, c, r, pagos, retiros, ciudades]) {
-    if (res.error) throw new Error(res.error.message ?? 'No se pudieron cargar las métricas.');
-  }
-
-  const pagosArr = (pagos.data ?? []) as { monto: number }[];
-  const gmv = pagosArr.reduce((s, p) => s + (p.monto ?? 0), 0);
-
-  const porCiudadMap: Record<string, number> = {};
-  for (const row of (ciudades.data ?? []) as { ciudad: string }[]) {
-    porCiudadMap[row.ciudad] = (porCiudadMap[row.ciudad] ?? 0) + 1;
-  }
-
-  return {
-    usuarios: u.count ?? 0,
-    canchas: c.count ?? 0,
-    reservas: r.count ?? 0,
-    pagosAprobados: pagosArr.length,
-    gmv,
-    retirosPendientes: retiros.count ?? 0,
-    porCiudad: Object.entries(porCiudadMap)
-      .map(([ciudad, canchas]) => ({ ciudad, canchas }))
-      .sort((a, b) => b.canchas - a.canchas),
-  };
+  const {data,error} = await supabase.rpc('admin_metricas');
+  if (error || !data) throw new Error('No se pudieron cargar las métricas.');
+  return data as unknown as MetricasAdmin;
 }
 
 // ---------------------------------------------------------------------------
@@ -207,12 +176,10 @@ export async function resolverReporte(
   eliminar = false,
 ): Promise<void> {
   if (!supabaseConfigurado) throw new Error('Necesitás conexión.');
-  const { error } = await supabase.rpc('admin_resolver_reporte', {
-    p_reporte: id,
-    p_estado: estado,
-    p_eliminar: eliminar,
-  } as never);
-  if (error) throw new Error('No se pudo resolver el reporte.');
+  const {data,error} = await supabase.functions.invoke('moderar-contenido',{
+    body:{reporte:id,estado,eliminar},
+  });
+  if (error || data?.ok !== true) throw new Error('No se pudo resolver el reporte.');
 }
 
 /** Suspende o reactiva a un usuario (expulsión por moderación). */

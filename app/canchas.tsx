@@ -1,11 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/BackButton';
 import Chip from '@/components/Chip';
+import GlowButton from '@/components/GlowButton';
 import EmptyState from '@/components/EmptyState';
 import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
@@ -29,21 +30,34 @@ export default function Canchas() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const version = useRef(0);
+  const pagina = useRef(0);
+  const [hayMas,setHayMas] = useState(false);
+  const [cargandoMas,setCargandoMas] = useState(false);
+
   const cargar = useCallback(async (conSkeleton = true) => {
+    const actual=++version.current;
+    pagina.current=0;
     if (conSkeleton) setCargando(true);
     setError(null);
     try {
-      const filas = await listarCanchas({ zona, formato });
-      setCanchas(filas);
+      const filas = await listarCanchas({ zona, formato, texto:query, pagina:0 });
+      if(actual!==version.current)return;
+      setCanchas(filas);setHayMas(filas.length===30);
     } catch {
+      if(actual!==version.current)return;
       setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
     } finally {
-      if (conSkeleton) setCargando(false);
+      if (conSkeleton && actual===version.current) setCargando(false);
     }
-  }, [zona, formato]);
+  }, [zona, formato,query]);
 
   useEffect(() => {
-    cargar();
+    const contador=version;
+    contador.current++;
+    setCargando(true);
+    const timer=setTimeout(()=>{void cargar();},250);
+    return ()=>{clearTimeout(timer);contador.current++;};
   }, [cargar]);
 
   const onRefresh = async () => {
@@ -52,11 +66,19 @@ export default function Canchas() {
     setRefreshing(false);
   };
 
-  const resultados = useMemo(() => {
-    if (!query) return canchas;
-    const q = query.toLowerCase();
-    return canchas.filter((cancha) => `${cancha.nombre} ${cancha.zona}`.toLowerCase().includes(q));
-  }, [canchas, query]);
+  const resultados = canchas;
+  const cargarMas = async () => {
+    if (cargandoMas || !hayMas) return;
+    const actual=version.current;
+    setCargandoMas(true);
+    try {
+      const filas=await listarCanchas({zona,formato,texto:query,pagina:pagina.current+1});
+      if(actual!==version.current)return;
+      pagina.current++;setHayMas(filas.length===30);
+      setCanchas(prev=>[...prev,...filas.filter(f=>!prev.some(p=>p.id===f.id))]);setError(null);
+    } catch {if(actual===version.current)setError('No pudimos cargar más canchas. Reintentá.');}
+    finally {setCargandoMas(false);}
+  };
 
   return (
     <Screen edges={['top']}>
@@ -110,7 +132,7 @@ export default function Canchas() {
             resultados.map((cancha, i) => {
               const amenidades = Object.values(cancha.amenidades ?? {}).filter(Boolean).length;
               return (
-                <FadeIn key={cancha.id} delay={60 + i * 50}>
+                <FadeIn key={cancha.id} delay={60 + Math.min(i,6) * 50}>
                   <Pressable
                     onPress={() => router.push({ pathname: '/cancha/[id]', params: { id: cancha.id } })}
                     className="mb-4 overflow-hidden rounded-md border border-border bg-card active:opacity-80">
@@ -146,6 +168,8 @@ export default function Canchas() {
             })
           )}
         </View>
+        {error && resultados.length>0 ? <ErrorBanner message={error} /> : null}
+        {hayMas ? <View className="px-6"><GlowButton label="Cargar más canchas" loading={cargandoMas} variant="outline" onPress={cargarMas} /></View> : null}
       </ScrollView>
     </Screen>
   );

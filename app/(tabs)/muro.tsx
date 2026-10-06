@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
@@ -6,8 +6,10 @@ import { FlatList, Pressable, Text, View } from 'react-native';
 import Avatar from '@/components/Avatar';
 import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
-import ErrorCarga from '@/components/ErrorCarga';
 import FadeIn from '@/components/FadeIn';
+import ErrorBanner from '@/components/ErrorBanner';
+import GlowButton from '@/components/GlowButton';
+import { CardListSkeleton } from '@/components/Skeleton';
 import PostCard from '@/components/PostCard';
 import Screen from '@/components/Screen';
 import { useAuth } from '@/lib/auth';
@@ -34,6 +36,25 @@ export default function Muro() {
   const generarRecaps = useStore((s) => s.generarRecapsPendientes);
   const c = useTheme();
 
+  const hayMas = useStore(s => s.hayMasPosts);
+  const cargarMas = useStore(s => s.cargarMasPosts);
+  const hidratar = useStore(s => s.hidratar);
+  const cargando = useStore(s => s.cargando);
+  const errorCarga = useStore(s => s.errorCarga);
+  const [errorMas,setErrorMas] = useState<string | null>(null);
+  const [cargandoMas,setCargandoMas] = useState(false);
+  const [refreshing,setRefreshing] = useState(false);
+  const mas = async () => {
+    setCargandoMas(true);
+    try { await cargarMas(); setErrorMas(null); }
+    catch { setErrorMas('No pudimos cargar más publicaciones. Reintentá.'); }
+    finally { setCargandoMas(false); }
+  };
+  const refrescar = async () => {
+    setRefreshing(true);
+    try { if (profile?.id) await hidratar(profile.id,true); }
+    finally { setRefreshing(false); }
+  };
   const [filtro, setFiltro] = useState<Filtro>('todos');
 
   // Auto-post: al entrar, genera recaps de partidos que ya terminaron
@@ -60,8 +81,6 @@ export default function Muro() {
         </View>
       </FadeIn>
 
-      <ErrorCarga className="mx-6 mb-3" />
-
       {/* Compositor */}
       <FadeIn delay={100}>
         <Pressable
@@ -82,15 +101,19 @@ export default function Muro() {
         ))}
       </View>
 
+      <ErrorBanner message={errorCarga ?? errorMas} className="mx-6 mt-2" />
       <FlatList
         data={visibles}
+        refreshing={refreshing}
+        onRefresh={refrescar}
+        ListFooterComponent={hayMas ? <GlowButton label="Cargar más publicaciones" variant="outline" loading={cargandoMas} onPress={mas} /> : null}
         keyExtractor={(p: Post) => p.id}
         contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <PostCard post={item} comentarios={(comentarios[item.id] ?? []).length} />
+          <PostCard post={item} comentarios={item.comment_count ?? (comentarios[item.id] ?? []).length} />
         )}
-        ListEmptyComponent={
+        ListEmptyComponent={cargando ? <CardListSkeleton rows={3} /> :
           <EmptyState
             icon="newspaper-outline"
             titulo="El muro está quieto"

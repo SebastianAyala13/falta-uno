@@ -1,13 +1,14 @@
-import { Ionicons } from '@expo/vector-icons';
+import ModeracionBoton from '@/components/ModeracionBoton';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/BackButton';
 import CanchaMap from '@/components/CanchaMap';
-import EmptyState from '@/components/EmptyState';
 import ErrorBanner from '@/components/ErrorBanner';
+import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
@@ -22,26 +23,20 @@ export default function PerfilCancha() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const c = useTheme();
 
+  const [error,setError] = useState<string | null>(null);
+  const [revision,setRevision] = useState(0);
   const [cancha, setCancha] = useState<Cancha | null>(null);
   const [cargando, setCargando] = useState(true);
-  // Sin este estado, un fallo de red terminaba en la pantalla de "Cancha no
-  // encontrada", que le dice al usuario que la dieron de baja. Son dos cosas
-  // muy distintas y la segunda lo hace irse.
-  const [error, setError] = useState<string | null>(null);
-
-  const cargar = useCallback(() => {
-    if (!id) return;
-    setError(null);
-    setCargando(true);
-    getCancha(id)
-      .then(setCancha)
-      .catch(() => setError('No pudimos cargar la cancha. Revisá tu conexión e intentá de nuevo.'))
-      .finally(() => setCargando(false));
-  }, [id]);
 
   useEffect(() => {
-    cargar();
-  }, [cargar]);
+    if (!id) return;
+    let activo = true;
+    setCargando(true);
+    getCancha(id).then(c => { if (activo) {setCancha(c);setError(null);} })
+      .catch(() => { if (activo) setError('No pudimos cargar la cancha. Revisá tu conexión.'); })
+      .finally(() => { if (activo) setCargando(false); });
+    return () => {activo=false;};
+  },[id,revision]);
 
   const activas = cancha
     ? AMENIDADES.filter((a) => (cancha.amenidades as Record<string, boolean | undefined>)?.[a.id])
@@ -51,6 +46,7 @@ export default function PerfilCancha() {
     <Screen edges={['top']}>
       <ScreenHeader title="Cancha" titleSize="2xl" className="px-6 pb-2 pt-2" />
 
+      <ErrorBanner message={error} className="mx-6 mt-2" action={{label:"Reintentar",onPress:() => setRevision(r => r+1)}} />
       {cargando ? (
         <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
           <SkeletonBlock height={160} radius={18} />
@@ -63,10 +59,6 @@ export default function PerfilCancha() {
             <SkeletonBlock height={36} width={72} radius={999} />
             <SkeletonBlock height={36} width={72} radius={999} />
           </View>
-        </View>
-      ) : error ? (
-        <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
-          <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: cargar }} />
         </View>
       ) : !cancha ? (
         <EmptyState
@@ -98,6 +90,7 @@ export default function PerfilCancha() {
 
             <FadeIn delay={80}>
               <View className="px-6 pt-4">
+                <View className="mb-2 flex-row items-center justify-end"><Text className="mr-2 font-body text-xs text-muted">Opciones de la cancha</Text><ModeracionBoton tipo="cancha" contenidoId={cancha.id} autorId={cancha.owner_id} autorNombre={cancha.nombre} texto={cancha.descripcion ?? cancha.nombre} /></View>
                 <Text className="font-display text-3xl uppercase text-cream" style={{ lineHeight: 40, paddingTop: 2 }}>
                   {cancha.nombre}
                 </Text>

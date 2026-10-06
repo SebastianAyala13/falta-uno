@@ -1,4 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Modal, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
@@ -25,7 +26,6 @@ import {
   saldoCancha,
   solicitarRetiro,
 } from '@/lib/canchas';
-import { dialogo } from '@/lib/dialogo';
 import { precioCOP, tiempoRelativo } from '@/lib/format';
 import { useTheme } from '@/lib/theme';
 import type { Cancha, DatosDesembolso, MovimientoCancha, Retiro } from '@/types/database';
@@ -133,7 +133,7 @@ export default function Finanzas() {
     if (!cancha) return;
     const valor = Number(monto);
     if (!monto.trim() || Number.isNaN(valor) || valor <= 0) {
-      dialogo.mostrar('Monto inválido', 'Ingresá un monto mayor a cero, parce.');
+      Alert.alert('Monto inválido', 'Ingresá un monto mayor a cero, parce.');
       return;
     }
     setEnviando(true);
@@ -142,9 +142,9 @@ export default function Finanzas() {
       setModalRetiro(false);
       setMonto('');
       await cargarDatos(cancha);
-      dialogo.mostrar('¡Retiro solicitado!', 'Te lo desembolsamos pronto.');
+      Alert.alert('¡Retiro solicitado!', 'Te lo desembolsamos pronto.');
     } catch (e) {
-      dialogo.mostrar('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo en un rato.');
+      Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo en un rato.');
     } finally {
       setEnviando(false);
     }
@@ -164,7 +164,7 @@ export default function Finanzas() {
   const guardarCuenta = async () => {
     if (!profile) return;
     if (!titular.trim() || !numero.trim() || !documento.trim()) {
-      dialogo.mostrar('Faltan datos', 'Completá titular, número de cuenta y documento.');
+      Alert.alert('Faltan datos', 'Completá titular, número de cuenta y documento.');
       return;
     }
     setGuardandoCuenta(true);
@@ -179,9 +179,9 @@ export default function Finanzas() {
       await guardarDatosDesembolso(profile.id, datos);
       setDesembolso({ owner_id: profile.id, ...datos, created_at: '', updated_at: '' });
       setModalCuenta(false);
-      dialogo.mostrar('Guardado', 'Tus datos de desembolso quedaron guardados.');
+      Alert.alert('Guardado', 'Tus datos de desembolso quedaron guardados.');
     } catch (e) {
-      dialogo.mostrar('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
+      Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
     } finally {
       setGuardandoCuenta(false);
     }

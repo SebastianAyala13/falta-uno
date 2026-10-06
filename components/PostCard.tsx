@@ -1,4 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
@@ -8,6 +9,7 @@ import ModeracionBoton from '@/components/ModeracionBoton';
 import { useAuth } from '@/lib/auth';
 import { tiempoRelativo } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
+import { useGuardInvitado } from '@/lib/useGuardInvitado';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import type { Post } from '@/types/database';
@@ -36,9 +38,12 @@ export default function PostCard({ post, comentarios = 0 }: PostCardProps) {
   const esRecap = post.tipo === 'recap';
   const meta = TIPO_META[post.tipo];
 
-  const onLike = () => {
+  const guardInvitado = useGuardInvitado();
+  const onLike = async () => {
+    if (guardInvitado('Creá una cuenta para dar me gusta.')) return;
     haptics.light();
-    toggleLike(post.id, uid);
+    try { await toggleLike(post.id,uid); }
+    catch (e) { Alert.alert('No se pudo guardar',e instanceof Error ? e.message : 'Reintentá.'); }
   };
 
   return (
@@ -117,7 +122,7 @@ export default function PostCard({ post, comentarios = 0 }: PostCardProps) {
             color={liked ? c.danger : c.muted}
           />
           <Text className="font-body-semibold text-sm" style={{ color: liked ? c.danger : c.muted }}>
-            {post.likes.length}
+            {post.like_count ?? post.likes.length}
           </Text>
         </Pressable>
         <View className="flex-row items-center gap-1.5">

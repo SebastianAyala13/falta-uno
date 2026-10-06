@@ -1,10 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
-import { dialogo } from '@/lib/dialogo';
 import { haptics } from '@/lib/haptics';
 import { MOTIVOS_REPORTE } from '@/lib/moderation';
+import { useGuardInvitado } from '@/lib/useGuardInvitado';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import type { MotivoReporte, TipoContenido } from '@/types/database';
@@ -39,13 +40,15 @@ export default function ModeracionBoton({
   const col = color ?? c.muted;
   const { profile } = useAuth();
   const uid = profile?.id ?? 'demo';
+  const guardInvitado = useGuardInvitado();
   const reportarContenido = useStore((s) => s.reportarContenido);
   const bloquearUsuario = useStore((s) => s.bloquearUsuario);
 
   if (autorId === uid || autorId === 'sistema') return null;
 
-  const confirmarReporte = (motivo: MotivoReporte) => {
-    reportarContenido({
+  const confirmarReporte = async (motivo: MotivoReporte) => {
+    try {
+    await reportarContenido({
       tipo,
       contenido_id: contenidoId,
       autor_id: autorId,
@@ -53,21 +56,22 @@ export default function ModeracionBoton({
       motivo,
       texto,
     });
-    dialogo.mostrar(
+    Alert.alert(
       'Gracias, parce',
       'Recibimos tu reporte. Lo revisamos en menos de 24 horas y tomamos acción si incumple las normas de la comunidad.',
     );
+    } catch(e) { Alert.alert('No pudimos enviar el reporte',e instanceof Error ? e.message : 'Reintentá.'); }
   };
 
   const menuReportar = () => {
-    dialogo.mostrar('Reportar contenido', '¿Por qué lo estás reportando?', [
+    Alert.alert('Reportar contenido', '¿Por qué lo estás reportando?', [
       ...MOTIVOS_REPORTE.map((m) => ({ text: m.label, onPress: () => confirmarReporte(m.id) })),
       { text: 'Cancelar', style: 'cancel' as const },
     ]);
   };
 
   const confirmarBloqueo = () => {
-    dialogo.mostrar(
+    Alert.alert(
       `¿Bloquear a ${autorNombre}?`,
       'No volverás a ver sus publicaciones, comentarios ni mensajes.',
       [
@@ -75,9 +79,9 @@ export default function ModeracionBoton({
         {
           text: 'Bloquear',
           style: 'destructive',
-          onPress: () => {
-            bloquearUsuario(autorId, uid);
-            dialogo.mostrar('Listo', `Bloqueaste a ${autorNombre}.`);
+          onPress: async () => {
+            try { await bloquearUsuario(autorId,uid); Alert.alert('Listo',`Bloqueaste a ${autorNombre}.`); }
+            catch(e) { Alert.alert('No pudimos bloquear',e instanceof Error ? e.message : 'Reintentá.'); }
           },
         },
       ],
@@ -85,7 +89,8 @@ export default function ModeracionBoton({
   };
 
   const abrirMenu = () => {
-    dialogo.mostrar('Opciones', undefined, [
+    if (guardInvitado('Creá una cuenta para reportar o bloquear.')) return;
+    Alert.alert('Opciones', undefined, [
       { text: 'Reportar contenido', onPress: menuReportar },
       { text: `Bloquear a ${autorNombre}`, style: 'destructive', onPress: confirmarBloqueo },
       { text: 'Cancelar', style: 'cancel' },

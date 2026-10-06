@@ -1,4 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
@@ -12,7 +13,6 @@ import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { APP, NIVELES, POSICIONES, URL_PRIVACIDAD, URL_TERMINOS, type Nivel, type Posicion } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
-import { dialogo } from '@/lib/dialogo';
 import { useTheme } from '@/lib/theme';
 
 export default function Register() {
@@ -63,7 +63,7 @@ export default function Register() {
         roles: esCancha ? ['jugador', 'cancha'] : ['jugador'],
       });
       if (res.needsConfirmation) {
-        dialogo.mostrar(
+        Alert.alert(
           'Revisá tu correo 📩',
           'Te enviamos un enlace para confirmar tu cuenta. Confirmalo y entrá con tu correo y contraseña.',
           [{ text: 'Ir a entrar', onPress: () => router.replace('/(auth)/login') }],

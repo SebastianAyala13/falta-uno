@@ -1,4 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
@@ -13,7 +14,6 @@ import Screen from '@/components/Screen';
 import { CardListSkeleton } from '@/components/Skeleton';
 import StatCard from '@/components/StatCard';
 import { ajusteSaldo, listarCanchasAdmin, movimientosCancha, setEstadoCancha } from '@/lib/admin';
-import { dialogo } from '@/lib/dialogo';
 import { precioCOP, tiempoRelativo } from '@/lib/format';
 import { useTheme } from '@/lib/theme';
 import type { Cancha, MovimientoCancha } from '@/types/database';
@@ -93,7 +93,7 @@ export default function CanchasAdmin() {
       await setEstadoCancha(cancha.id, nuevo);
       await cargar(false);
     } catch (e) {
-      dialogo.mostrar('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
+      Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
     } finally {
       setToggleId(null);
     }
@@ -110,7 +110,7 @@ export default function CanchasAdmin() {
     if (!ajuste) return;
     const bruto = Number(monto.trim());
     if (!monto.trim() || Number.isNaN(bruto) || bruto === 0) {
-      dialogo.mostrar('Monto inválido', 'Ingresá un monto distinto de cero.');
+      Alert.alert('Monto inválido', 'Ingresá un monto distinto de cero.');
       return;
     }
     // Signo: manda el toggle, pero si escribieron el monto en negativo es débito.
@@ -121,12 +121,12 @@ export default function CanchasAdmin() {
       await ajusteSaldo(ajuste.id, valor, desc.trim() || undefined);
       const nombre = ajuste.nombre;
       setAjuste(null);
-      dialogo.mostrar(
+      Alert.alert(
         'Ajuste registrado',
         `${valor > 0 ? 'Crédito' : 'Débito'} de ${precioCOP(Math.abs(valor))} aplicado al saldo de ${nombre}.`,
       );
     } catch (e) {
-      dialogo.mostrar('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
+      Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
     } finally {
       setEnviandoAjuste(false);
     }
@@ -140,7 +140,7 @@ export default function CanchasAdmin() {
       setMovs(await movimientosCancha(cancha.id));
     } catch (e) {
       setSaldoDe(null);
-      dialogo.mostrar('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
+      Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
     } finally {
       setLoadingMovs(false);
     }

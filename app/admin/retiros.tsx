@@ -1,4 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useCallback, useEffect, useState } from 'react';
 import { Modal, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
@@ -13,7 +14,6 @@ import Screen from '@/components/Screen';
 import { CardListSkeleton } from '@/components/Skeleton';
 import type { Palette } from '@/constants/themes';
 import { procesarRetiro, retirosTodos } from '@/lib/admin';
-import { dialogo } from '@/lib/dialogo';
 import { precioCOP, tiempoRelativo } from '@/lib/format';
 import { useTheme } from '@/lib/theme';
 import type { Retiro } from '@/types/database';
@@ -87,14 +87,14 @@ export default function RetirosAdmin() {
       try {
         await procesarRetiro(id, 'pagado');
         const refrescado = await cargar(false);
-        dialogo.mostrar(
+        Alert.alert(
           '¡Listo!',
           refrescado
             ? 'Retiro marcado como pagado. El saldo de la cancha se descontó.'
             : 'Retiro marcado como pagado. No se pudo refrescar la lista, deslizá para actualizar.',
         );
       } catch (e) {
-        dialogo.mostrar('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
+        Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
       } finally {
         setProcesandoId(null);
       }
@@ -103,7 +103,7 @@ export default function RetirosAdmin() {
   );
 
   const aprobar = (r: Retiro) => {
-    dialogo.mostrar(
+    Alert.alert(
       'Aprobar retiro',
       `¿Ya hiciste la transferencia de ${precioCOP(r.monto)} a la cancha? Al aprobar se descuenta del saldo.`,
       [
@@ -116,7 +116,7 @@ export default function RetirosAdmin() {
   const confirmarRechazo = async () => {
     if (!rechazo) return;
     if (!motivo.trim()) {
-      dialogo.mostrar('Falta el motivo', 'Contale a la cancha por qué se rechaza el retiro.');
+      Alert.alert('Falta el motivo', 'Contale a la cancha por qué se rechaza el retiro.');
       return;
     }
     setEnviandoRechazo(true);
@@ -125,14 +125,14 @@ export default function RetirosAdmin() {
       setRechazo(null);
       setMotivo('');
       const refrescado = await cargar(false);
-      dialogo.mostrar(
+      Alert.alert(
         'Retiro rechazado',
         refrescado
           ? 'La cancha va a ver el motivo en sus finanzas.'
           : 'Retiro rechazado. No se pudo refrescar la lista, deslizá para actualizar.',
       );
     } catch (e) {
-      dialogo.mostrar('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
+      Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo.');
     } finally {
       setEnviandoRechazo(false);
     }

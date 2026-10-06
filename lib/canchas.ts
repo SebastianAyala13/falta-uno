@@ -1,3 +1,5 @@
+import { subirImagen } from '@/lib/media';
+import { patronBusqueda } from '@/lib/partidos';
 /**
  * Capa de datos del marketplace de canchas (Supabase-backed).
  *
@@ -8,6 +10,9 @@
  */
 import type { Formato } from '@/constants/config';
 import { supabase, supabaseConfigurado } from '@/lib/supabase';
+import { comprobarRespuesta, hoyColombia } from '@/lib/data-utils';
+import { diaSemanaDe, generarSlots, type Slot } from '@/lib/slots';
+export { diaSemanaDe, type Slot } from '@/lib/slots';
 import type {
   Amenidades,
   Cancha,
@@ -21,23 +26,7 @@ import type {
 const SIN_CONEXION = 'Necesitás conexión para gestionar canchas.';
 
 /** Referencia legible de reserva tipo FU-RXXXXX. */
-export const genRefReserva = () => 'FU-R' + Math.random().toString(36).slice(2, 7).toUpperCase();
-
-// ---------------------------------------------------------------------------
-// Helpers de tiempo ('HH:mm' o 'HH:mm:ss' de Postgres)
-// ---------------------------------------------------------------------------
-const hhmmToMin = (t: string): number => {
-  const [h, m] = t.split(':').map(Number);
-  return (h || 0) * 60 + (m || 0);
-};
-const minToHHmm = (mins: number): string =>
-  `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
-
-/** Día de la semana (0=domingo) de una fecha 'YYYY-MM-DD' sin problemas de zona. */
-export const diaSemanaDe = (fecha: string): number => {
-  const [y, m, d] = fecha.split('-').map(Number);
-  return new Date(Date.UTC(y, (m || 1) - 1, d || 1)).getUTCDay();
-};
+export const genRefReserva = () => 'FU-R' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2,12).toUpperCase();
 
 // ---------------------------------------------------------------------------
 // Canchas (CRUD)
@@ -94,21 +83,25 @@ export async function actualizarCancha(id: string, cambios: Partial<Cancha>): Pr
 
 export async function misCanchas(ownerId: string): Promise<Cancha[]> {
   if (!supabaseConfigurado) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('canchas')
     .select('*')
     .eq('owner_id', ownerId)
     .order('created_at', { ascending: false });
+  if (error) throw new Error('No pudimos cargar los datos de la cancha. Revisá tu conexión.');
   return (data ?? []) as Cancha[];
 }
 
 export async function getCancha(id: string): Promise<Cancha | null> {
   if (!supabaseConfigurado) return null;
-  const { data } = await supabase.from('canchas').select('*').eq('id', id).maybeSingle();
+  const { data, error } = await supabase.from('canchas').select('*').eq('id', id).maybeSingle();
+  if (error) throw new Error('No pudimos cargar los datos de la cancha. Revisá tu conexión.');
   return (data as unknown as Cancha | null) ?? null;
 }
 
 export interface FiltrosCancha {
+  texto?: string;
+  pagina?: number;
   zona?: string | null;
   formato?: Formato | null;
   amenidad?: string | null; // id de amenidad
@@ -116,13 +109,20 @@ export interface FiltrosCancha {
 
 export async function listarCanchas(filtros: FiltrosCancha = {}): Promise<Cancha[]> {
   if (!supabaseConfigurado) return [];
-  let q = supabase.from('canchas').select('*').eq('estado', 'activa');
+  let q = supabase.from('canchas').select('*').eq('estado', 'activa').eq('oculto',false);
   if (filtros.zona) q = q.eq('zona', filtros.zona);
-  const { data } = await q.order('created_at', { ascending: false });
-  let filas = (data ?? []) as Cancha[];
-  if (filtros.formato) filas = filas.filter((c) => c.formatos?.includes(filtros.formato!));
-  if (filtros.amenidad) filas = filas.filter((c) => (c.amenidades as Record<string, boolean>)?.[filtros.amenidad!]);
-  return filas;
+  if (filtros.formato) q = q.contains('formatos', [filtros.formato]);
+  if (filtros.amenidad) q = q.contains('amenidades', {[filtros.amenidad]:true});
+  if (filtros.texto?.trim()) {
+    const patron = patronBusqueda(filtros.texto.trim());
+    q = q.or(`nombre.ilike.${patron},zona.ilike.${patron}`);
+  }
+  const inicio = Math.max(0, filtros.pagina ?? 0) * 30;
+  q = q.order('created_at', { ascending: false }).order('id', {ascending:false});
+  if (filtros.pagina !== undefined) q = q.range(inicio,inicio+29);
+  const { data, error } = await q;
+  if (error) throw new Error('No pudimos cargar los datos de la cancha. Revisá tu conexión.');
+  return (data ?? []) as Cancha[];
 }
 
 // ---------------------------------------------------------------------------
@@ -130,11 +130,12 @@ export async function listarCanchas(filtros: FiltrosCancha = {}): Promise<Cancha
 // ---------------------------------------------------------------------------
 export async function getDisponibilidad(canchaId: string): Promise<CanchaDisponibilidad[]> {
   if (!supabaseConfigurado) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('cancha_disponibilidad')
     .select('*')
     .eq('cancha_id', canchaId)
     .order('dia_semana', { ascending: true });
+  if (error) throw new Error('No pudimos cargar los datos de la cancha. Revisá tu conexión.');
   return (data ?? []) as CanchaDisponibilidad[];
 }
 
@@ -149,70 +150,20 @@ export interface FranjaInput {
 /** Reemplaza toda la disponibilidad de una cancha por el set nuevo. */
 export async function setDisponibilidad(canchaId: string, franjas: FranjaInput[]): Promise<void> {
   if (!supabaseConfigurado) throw new Error(SIN_CONEXION);
-  await supabase.from('cancha_disponibilidad').delete().eq('cancha_id', canchaId);
-  if (!franjas.length) return;
-  const { error } = await supabase.from('cancha_disponibilidad').insert(
-    franjas.map((f) => ({
-      cancha_id: canchaId,
-      dia_semana: f.dia_semana,
-      hora_apertura: f.hora_apertura,
-      hora_cierre: f.hora_cierre,
-      duracion_min: f.duracion_min,
-      precio: f.precio,
-      activo: true,
-    })) as never,
-  );
-  if (error) throw new Error('No pudimos guardar los horarios. Probá de nuevo.');
+  comprobarRespuesta(await supabase.rpc('reemplazar_disponibilidad', {p_cancha:canchaId,p_franjas:franjas} as never));
 }
 
-export interface Slot {
-  hora_inicio: string; // 'HH:mm'
-  hora_fin: string; // 'HH:mm'
-  precio: number;
-  ocupado: boolean;
-}
-
-/**
- * Slots reservables de una cancha en una fecha concreta: genera los turnos de la
- * plantilla del día y marca como `ocupado` los que ya tienen reserva activa.
- */
+/** Horarios reservables; ocupación pública sin revelar jugadores ni pagos. */
 export async function slotsDelDia(canchaId: string, fecha: string): Promise<Slot[]> {
   if (!supabaseConfigurado) return [];
-  const dia = diaSemanaDe(fecha);
-  const [{ data: dispRaw }, { data: resRaw }] = await Promise.all([
-    supabase
-      .from('cancha_disponibilidad')
-      .select('*')
-      .eq('cancha_id', canchaId)
-      .eq('dia_semana', dia)
-      .eq('activo', true),
-    supabase
-      .from('reservas')
-      .select('hora_inicio, estado')
-      .eq('cancha_id', canchaId)
-      .eq('fecha', fecha),
+  const [disp,res] = await Promise.all([
+    supabase.from('cancha_disponibilidad').select('*').eq('cancha_id',canchaId)
+      .eq('dia_semana',diaSemanaDe(fecha)).eq('activo',true).order('id'),
+    supabase.rpc('horarios_ocupados',{p_cancha:canchaId,p_fecha:fecha} as never),
   ]);
-
-  const ocupados = new Set(
-    ((resRaw ?? []) as { hora_inicio: string; estado: string }[])
-      .filter((r) => r.estado !== 'cancelada')
-      .map((r) => hhmmToMin(r.hora_inicio)),
-  );
-
-  const slots: Slot[] = [];
-  for (const f of (dispRaw ?? []) as CanchaDisponibilidad[]) {
-    const ini = hhmmToMin(f.hora_apertura);
-    const fin = hhmmToMin(f.hora_cierre);
-    for (let t = ini; t + f.duracion_min <= fin; t += f.duracion_min) {
-      slots.push({
-        hora_inicio: minToHHmm(t),
-        hora_fin: minToHHmm(t + f.duracion_min),
-        precio: f.precio,
-        ocupado: ocupados.has(t),
-      });
-    }
-  }
-  return slots.sort((a, b) => hhmmToMin(a.hora_inicio) - hhmmToMin(b.hora_inicio));
+  const franjas = (comprobarRespuesta(disp) ?? []) as CanchaDisponibilidad[];
+  const ocupados = (comprobarRespuesta(res) ?? []) as unknown as {hora_inicio:string;hora_fin:string}[];
+  return generarSlots(franjas,ocupados,fecha);
 }
 
 // ---------------------------------------------------------------------------
@@ -253,19 +204,21 @@ export async function crearReserva(data: NuevaReserva): Promise<Reserva> {
     .select()
     .single();
   if (error) {
-    if (error.code === '23505') throw new Error('Ese horario ya está reservado, parce. Elegí otro.');
+    if (error.code === '23505' || error.code === '23P01') throw new Error('Ese horario ya está reservado, parce. Elegí otro.');
     throw new Error('No pudimos reservar. Probá de nuevo.');
   }
+  if (!fila) throw new Error('No pudimos confirmar el registro de la reserva.');
   return fila as Reserva;
 }
 
 export async function misReservas(jugadorId: string): Promise<Reserva[]> {
   if (!supabaseConfigurado) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('reservas')
     .select('*')
     .eq('jugador_id', jugadorId)
     .order('fecha', { ascending: false });
+  if (error) throw new Error('No pudimos cargar los datos de la cancha. Revisá tu conexión.');
   return (data ?? []) as Reserva[];
 }
 
@@ -273,7 +226,8 @@ export async function reservasDeCancha(canchaId: string, fecha?: string): Promis
   if (!supabaseConfigurado) return [];
   let q = supabase.from('reservas').select('*').eq('cancha_id', canchaId);
   if (fecha) q = q.eq('fecha', fecha);
-  const { data } = await q.order('fecha', { ascending: true }).order('hora_inicio', { ascending: true });
+  const { data, error } = await q.order('fecha', { ascending: true }).order('hora_inicio', { ascending: true });
+  if (error) throw new Error('No pudimos cargar los datos de la cancha. Revisá tu conexión.');
   return (data ?? []) as Reserva[];
 }
 
@@ -291,43 +245,41 @@ export async function cancelarReserva(reservaId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 export async function saldoCancha(canchaId: string): Promise<number> {
   if (!supabaseConfigurado) return 0;
-  // El saldo es la suma del ledger. RLS garantiza que solo el dueño lee sus
-  // movimientos, así que este cálculo es seguro y no expone saldos ajenos.
-  const { data } = await supabase.from('movimientos_cancha').select('monto').eq('cancha_id', canchaId);
-  return ((data ?? []) as { monto: number }[]).reduce((s, m) => s + (m.monto ?? 0), 0);
+  const saldo = comprobarRespuesta(await supabase.rpc('saldo_cancha',{p_cancha:canchaId} as never));
+  return Number(saldo ?? 0);
 }
 
 export async function movimientos(canchaId: string): Promise<MovimientoCancha[]> {
   if (!supabaseConfigurado) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('movimientos_cancha')
     .select('*')
     .eq('cancha_id', canchaId)
     .order('created_at', { ascending: false });
+  if (error) throw new Error('No pudimos cargar los datos de la cancha. Revisá tu conexión.');
   return (data ?? []) as MovimientoCancha[];
 }
 
 export async function retirosDeCancha(canchaId: string): Promise<Retiro[]> {
   if (!supabaseConfigurado) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('retiros')
     .select('*')
     .eq('cancha_id', canchaId)
     .order('solicitado_at', { ascending: false });
+  if (error) throw new Error('No pudimos cargar los datos de la cancha. Revisá tu conexión.');
   return (data ?? []) as Retiro[];
 }
 
 export async function solicitarRetiro(canchaId: string, monto: number): Promise<Retiro> {
   if (!supabaseConfigurado) throw new Error(SIN_CONEXION);
-  const saldo = await saldoCancha(canchaId);
-  if (monto <= 0) throw new Error('Ingresá un monto válido.');
-  if (monto > saldo) throw new Error('El monto supera tu saldo disponible.');
+  if (!Number.isSafeInteger(monto) || monto <= 0) throw new Error('Ingresá un monto válido.');
   const { data: fila, error } = await supabase
     .from('retiros')
     .insert({ cancha_id: canchaId, monto, estado: 'solicitado' } as never)
     .select()
     .single();
-  if (error || !fila) throw new Error('No pudimos registrar el retiro. Probá de nuevo.');
+  if (error || !fila) throw new Error(error?.message?.includes('saldo') ? 'El monto supera tu saldo disponible.' : 'No pudimos registrar el retiro. Probá de nuevo.');
   return fila as Retiro;
 }
 
@@ -336,12 +288,15 @@ export async function solicitarRetiro(canchaId: string, monto: number): Promise<
 // ---------------------------------------------------------------------------
 export async function membresiaActiva(canchaId: string): Promise<boolean> {
   if (!supabaseConfigurado) return false;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('membresias_cancha')
     .select('estado, vigente_hasta')
     .eq('cancha_id', canchaId)
     .eq('estado', 'activa')
+    .or(`vigente_hasta.is.null,vigente_hasta.gte.${hoyColombia()}`)
+    .limit(1)
     .maybeSingle();
+  if (error) throw new Error('No pudimos cargar los datos de la cancha. Revisá tu conexión.');
   return !!data;
 }
 
@@ -350,15 +305,11 @@ export async function membresiaActiva(canchaId: string): Promise<boolean> {
 // ---------------------------------------------------------------------------
 export async function subirFotoCancha(uri: string): Promise<string> {
   if (!supabaseConfigurado) throw new Error(SIN_CONEXION);
-  const resp = await fetch(uri);
-  const arrayBuffer = await resp.arrayBuffer();
-  const ext = uri.split('.').pop()?.split('?')[0] || 'jpg';
-  const path = `${Math.random().toString(36).slice(2)}-${arrayBuffer.byteLength}.${ext}`;
-  const { error } = await supabase.storage
-    .from('canchas')
-    .upload(path, arrayBuffer, { contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}`, upsert: false });
-  if (error) throw new Error('No pudimos subir la foto. Probá de nuevo.');
-  return supabase.storage.from('canchas').getPublicUrl(path).data.publicUrl;
+  const {data,error} = await supabase.auth.getUser();
+  if (error || !data.user) throw new Error('Necesitás iniciar sesión para subir fotos.');
+  const url = await subirImagen(uri,data.user.id);
+  if (!url) throw new Error('No pudimos subir la foto.');
+  return url;
 }
 
 // ---------------------------------------------------------------------------
@@ -442,11 +393,12 @@ export async function crearEstablecimiento(
 // ---------------------------------------------------------------------------
 export async function getDatosDesembolso(ownerId: string): Promise<DatosDesembolso | null> {
   if (!supabaseConfigurado) return null;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('datos_desembolso')
     .select('*')
     .eq('owner_id', ownerId)
     .maybeSingle();
+  if (error) throw new Error('No pudimos cargar los datos de la cancha. Revisá tu conexión.');
   return (data as unknown as DatosDesembolso | null) ?? null;
 }
 

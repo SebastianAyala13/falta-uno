@@ -20,13 +20,16 @@ const SITE_URL = SITE_URL_ENV || 'https://sebastianayala13.github.io/falta-uno-l
 export const LEGAL_URL = SITE_URL_ENV ? `${SITE_URL}/legal` : SITE_URL;
 export const URL_PRIVACIDAD = `${LEGAL_URL}/privacidad.html`;
 export const URL_TERMINOS = `${LEGAL_URL}/terminos.html`;
+export const URL_ELIMINAR_CUENTA = `${LEGAL_URL}/eliminar-cuenta.html`;
+export const URL_COMUNIDAD = `${LEGAL_URL}/normas-comunidad.html`;
+export const URL_SOPORTE = 'mailto:vasecom22@gmail.com?subject=Soporte%20Falta%20Uno';
 
 /**
  * Versión vigente de la Política de Privacidad / autorización de tratamiento de
  * datos (Ley 1581 de 2012). Se guarda junto a la aceptación del usuario como
  * prueba del consentimiento (habeas data). Subila cuando cambie la política.
  */
-export const POLITICA_VERSION = '2026-06-25';
+export const POLITICA_VERSION = '2026-10-06';
 
 /** Posiciones de juego disponibles en el registro y perfil. */
 export const POSICIONES = ['Portero', 'Defensa', 'Mediocampista', 'Delantero'] as const;

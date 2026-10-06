@@ -26,9 +26,6 @@ const cors = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-/** Comisión de servicio sobre el cupo de partido (sync con constants/config.ts). */
-const COMISION_SERVICIO = 0.08;
-
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -59,6 +56,7 @@ function firmarRapyd(
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  if (req.method !== 'POST') return json({error:'Método no permitido'},405);
 
   try {
     const authHeader = req.headers.get('Authorization');
@@ -91,28 +89,29 @@ Deno.serve(async (req) => {
     let amount = 0;
     if (tipo === 'partido') {
       if (typeof partidoId !== 'string' || !partidoId) return json({ error: 'partidoId inválido' }, 400);
-      const { data: p, error } = await userClient
-        .from('partidos')
-        .select('precio')
-        .eq('id', partidoId)
-        .single();
-      if (error || !p) return json({ error: 'Partido no encontrado' }, 404);
-      amount = p.precio + Math.round(p.precio * COMISION_SERVICIO);
+      const {data:p,error} = await userClient.from('pagos')
+        .select('monto,estado,medio,jugador_id,caduca_at').eq('referencia',referencia)
+        .eq('partido_id',partidoId).eq('jugador_id',user.id).single();
+      if (error || !p) return json({error:'Pago no encontrado'},404);
+      if (p.estado !== 'pendiente' || p.medio !== 'online' || !p.caduca_at || Date.parse(p.caduca_at) <= Date.now()) return json({error:'Pago no disponible'},409);
+      // Frozen price comes from the atomic enrollment RPC, never the request body.
+      amount = p.monto;
     } else if (tipo === 'reserva') {
       if (typeof reservaId !== 'string' || !reservaId) return json({ error: 'reservaId inválido' }, 400);
       const { data: r, error } = await userClient
         .from('reservas')
-        .select('precio, jugador_id')
+        .select('precio,jugador_id,referencia,estado,medio,caduca_at')
         .eq('id', reservaId)
         .single();
       if (error || !r) return json({ error: 'Reserva no encontrada' }, 404);
       if (r.jugador_id !== user.id) return json({ error: 'No autorizado' }, 403);
+      if (r.referencia !== referencia || r.medio !== 'online' || r.estado !== 'pendiente' || !r.caduca_at || Date.parse(r.caduca_at) <= Date.now()) return json({error:'Reserva no disponible'},409);
       amount = r.precio; // el jugador paga el precio del turno; la comisión sale del ledger de la cancha
     } else {
       return json({ error: 'Tipo inválido' }, 400);
     }
 
-    if (!Number.isFinite(amount) || amount <= 0) return json({ error: 'Monto inválido' }, 400);
+    if (!Number.isSafeInteger(amount) || amount <= 0) return json({ error: 'Monto inválido' }, 400);
 
     // Crear el Hosted Checkout de Rapyd. COP es moneda sin decimales: el entero va tal cual.
     const method = 'post';
@@ -139,19 +138,20 @@ Deno.serve(async (req) => {
         salt,
         timestamp,
         signature,
+        idempotency: referencia,
       },
       body,
     });
     const out = await resp.json();
     const redirectUrl = out?.data?.redirect_url;
     if (!resp.ok || out?.status?.status !== 'SUCCESS' || !redirectUrl) {
-      console.error('rapyd-crear-checkout: respuesta Rapyd', JSON.stringify(out?.status ?? out));
+      console.error('rapyd-crear-checkout: respuesta no válida del proveedor');
       return json({ error: 'No se pudo crear el checkout' }, 502);
     }
 
     return json({ url: redirectUrl });
   } catch (e) {
-    console.error('rapyd-crear-checkout:', e);
-    return json({ error: String(e) }, 500);
+    console.error('rapyd-crear-checkout: operación incompleta');
+    return json({ error: 'No se pudo iniciar el checkout' }, 500);
   }
 });

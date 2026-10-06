@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
@@ -35,7 +35,7 @@ export default function GlowButton({
     primary: { bg: c.primary, text: c.ink, glow: c.primary },
     accent: { bg: c.accent, text: c.ink, glow: c.accent },
     outline: { bg: 'transparent', text: c.cream, glow: 'transparent', border: c.border },
-    dark: { bg: c.card, text: c.cream, glow: '#000000', border: c.border },
+    dark: { bg: c.card, text: c.cream, glow: c.background, border: c.border },
   };
 
   const scale = useSharedValue(1);

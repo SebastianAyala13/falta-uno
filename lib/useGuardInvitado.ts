@@ -1,5 +1,6 @@
+import { Alert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
-import { Alert } from 'react-native';
+
 
 import { useAuth } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
@@ -19,10 +20,10 @@ import { haptics } from '@/lib/haptics';
  *   };
  */
 export function useGuardInvitado() {
-  const { esInvitado } = useAuth();
+  const { esInvitado, profile } = useAuth();
   const router = useRouter();
   return (mensaje = 'Creá una cuenta para hacer esto, parce.'): boolean => {
-    if (!esInvitado) return false;
+    if (!esInvitado && profile) return false;
     haptics.tap();
     Alert.alert('Necesitás una cuenta', mensaje, [
       { text: 'Ahora no', style: 'cancel' },

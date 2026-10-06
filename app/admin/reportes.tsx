@@ -1,4 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
@@ -12,7 +14,6 @@ import Screen from '@/components/Screen';
 import { CardListSkeleton } from '@/components/Skeleton';
 import type { Palette } from '@/constants/themes';
 import { reportesAdmin, resolverReporte, suspenderUsuario } from '@/lib/admin';
-import { dialogo } from '@/lib/dialogo';
 import { tiempoRelativo } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
@@ -27,6 +28,9 @@ const MOTIVO_CHIP = (c: Palette): Record<Reporte['motivo'], { label: string; col
 });
 
 const TIPO_CONTENIDO: Record<Reporte['tipo'], { label: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  partido: {label:'Partido',icon:'football-outline'},
+  cancha: {label:'Cancha',icon:'business-outline'},
+  perfil: {label:'Perfil',icon:'person-outline'},
   post: { label: 'Post', icon: 'newspaper-outline' },
   comentario: { label: 'Comentario', icon: 'chatbubble-outline' },
   mensaje: { label: 'Mensaje', icon: 'mail-outline' },
@@ -122,7 +126,7 @@ export default function AdminReportes() {
         haptics.success();
         await cargar(false);
       } catch (e) {
-        dialogo.mostrar('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo, parce.');
+        Alert.alert('No se pudo', e instanceof Error ? e.message : 'Intentá de nuevo, parce.');
       } finally {
         setProcesando(null);
       }
@@ -132,7 +136,7 @@ export default function AdminReportes() {
 
   const eliminarContenido = (r: Reporte) => {
     haptics.tap();
-    dialogo.mostrar('¿Eliminar el contenido?', 'Se borra el contenido reportado de forma permanente.', [
+    Alert.alert('¿Eliminar el contenido?', 'Se retira el contenido reportado. Partidos y canchas se ocultan para conservar reservas y pagos; perfiles se suspenden.', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Eliminar', style: 'destructive', onPress: () => ejecutar(r.id, () => resolverReporte(r.id, 'resuelto', true)) },
     ]);
@@ -146,7 +150,7 @@ export default function AdminReportes() {
   const suspenderAutor = (r: Reporte) => {
     if (!r.autor_id) return;
     haptics.tap();
-    dialogo.mostrar('¿Suspender al autor?', 'El usuario queda suspendido y no podrá seguir publicando.', [
+    Alert.alert('¿Suspender al autor?', 'El usuario queda suspendido y no podrá seguir publicando.', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Suspender', style: 'destructive', onPress: () => ejecutar(r.id, () => suspenderUsuario(r.autor_id, true)) },
     ]);
@@ -225,6 +229,7 @@ export default function AdminReportes() {
                         {/* Contenido reportado */}
                         <View className="mt-3 rounded-sm border border-borderStrong bg-background p-3">
                           <Text className="font-body text-sm text-cream">{r.texto}</Text>
+                          {r.foto_url ? <Image source={{uri:r.foto_url}} accessibilityLabel="Foto del contenido reportado" style={{width:'100%',height:180,borderRadius:12,marginTop:12}} contentFit="contain" /> : null}
                         </View>
 
                         {/* Quién escribió y quién reportó */}

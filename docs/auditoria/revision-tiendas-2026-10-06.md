@@ -1,5 +1,3 @@
-> Estado de publicación: este informe describe cambios y pruebas del workspace de Codex. En este commit se publica únicamente documentación; el código, las pruebas y las migraciones descritos todavía no están incluidos en el repositorio remoto. Deben recuperarse e integrarse antes de ejecutar sus instrucciones.
-
 # Resultado de revisión Android/iOS
 
 **6 de octubre de 2026.** Código corregido y verificado localmente; **no listo

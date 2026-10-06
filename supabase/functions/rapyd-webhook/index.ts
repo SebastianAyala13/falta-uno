@@ -16,10 +16,7 @@
 // (SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY ya vienen en el entorno.)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { createHmac } from 'node:crypto';
-
-/** Comisión de servicio sobre el cupo de partido (sync con constants/config.ts). */
-const COMISION_SERVICIO = 0.08;
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -59,7 +56,9 @@ Deno.serve(async (req) => {
     const sign = req.headers.get('signature') ?? '';
 
     const esperado = firmaWebhookRapyd(webhookUrl, salt, timestamp, accessKey, secretKey, raw);
-    if (!sign || sign !== esperado) return json({ error: 'Firma inválida' }, 401);
+    const firma = new TextEncoder().encode(sign);
+    const valida = new TextEncoder().encode(esperado);
+    if (!salt || !/^\d+$/.test(timestamp) || firma.length !== valida.length || !timingSafeEqual(firma,valida)) return json({ error: 'Firma inválida' }, 401);
 
     const evento = JSON.parse(raw);
     // Solo nos interesa el pago completado. Cualquier otro tipo se ignora (200 OK).
@@ -67,7 +66,8 @@ Deno.serve(async (req) => {
 
     const pagoRapyd = evento.data ?? {};
     const referencia = String(pagoRapyd.merchant_reference_id ?? '');
-    const amountInt = Math.round(Number(pagoRapyd.amount ?? 0));
+    const amountInt = Number(pagoRapyd.amount);
+    if (!Number.isSafeInteger(amountInt) || amountInt <= 0 || pagoRapyd.currency !== 'COP') return json({error:'Monto o moneda inválido'},400);
     if (!referencia) return json({ error: 'Sin referencia' }, 400);
 
     const admin = createClient(
@@ -75,84 +75,16 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // ¿Es un pago de partido? (pagos.referencia)
-    const { data: pago } = await admin
-      .from('pagos')
-      .select('id, partido_id, jugador_id, monto, estado')
-      .eq('referencia', referencia)
-      .maybeSingle();
-
-    if (pago) {
-      if (pago.estado === 'aprobado') return json({ ok: true, duplicado: true });
-      if (Math.round(pago.monto) !== amountInt) {
-        console.error('rapyd-webhook: monto no coincide (pago)', referencia, pago.monto, amountInt);
-        return json({ ok: true, alerta: 'monto no coincide' });
-      }
-      await admin.from('pagos').update({ estado: 'aprobado' }).eq('id', pago.id);
-
-      // Asegurar inscripción (el trigger fn_sync_cupos ocupa el cupo)
-      const { data: yaInscrito } = await admin
-        .from('partido_jugadores')
-        .select('id')
-        .eq('partido_id', pago.partido_id)
-        .eq('jugador_id', pago.jugador_id)
-        .maybeSingle();
-      if (!yaInscrito) {
-        const { data: perfil } = await admin
-          .from('profiles')
-          .select('posicion')
-          .eq('id', pago.jugador_id)
-          .maybeSingle();
-        const { error: errIns } = await admin.from('partido_jugadores').insert({
-          partido_id: pago.partido_id,
-          jugador_id: pago.jugador_id,
-          posicion: perfil?.posicion ?? 'Mediocampista',
-          confirmado: true,
-        });
-        if (errIns && errIns.code !== '23505') throw errIns;
-      }
-      return json({ ok: true, tipo: 'partido' });
-    }
-
-    // ¿Es una reserva de cancha? (reservas.referencia)
-    const { data: reserva } = await admin
-      .from('reservas')
-      .select('id, cancha_id, precio, comision, estado')
-      .eq('referencia', referencia)
-      .maybeSingle();
-
-    if (reserva) {
-      if (reserva.estado === 'confirmada') return json({ ok: true, duplicado: true });
-      if (Math.round(reserva.precio) !== amountInt) {
-        console.error('rapyd-webhook: monto no coincide (reserva)', referencia, reserva.precio, amountInt);
-        return json({ ok: true, alerta: 'monto no coincide' });
-      }
-      await admin.from('reservas').update({ estado: 'confirmada' }).eq('id', reserva.id);
-
-      // Ledger de la cancha: ingreso por la reserva y comisión de Falta Uno
-      const comision = reserva.comision ?? Math.round(reserva.precio * COMISION_SERVICIO);
-      await admin.from('movimientos_cancha').insert([
-        {
-          cancha_id: reserva.cancha_id,
-          tipo: 'ingreso_reserva',
-          monto: reserva.precio,
-          reserva_id: reserva.id,
-          descripcion: 'Ingreso por reserva (Rapyd)',
-        },
-        {
-          cancha_id: reserva.cancha_id,
-          tipo: 'comision',
-          monto: -Math.abs(comision),
-          reserva_id: reserva.id,
-          descripcion: 'Comisión Falta Uno',
-        },
-      ]);
-      return json({ ok: true, tipo: 'reserva' });
-    }
-
-    return json({ ok: true, ignorado: 'referencia desconocida' });
+    // The RPC commits payment, membership and ledger together. It locks only
+    // the corresponding match/reservation and handles parallel retries safely.
+    const {data,error} = await admin.rpc('confirmar_pago_online', {
+      p_referencia:referencia,p_monto:amountInt,p_moneda:pagoRapyd.currency,
+      p_proveedor_pago_id:typeof pagoRapyd.id === 'string' ? pagoRapyd.id : null,
+    });
+    if (error) throw error; // Return 500 so the provider retries a failed transaction.
+    return json({ok:true,...data});
   } catch (e) {
-    console.error('rapyd-webhook:', e);
-    return json({ error: String(e) }, 500);
+    console.error('rapyd-webhook: transacción incompleta');
+    return json({ error: 'No se pudo confirmar el pago' }, 500);
   }
 });

@@ -23,12 +23,15 @@ This is the single most common trip-up. The repo standardized on **pnpm via core
 pnpm install                          # install deps (uses pnpm-lock.yaml)
 pnpm start                            # expo start — dev server (Expo Go QR, or press a/i/w)
 pnpm android | pnpm ios | pnpm web    # expo start on a specific platform
-pnpm lint                             # expo lint — the only automated check in the repo
+pnpm lint                             # Expo lint
+pnpm test                             # node:test regression suite
+pnpm test:db                          # isolated PostgreSQL/Docker regressions
 pnpm exec expo export --platform web  # produce the static web build in dist/
 ```
 
-There is **no test suite** (no jest, no `test` script). "Verification" means: `pnpm lint`, a
-successful `expo export`, and — for the web deploy — a `docker build` (see Deploy).
+Regression tests use node:test in `tests/`; database tests start an isolated Docker PostgreSQL.
+Run tests, TypeScript, lint and the exports relevant to the change. For web deploy, also verify
+nginx and the Docker build when the environment permits it.
 
 Mobile release builds go through EAS (`eas.json`):
 
@@ -68,7 +71,7 @@ saldo, PayU), `lib/payments.ts`, `types/database.ts` (Supabase row types).
 Merging to `main` triggers `.github/workflows/db-migrations.yml`, which runs `supabase db push` to apply
 pending migrations to prod. `db reset` is **local only**, never against prod; there is **no staging**, so
 always test locally before merging. Server logic lives in `supabase/functions/` (`rapyd-crear-checkout`,
-`rapyd-webhook`, `delete-user`) and — together with its secrets — is **managed in the Supabase
+`rapyd-webhook`, `delete-user`, `moderar-contenido`) and — together with its secrets — is **managed in the Supabase
 dashboard**, not deployed by the CLI or CI.
 
 **Payments (hard invariant)** — the client **never** marks a payment `aprobado`. Cash stays

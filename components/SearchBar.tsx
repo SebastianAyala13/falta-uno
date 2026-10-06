@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { TextInput, View } from 'react-native';
 
 import { cx } from '@/lib/cx';

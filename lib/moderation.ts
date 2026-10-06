@@ -49,7 +49,7 @@ export const MENSAJE_BLOQUEO_FILTRO =
 export const MOTIVOS_REPORTE: { id: MotivoReporte; label: string }[] = [
   { id: 'spam', label: 'Spam o estafa' },
   { id: 'acoso', label: 'Acoso o bullying' },
-  { id: 'sexual', label: 'Contenido sexual' },
+  { id: 'sexual', label: 'Contenido sexual o abuso de menores' },
   { id: 'odio', label: 'Odio o violencia' },
   { id: 'otro', label: 'Otro' },
 ];

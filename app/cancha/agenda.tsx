@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
@@ -13,6 +13,7 @@ import Screen from '@/components/Screen';
 import { CardListSkeleton, SkeletonBlock } from '@/components/Skeleton';
 import { useAuth } from '@/lib/auth';
 import { misCanchas, reservasDeCancha, slotsDelDia, type Slot } from '@/lib/canchas';
+import { hoyColombia } from '@/lib/data-utils';
 import { precioCOP } from '@/lib/format';
 import { useTheme } from '@/lib/theme';
 import type { Cancha, Reserva } from '@/types/database';
@@ -39,7 +40,7 @@ export default function AgendaCancha() {
   const [loading, setLoading] = useState(true);
   const [cargandoDia, setCargandoDia] = useState(false);
   const [cancha, setCancha] = useState<Cancha | null>(null);
-  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
+  const [fecha, setFecha] = useState(hoyColombia());
   const [slots, setSlots] = useState<Slot[]>([]);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +83,7 @@ export default function AgendaCancha() {
         if (vigente) {
           setSlots([]);
           setReservas([]);
+          setError('No pudimos cargar la agenda. Reintentá.');
         }
       } finally {
         if (vigente) setCargandoDia(false);

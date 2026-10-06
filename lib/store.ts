@@ -1,11 +1,14 @@
+import { subirImagen } from '@/lib/media';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { setActiveColors } from '@/constants/colors';
-import { COMISION_SERVICIO, CUPOS_POR_FORMATO, type Formato, type Nivel } from '@/constants/config';
+import { CUPOS_POR_FORMATO, type Formato, type Nivel } from '@/constants/config';
 import { DEFAULT_THEME_ID } from '@/constants/themes';
+import { conOrganizadores } from '@/lib/partidos';
 import { matchDateTime } from '@/lib/format';
+import { PAGE_SIZE, comprobarRespuesta, hoyColombia, leerPaginas, unirPorId } from '@/lib/data-utils';
 import { partidosDisponibles, postsSeed } from '@/lib/mockData';
 import { supabase, supabaseConfigurado } from '@/lib/supabase';
 import type {
@@ -58,18 +61,23 @@ interface StoreState {
   bloqueados: string[]; // ids de usuarios bloqueados por el usuario actual (moderación UGC)
   reportes: Reporte[]; // reportes de contenido objetable
   temaId: string; // id del tema de color activo
-  hidratado: boolean; // ya se trajeron datos reales de Supabase al menos una vez
-  /**
-   * Por qué falló la última carga, o `null` si fue bien. Sin esto, un fallo de red
-   * dejaba la app "hidratada" con las listas vacías: el inicio decía que no hay
-   * partidos y el muro que no hay publicaciones, sin una sola señal de que algo
-   * se rompió — así nadie reintenta. No se persiste (ver `partialize`).
-   */
+  usuarioId: string | null;
   errorCarga: string | null;
+  cargando: boolean;
+  hayMasPosts: boolean;
+  hayMasPartidos: boolean;
+  hayMasComentarios: Record<string, boolean>;
+  reiniciarSesion: (userId: string | null) => void;
+  cargarMasPosts: () => Promise<void>;
+  cargarMasPartidos: () => Promise<void>;
+  cargarPartido: (id: string) => Promise<void>;
+  cargarPost: (id: string) => Promise<void>;
+  cargarComentarios: (id: string, mas?: boolean) => Promise<void>;
+  hidratado: boolean; // ya se trajeron datos reales de Supabase al menos una vez
 
   setTema: (id: string) => void;
   /** Trae partidos, muro, inscripciones y pagos reales desde Supabase. */
-  hidratar: (userId: string) => Promise<void>;
+  hidratar: (userId: string, forzar?: boolean) => Promise<void>;
   getPartido: (id: string) => PartidoConOrganizador | undefined;
   estaInscrito: (id: string) => boolean;
   misPartidos: () => PartidoConOrganizador[];
@@ -80,13 +88,13 @@ interface StoreState {
     partidoId: string,
     autorId: string,
     data: { estrellas: number; organizador_estrellas: number; hubo_no_show: boolean; comentario: string },
-  ) => void;
+  ) => Promise<void>;
 
   // --- Muro social ---
   getComentarios: (postId: string) => Comentario[];
   crearPost: (data: NuevoPost, autor: AutorPost) => Promise<string>;
-  toggleLike: (postId: string, userId: string) => void;
-  comentar: (postId: string, autor: AutorPost, texto: string) => void;
+  toggleLike: (postId: string, userId: string) => Promise<void>;
+  comentar: (postId: string, autor: AutorPost, texto: string) => Promise<void>;
   /** Crea posts-recap para los partidos del usuario que ya terminaron (solo local). */
   generarRecapsPendientes: (userId: string, ahoraISO: string) => void;
 
@@ -94,11 +102,11 @@ interface StoreState {
   /** ¿El usuario actual bloqueó a este autor? */
   estaBloqueado: (userId: string) => boolean;
   /** Bloquea a un usuario: deja de ver su contenido. `byUserId` = quién bloquea (para persistir). */
-  bloquearUsuario: (userId: string, byUserId?: string) => void;
+  bloquearUsuario: (userId: string, byUserId?: string) => Promise<void>;
   /** Quita el bloqueo de un usuario. */
-  desbloquearUsuario: (userId: string, byUserId?: string) => void;
+  desbloquearUsuario: (userId: string, byUserId?: string) => Promise<void>;
   /** Registra un reporte de contenido objetable para revisión. */
-  reportarContenido: (data: Omit<Reporte, 'id' | 'created_at' | 'estado'>) => void;
+  reportarContenido: (data: Omit<Reporte, 'id' | 'created_at' | 'estado'>) => Promise<void>;
 
   crearPartido: (data: NuevoPartido, organizador: { id: string; nombre: string }) => Promise<string>;
   /**
@@ -113,22 +121,34 @@ interface StoreState {
     estado: EstadoPago,
     referencia?: string,
   ) => Promise<Pago>;
-  salirse: (partidoId: string, jugadorId: string) => void;
+  salirse: (partidoId: string, jugadorId: string) => Promise<void>;
 }
 
 const genId = (p: string) => `${p}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4)}`;
 /** Referencia legible de pago tipo FU-XXXXXX (se comparte con la pasarela). */
-export const genRef = () => 'FU-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+export const genRef = () => 'FU-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 12).toUpperCase();
 
 /** En modo demo (sin Supabase) arrancamos con datos de ejemplo; con backend, vacío. */
 const USAR_SEEDS = !supabaseConfigurado;
 
-/** Ejecuta una escritura en Supabase en segundo plano, ignorando el resultado. */
-function bg(promesa: PromiseLike<unknown>) {
-  Promise.resolve(promesa).then(
-    () => {},
-    () => {},
-  );
+// Invalidate all pending reads when the account changes. Each flight is scoped.
+let sesionVersion = 0;
+let ultimaCarga = 0;
+let cursorPartidos: PartidoConOrganizador | null = null;
+const cursoresComentarios = new Map<string,Comentario>();
+let cursorPosts: { created_at: string; id: string } | null = null;
+const consultas = new Map<string, Promise<void>>();
+const likesPendientes = new Set<string>();
+const inscripcionesPendientes = new Map<string, Promise<Pago>>();
+
+function consultaCompartida(clave: string, tarea: () => Promise<void>): Promise<void> {
+  const existente = consultas.get(clave);
+  if (existente) return existente;
+  const promesa = Promise.resolve().then(tarea).finally(() => {
+    if (consultas.get(clave) === promesa) consultas.delete(clave);
+  });
+  consultas.set(clave, promesa);
+  return promesa;
 }
 
 // Mensajes de ejemplo para que el chat se sienta vivo en el demo (solo sin backend)
@@ -156,7 +176,12 @@ export const useStore = create<StoreState>()(
       reportes: [],
       temaId: DEFAULT_THEME_ID,
       hidratado: false,
+      usuarioId: null,
       errorCarga: null,
+      cargando: false,
+      hayMasPosts: false,
+      hayMasPartidos: false,
+      hayMasComentarios: {},
 
       setTema: (id) => {
         setActiveColors(id);
@@ -166,100 +191,129 @@ export const useStore = create<StoreState>()(
       // ----------------------------------------------------------------------
       // HIDRATACIÓN: trae los datos reales de Supabase y reemplaza el estado.
       // ----------------------------------------------------------------------
-      hidratar: async (userId) => {
-        if (!supabaseConfigurado) {
-          set({ hidratado: true });
-          return;
-        }
-        try {
-          const [
-            { data: partidosRaw },
-            { data: inscRaw },
-            { data: pagosRaw },
-            { data: postsRaw },
-            { data: likesRaw },
-            { data: comentRaw },
-            { data: calRaw },
-            { data: bloqRaw },
-          ] = await Promise.all([
-            supabase.from('partidos').select('*').order('fecha', { ascending: true }),
-            supabase.from('partido_jugadores').select('partido_id').eq('jugador_id', userId),
-            supabase.from('pagos').select('*').eq('jugador_id', userId).order('created_at', { ascending: false }),
-            supabase.from('posts').select('*').order('created_at', { ascending: false }),
-            supabase.from('post_likes').select('post_id, user_id'),
-            supabase.from('comentarios').select('*').order('created_at', { ascending: true }),
-            supabase.from('calificaciones').select('*').eq('autor_id', userId),
-            supabase.from('bloqueos').select('bloqueado_id').eq('usuario_id', userId),
-          ]);
-
-          // Organizadores: nombre/avatar/rating desde la vista pública (RLS-safe)
-          const partidos = (partidosRaw ?? []) as PartidoConOrganizador[];
-          const orgIds = [...new Set(partidos.map((p) => p.organizador_id))];
-          const organizadores: Record<string, { nombre: string; avatar_url: string | null; rating: number }> = {};
-          if (orgIds.length) {
-            const { data: perfiles } = await supabase
-              .from('perfiles_publicos')
-              .select('id, nombre, avatar_url, rating')
-              .in('id', orgIds);
-            const filas = (perfiles ?? []) as { id: string; nombre: string; avatar_url: string | null; rating: number }[];
-            for (const p of filas) {
-              organizadores[p.id] = { nombre: p.nombre, avatar_url: p.avatar_url, rating: p.rating };
-            }
-          }
-          const partidosConOrg = partidos.map((p) => ({
-            ...p,
-            organizador: organizadores[p.organizador_id] ?? { nombre: 'Organizador', avatar_url: null, rating: 5 },
-          }));
-
-          // Likes: agrupamos user_ids por post
-          const likesPorPost: Record<string, string[]> = {};
-          for (const l of (likesRaw ?? []) as { post_id: string; user_id: string }[]) {
-            (likesPorPost[l.post_id] ??= []).push(l.user_id);
-          }
-          // Recaps locales (auto-generados) no viven en Supabase: los conservamos
-          const recapsLocales = get().posts.filter((p) => p.tipo === 'recap');
-          const posts = [
-            ...recapsLocales,
-            ...((postsRaw ?? []) as Post[]).map((p) => ({ ...p, likes: likesPorPost[p.id] ?? [] })),
-          ];
-
-          // Comentarios agrupados por post
-          const comentarios: Record<string, Comentario[]> = {};
-          for (const c of (comentRaw ?? []) as Comentario[]) {
-            (comentarios[c.post_id] ??= []).push(c);
-          }
-
-          // Inscritos: partidos donde soy jugador + partidos que organizo
-          const inscritos = [
-            ...new Set([
-              ...((inscRaw ?? []) as { partido_id: string }[]).map((r) => r.partido_id),
-              ...partidos.filter((p) => p.organizador_id === userId).map((p) => p.id),
-            ]),
-          ];
-
-          set({
-            partidos: partidosConOrg,
-            inscritos,
-            pagos: (pagosRaw ?? []) as Pago[],
-            posts,
-            comentarios,
-            calificaciones: (calRaw ?? []) as Calificacion[],
-            // Con backend, la lista del servidor es la fuente de verdad (evita que un usuario
-            // herede los bloqueos de otra cuenta que usó el mismo dispositivo).
-            bloqueados: ((bloqRaw ?? []) as { bloqueado_id: string }[]).map((b) => b.bloqueado_id),
-            hidratado: true,
-            errorCarga: null,
-          });
-        } catch {
-          // Dejamos lo que haya y marcamos hidratado para no colgar la interfaz,
-          // pero ahora queda dicho que falló: las pantallas muestran el aviso con
-          // reintentar en vez de fingir que no hay nada.
-          set({
-            hidratado: true,
-            errorCarga: 'No pudimos cargar los datos. Revisá tu conexión e intentá de nuevo.',
-          });
-        }
+      reiniciarSesion: (userId) => {
+        if (get().usuarioId === userId) return;
+        sesionVersion++;
+        ultimaCarga = 0;
+        cursorPartidos = null;
+        cursoresComentarios.clear();
+        cursorPosts = null;
+        consultas.clear();
+        likesPendientes.clear();
+        inscripcionesPendientes.clear();
+        set({ usuarioId: userId, hidratado: false, cargando: false, errorCarga: null,
+          partidos: USAR_SEEDS ? partidosDisponibles : [], posts: USAR_SEEDS ? postsSeed : [],
+          inscritos: [], pagos: [], mensajes: USAR_SEEDS ? mensajesSeed : {}, comentarios: {},
+          calificaciones: [], bloqueados: [], reportes: [], hayMasPosts: false, hayMasPartidos: false, hayMasComentarios: {} });
       },
+
+      hidratar: async (userId, forzar = false) => {
+        if (!supabaseConfigurado) { set({ hidratado: true }); return; }
+        if (get().usuarioId && get().usuarioId !== userId) get().reiniciarSesion(userId);
+        else if (!get().usuarioId) set({ usuarioId: userId });
+        if (!forzar && get().hidratado && Date.now() - ultimaCarga < 30000) return;
+        const version = sesionVersion;
+        return consultaCompartida(`hidratar:${userId}`, async () => {
+          if (version !== sesionVersion) return;
+          set({ cargando: true, errorCarga: null });
+          const privado = !userId.startsWith('demo');
+          try {
+            const [partidosRes, inscRaw, pagosRaw, postsRes, calRaw, bloqRaw, propios] = await Promise.all([
+              supabase.from('partidos').select('*').gte('fecha', hoyColombia()).eq('oculto',false)
+                .order('fecha').order('hora').order('id').range(0, PAGE_SIZE - 1),
+              privado ? leerPaginas<{ partido_id: string }>((a,b) => supabase.from('partido_jugadores')
+                .select('partido_id').eq('jugador_id',userId).order('id').range(a,b)) : Promise.resolve([]),
+              privado ? leerPaginas<Pago>((a,b) => supabase.from('pagos').select('*').eq('jugador_id',userId)
+                .order('created_at',{ascending:false}).order('id').range(a,b)) : Promise.resolve([]),
+              supabase.rpc('feed_posts', { p_limite: PAGE_SIZE } as never),
+              privado ? leerPaginas<Calificacion>((a,b) => supabase.from('calificaciones').select('*')
+                .eq('autor_id',userId).order('id').range(a,b)) : Promise.resolve([]),
+              privado ? leerPaginas<{ bloqueado_id: string }>((a,b) => supabase.from('bloqueos')
+                .select('bloqueado_id').eq('usuario_id',userId).order('id').range(a,b)) : Promise.resolve([]),
+              privado ? leerPaginas<PartidoConOrganizador>((a,b) => supabase.from('partidos').select('*')
+                .eq('organizador_id',userId).order('id').range(a,b)) : Promise.resolve([]),
+            ]);
+            const pagina = (comprobarRespuesta(partidosRes) ?? []) as PartidoConOrganizador[];
+            const posts = (comprobarRespuesta(postsRes) ?? []) as unknown as Post[];
+            const inscritos = [...new Set([...inscRaw.map(r => r.partido_id), ...propios.map(p => p.id)])];
+            let partidos = unirPorId(pagina, propios);
+            // Only this account's matches can require older/out-of-page rows.
+            const faltantes = inscritos.filter(id => !partidos.some(p => p.id === id));
+            for (let i = 0; i < faltantes.length; i += 100) {
+              const filas = comprobarRespuesta(await supabase.from('partidos').select('*').in('id',faltantes.slice(i,i+100))) ?? [];
+              partidos = unirPorId(partidos, filas as PartidoConOrganizador[]);
+            }
+            const conOrg = await conOrganizadores(partidos);
+            if (version !== sesionVersion) return;
+            cursorPosts = posts.length ? posts[posts.length - 1] : null;
+            cursorPartidos = pagina.length ? pagina[pagina.length-1] : null;
+            ultimaCarga = Date.now();
+            set({ partidos: conOrg, inscritos, pagos: pagosRaw, posts,
+              calificaciones: calRaw, bloqueados: bloqRaw.map(b => b.bloqueado_id),
+              hidratado: true, hayMasPosts: posts.length === PAGE_SIZE,
+              hayMasPartidos: pagina.length === PAGE_SIZE, errorCarga: null });
+          } catch {
+            if (version === sesionVersion) set({ errorCarga: 'No pudimos actualizar los datos. Revisá tu conexión y reintentá.' });
+          } finally {
+            if (version === sesionVersion) set({ cargando: false });
+          }
+        });
+      },
+
+      cargarMasPosts: () => consultaCompartida('masPosts', async () => {
+        if (!supabaseConfigurado || !get().hayMasPosts || !cursorPosts) return;
+        const version = sesionVersion;
+        const filas = (comprobarRespuesta(await supabase.rpc('feed_posts', {
+          p_antes: cursorPosts.created_at, p_antes_id: cursorPosts.id, p_limite: PAGE_SIZE,
+        } as never)) ?? []) as unknown as Post[];
+        if (version !== sesionVersion) return;
+        if (filas.length) cursorPosts = filas[filas.length-1];
+        set(s => ({ posts: unirPorId(s.posts,filas), hayMasPosts: filas.length === PAGE_SIZE }));
+      }),
+
+      cargarMasPartidos: () => consultaCompartida('masPartidos', async () => {
+        if (!supabaseConfigurado || !get().hayMasPartidos || !cursorPartidos) return;
+        const version = sesionVersion;
+        const ultimo = cursorPartidos;
+        const filas = (comprobarRespuesta(await supabase.from('partidos').select('*').gte('fecha',hoyColombia()).eq('oculto',false)
+          .or(`fecha.gt.${ultimo.fecha},and(fecha.eq.${ultimo.fecha},hora.gt.${ultimo.hora}),and(fecha.eq.${ultimo.fecha},hora.eq.${ultimo.hora},id.gt.${ultimo.id})`)
+          .order('fecha').order('hora').order('id').limit(PAGE_SIZE)) ?? []) as PartidoConOrganizador[];
+        const partidos = await conOrganizadores(filas);
+        if (version !== sesionVersion) return;
+        if (filas.length) cursorPartidos = filas[filas.length-1];
+        set(s => ({ partidos: unirPorId(s.partidos,partidos), hayMasPartidos: filas.length === PAGE_SIZE }));
+      }),
+
+      cargarPartido: id => consultaCompartida(`partido:${id}`, async () => {
+        if (!supabaseConfigurado) return;
+        const version = sesionVersion;
+        const fila = comprobarRespuesta(await supabase.from('partidos').select('*').eq('id',id).maybeSingle());
+        if (!fila) return;
+        const partidos = await conOrganizadores([fila as PartidoConOrganizador]);
+        if (version === sesionVersion) set(s => ({ partidos: unirPorId(s.partidos,partidos) }));
+      }),
+
+      cargarPost: id => consultaCompartida(`post:${id}`, async () => {
+        if (!supabaseConfigurado || id.startsWith('post-')) return;
+        const version = sesionVersion;
+        const filas = (comprobarRespuesta(await supabase.rpc('feed_posts',{p_post:id,p_limite:1} as never)) ?? []) as unknown as Post[];
+        if (version === sesionVersion) set(s => ({ posts: unirPorId(s.posts,filas) }));
+      }),
+
+      cargarComentarios: (id, mas = false) => consultaCompartida(`comentarios:${id}`, async () => {
+        if (!supabaseConfigurado || id.startsWith('post-')) return;
+        const version = sesionVersion;
+        const cursor = mas ? cursoresComentarios.get(id) : null;
+        let query = supabase.from('comentarios').select('*').eq('post_id',id);
+        if (cursor) query = query.or(`created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`);
+        const filas = (comprobarRespuesta(await query.order('created_at',{ascending:false})
+          .order('id',{ascending:false}).limit(PAGE_SIZE)) ?? []) as Comentario[];
+        if (version === sesionVersion && filas.length) cursoresComentarios.set(id,filas[filas.length-1]);
+        if (version === sesionVersion) set(s => ({
+          comentarios: { ...s.comentarios, [id]: unirPorId(mas ? (s.comentarios[id] ?? []) : [],filas) },
+          hayMasComentarios: { ...s.hayMasComentarios, [id]: filas.length === PAGE_SIZE },
+        }));
+      }),
 
       getPartido: (id) => get().partidos.find((p) => p.id === id),
       estaInscrito: (id) => get().inscritos.includes(id),
@@ -284,9 +338,12 @@ export const useStore = create<StoreState>()(
       getComentarios: (postId) => get().comentarios[postId] ?? [],
 
       crearPost: async (data, autor) => {
+        const version = sesionVersion;
         const texto = data.texto.trim();
         // Con backend: insertamos en Supabase y usamos la fila real (id UUID).
         if (supabaseConfigurado) {
+          const fotoUrl = await subirImagen(data.foto_url,autor.id);
+          if (version !== sesionVersion) throw new Error('La sesión cambió. Volvé a entrar.');
           const { data: fila, error } = await supabase
             .from('posts')
             .insert({
@@ -295,13 +352,14 @@ export const useStore = create<StoreState>()(
               autor_nombre: autor.nombre, // el trigger lo reescribe con el perfil real
               autor_avatar: autor.avatar_url ?? null,
               texto,
-              foto_url: data.foto_url ?? null,
+              foto_url: fotoUrl,
               partido_id: data.partido_id ?? null,
             } as never)
             .select()
             .single();
           if (!error && fila) {
-            const nuevo = { ...(fila as Post), likes: [] };
+            if (version !== sesionVersion) throw new Error('La sesión cambió. Volvé a entrar.');
+            const nuevo = { ...(fila as Post), likes: [], like_count: 0, comment_count: 0 };
             set((s) => ({ posts: [nuevo, ...s.posts] }));
             return nuevo.id;
           }
@@ -325,53 +383,52 @@ export const useStore = create<StoreState>()(
         return id;
       },
 
-      toggleLike: (postId, userId) => {
-        const yaLike = get().posts.find((p) => p.id === postId)?.likes.includes(userId) ?? false;
-        // Optimista local
-        set((s) => ({
-          posts: s.posts.map((p) =>
-            p.id === postId
-              ? { ...p, likes: yaLike ? p.likes.filter((u) => u !== userId) : [...p.likes, userId] }
-              : p,
-          ),
-        }));
-        // Persistimos en Supabase (post_likes)
-        if (supabaseConfigurado) {
-          if (yaLike) {
-            bg(supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId));
-          } else {
-            bg(supabase.from('post_likes').insert({ post_id: postId, user_id: userId } as never));
+      toggleLike: async (postId, userId) => {
+        const key = `${postId}:${userId}`;
+        if (likesPendientes.has(key)) return;
+        const post = get().posts.find(p => p.id === postId);
+        if (!post) return;
+        const yaLike = post.likes.includes(userId);
+        const version = sesionVersion;
+        likesPendientes.add(key);
+        let total = Math.max(0,(post.like_count ?? post.likes.length)+(yaLike ? -1 : 1));
+        try {
+          if (supabaseConfigurado) {
+            if (userId.startsWith('demo') || postId.startsWith('post-')) throw new Error('Creá una cuenta para dar me gusta.');
+            const response = comprobarRespuesta(await supabase.rpc('set_post_like',{p_post:postId,p_like:!yaLike} as never)) as unknown as {like_count:number} | null;
+            if (!response) throw new Error('No pudimos guardar el me gusta.');
+            total = response.like_count;
           }
-        }
+          if (version !== sesionVersion) return;
+          set(s => ({ posts: s.posts.map(p => p.id === postId ? { ...p,
+            likes: yaLike ? p.likes.filter(u => u !== userId) : [...new Set([...p.likes,userId])],
+            like_count: total,
+          } : p) }));
+        } finally { likesPendientes.delete(key); }
       },
 
-      comentar: (postId, autor, texto) => {
+      comentar: async (postId, autor, texto) => {
         const limpio = texto.trim();
         if (!limpio) return;
-        const c: Comentario = {
-          id: genId('com'),
-          post_id: postId,
-          autor_id: autor.id,
-          autor_nombre: autor.nombre,
-          texto: limpio,
-          created_at: new Date().toISOString(),
-        };
-        set((s) => ({
-          comentarios: { ...s.comentarios, [postId]: [...(s.comentarios[postId] ?? []), c] },
-        }));
+        if (limpio.length > 500) throw new Error('El comentario puede tener hasta 500 caracteres.');
+        const version = sesionVersion;
+        let c: Comentario = { id: genId('com'), post_id: postId, autor_id: autor.id,
+          autor_nombre: autor.nombre, texto: limpio, created_at: new Date().toISOString() };
         if (supabaseConfigurado) {
-          bg(
-            supabase.from('comentarios').insert({
-              post_id: postId,
-              autor_id: autor.id,
-              autor_nombre: autor.nombre, // el trigger lo reescribe con el perfil real
-              texto: limpio,
-            } as never),
-          );
+          if (postId.startsWith('post-')) throw new Error('Este resumen es local. Comentá en una publicación del muro.');
+          const fila = comprobarRespuesta(await supabase.from('comentarios').insert({
+            post_id:postId,autor_id:autor.id,autor_nombre:autor.nombre,texto:limpio,
+          } as never).select().single());
+          if (!fila) throw new Error('No pudimos guardar tu comentario.');
+          c = fila as Comentario;
         }
+        if (version !== sesionVersion) return;
+        set(s => ({ comentarios: { ...s.comentarios, [postId]: unirPorId([c],s.comentarios[postId] ?? []) },
+          posts: s.posts.map(p => p.id === postId ? { ...p,comment_count:(p.comment_count ?? s.comentarios[postId]?.length ?? 0)+1 } : p) }));
       },
 
       generarRecapsPendientes: (userId, ahoraISO) => {
+        if (supabaseConfigurado) return; // Never publish local recaps as if they were shared server posts.
         const ahora = Date.parse(ahoraISO);
         const { partidos, inscritos, posts } = get();
         const conRecap = new Set(
@@ -381,7 +438,7 @@ export const useStore = create<StoreState>()(
         for (const partido of partidos) {
           if (!inscritos.includes(partido.id)) continue;
           if (conRecap.has(partido.id)) continue;
-          if (matchDateTime(partido.fecha, partido.hora).getTime() > ahora) continue; // todavía no termina
+          if (matchDateTime(partido.fecha, partido.hora).getTime() + 2 * 60 * 60 * 1000 > ahora) continue; // todavía no termina
           nuevos.push({
             id: genId('post'),
             tipo: 'recap',
@@ -401,47 +458,37 @@ export const useStore = create<StoreState>()(
       // --- Moderación UGC ---
       estaBloqueado: (userId) => get().bloqueados.includes(userId),
 
-      bloquearUsuario: (userId, byUserId) => {
-        set((s) => (s.bloqueados.includes(userId) ? s : { bloqueados: [...s.bloqueados, userId] }));
-        // Persistimos el bloqueo (RLS: usuario_id = auth.uid()); solo con sesión real.
-        if (supabaseConfigurado && byUserId && !byUserId.startsWith('demo')) {
-          bg(supabase.from('bloqueos').insert({ usuario_id: byUserId, bloqueado_id: userId } as never));
-        }
-      },
-
-      desbloquearUsuario: (userId, byUserId) => {
-        set((s) => ({ bloqueados: s.bloqueados.filter((id) => id !== userId) }));
-        if (supabaseConfigurado && byUserId && !byUserId.startsWith('demo')) {
-          bg(supabase.from('bloqueos').delete().eq('usuario_id', byUserId).eq('bloqueado_id', userId));
-        }
-      },
-
-      reportarContenido: (data) => {
-        const reporte: Reporte = {
-          id: genId('rep'),
-          ...data,
-          estado: 'pendiente',
-          created_at: new Date().toISOString(),
-        };
-        set((s) => ({ reportes: [reporte, ...s.reportes] }));
-        // Con Supabase configurado, persistimos el reporte para revisión del equipo.
+      bloquearUsuario: async (userId,byUserId) => {
+        const version = sesionVersion;
         if (supabaseConfigurado) {
-          bg(
-            supabase.from('reportes').insert({
-              tipo: data.tipo,
-              contenido_id: data.contenido_id,
-              autor_id: data.autor_id,
-              reportado_por: data.reportado_por,
-              motivo: data.motivo,
-              texto: data.texto,
-            } as never),
-          );
+          if (!byUserId || byUserId.startsWith('demo')) throw new Error('Necesitás iniciar sesión para bloquear.');
+          comprobarRespuesta(await supabase.from('bloqueos').upsert({usuario_id:byUserId,bloqueado_id:userId} as never,
+            {onConflict:'usuario_id,bloqueado_id',ignoreDuplicates:true}));
         }
+        if (version === sesionVersion) set(s => ({bloqueados:[...new Set([...s.bloqueados,userId])]}));
+      },
+
+      desbloquearUsuario: async (userId,byUserId) => {
+        const version = sesionVersion;
+        if (supabaseConfigurado) {
+          if (!byUserId || byUserId.startsWith('demo')) throw new Error('Necesitás iniciar sesión para desbloquear.');
+          comprobarRespuesta(await supabase.from('bloqueos').delete().eq('usuario_id',byUserId).eq('bloqueado_id',userId));
+        }
+        if (version === sesionVersion) set(s => ({bloqueados:s.bloqueados.filter(id => id !== userId)}));
+      },
+
+      reportarContenido: async data => {
+        const version = sesionVersion;
+        if (supabaseConfigurado) comprobarRespuesta(await supabase.from('reportes').insert(data as never));
+        if (version === sesionVersion) set(s => ({reportes:[{...data,id:genId('rep'),estado:'pendiente',created_at:new Date().toISOString()},...s.reportes]}));
       },
 
       crearPartido: async (data, organizador) => {
+        const version = sesionVersion;
         // Con backend: creamos el partido real y usamos su UUID.
         if (supabaseConfigurado) {
+          const fotoUrl = await subirImagen(data.foto_url,organizador.id);
+          if (version !== sesionVersion) throw new Error('La sesión cambió. Volvé a entrar.');
           const { data: fila, error } = await supabase
             .from('partidos')
             .insert({
@@ -455,11 +502,12 @@ export const useStore = create<StoreState>()(
               precio: data.precio,
               cupos_totales: CUPOS_POR_FORMATO[data.formato],
               descripcion: data.descripcion || null,
-              foto_url: data.foto_url ?? null,
+              foto_url: fotoUrl,
             } as never)
             .select()
             .single();
           if (error || !fila) throw new Error('No pudimos publicar el partido. Probá de nuevo.');
+          if (version !== sesionVersion) throw new Error('La sesión cambió. Volvé a entrar.');
           const nuevo: PartidoConOrganizador = {
             ...(fila as PartidoConOrganizador),
             organizador: { nombre: organizador.nombre, avatar_url: null, rating: 5 },
@@ -491,129 +539,76 @@ export const useStore = create<StoreState>()(
       },
 
       inscribirse: async (partidoId, jugadorId, medio, estado, referencia) => {
-        const partido = get().getPartido(partidoId);
-        const precio = partido?.precio ?? 0;
-        const comision = Math.round(precio * COMISION_SERVICIO);
-        const ref = referencia ?? genRef();
-
-        if (supabaseConfigurado) {
-          // 1) Inscripción: el trigger fn_sync_cupos ocupa el cupo (y bloquea si está lleno)
-          const { error: errIns } = await supabase.from('partido_jugadores').insert({
-            partido_id: partidoId,
-            jugador_id: jugadorId,
-            posicion: 'Mediocampista',
-            confirmado: estado === 'aprobado',
-          } as never);
-          if (errIns && errIns.code !== '23505') {
-            // 23505 = ya estaba inscrito; cualquier otro error (p.ej. lleno) lo mostramos
-            throw new Error(errIns.message?.includes('lleno') ? 'El partido ya está lleno, parce.' : 'No pudimos inscribirte. Probá de nuevo.');
+        if (estado !== 'pendiente') throw new Error('El pago lo confirma el servidor; debe quedar pendiente.');
+        const key = `${partidoId}:${jugadorId}`;
+        const pendiente = inscripcionesPendientes.get(key);
+        if (pendiente) return pendiente;
+        const version = sesionVersion;
+        const operacion = (async () => {
+          if (supabaseConfigurado) {
+            const result = await supabase.rpc('inscribirse_partido', {
+              p_partido: partidoId, p_medio: medio, p_referencia: referencia ?? genRef(),
+            } as never);
+            if (result.error) throw new Error(result.error.message || 'No pudimos inscribirte. Probá de nuevo.');
+            const row = result.data as unknown as { pago: Pago; cupos_ocupados: number } | null;
+            if (!row?.pago) throw new Error('No pudimos registrar el pago.');
+            if (version !== sesionVersion) throw new Error('La sesión cambió. Volvé a iniciar sesión.');
+            set(s => ({ pagos: unirPorId([row.pago],s.pagos),
+              inscritos: [...new Set([...s.inscritos,partidoId])],
+              partidos: s.partidos.map(p => p.id === partidoId ? {...p,cupos_ocupados:row.cupos_ocupados} : p) }));
+            return row.pago;
           }
-          // 2) Pago (el cliente solo puede crear 'pendiente'; 'aprobado' lo pone el webhook)
-          const { data: pagoRow } = await supabase
-            .from('pagos')
-            .insert({
-              partido_id: partidoId,
-              jugador_id: jugadorId,
-              medio,
-              monto: precio + comision,
-              comision,
-              estado: estado === 'aprobado' ? 'aprobado' : 'pendiente',
-              referencia: ref,
-            } as never)
-            .select()
-            .single();
-
-          const pago: Pago = (pagoRow as unknown as Pago | null) ?? {
-            id: genId('pago'),
-            partido_id: partidoId,
-            jugador_id: jugadorId,
-            medio,
-            monto: precio + comision,
-            comision,
-            estado,
-            referencia: ref,
-            created_at: new Date().toISOString(),
-          };
-          set((s) => ({
-            pagos: [pago, ...s.pagos],
-            inscritos: s.inscritos.includes(partidoId) ? s.inscritos : [...s.inscritos, partidoId],
-            partidos: s.partidos.map((p) =>
-              p.id === partidoId
-                ? { ...p, cupos_ocupados: Math.min(p.cupos_totales, p.cupos_ocupados + 1) }
-                : p,
-            ),
-          }));
+          const partido = get().getPartido(partidoId);
+          if (!partido) throw new Error('Partido no encontrado.');
+          const existente = get().pagos.find(p => p.partido_id === partidoId && p.jugador_id === jugadorId && p.estado !== 'rechazado');
+          if (get().inscritos.includes(partidoId)) {
+            if (existente) return existente;
+            throw new Error('Ya estás inscrito en este partido.');
+          }
+          if (partido.cupos_ocupados >= partido.cupos_totales) throw new Error('El partido ya está lleno, parce.');
+          if (matchDateTime(partido.fecha,partido.hora).getTime() <= Date.now()) throw new Error('El partido ya comenzó.');
+          if (medio !== 'efectivo') throw new Error('El pago online necesita conexión con el servidor.');
+          const pago: Pago = { id:genId('pago'),partido_id:partidoId,jugador_id:jugadorId,medio,
+            monto:partido.precio,comision:0,estado:'pendiente',referencia:referencia ?? genRef(),created_at:new Date().toISOString() };
+          set(s => ({ pagos:[pago,...s.pagos],inscritos:[...s.inscritos,partidoId],
+            partidos:s.partidos.map(p => p.id === partidoId ? {...p,cupos_ocupados:p.cupos_ocupados+1} : p) }));
           return pago;
+        })();
+        inscripcionesPendientes.set(key,operacion);
+        try { return await operacion; } finally {
+          if (inscripcionesPendientes.get(key) === operacion) inscripcionesPendientes.delete(key);
         }
-
-        // Modo demo: pago local
-        const pago: Pago = {
-          id: genId('pago'),
-          partido_id: partidoId,
-          jugador_id: jugadorId,
-          medio,
-          monto: precio + comision,
-          comision,
-          estado,
-          referencia: ref,
-          created_at: new Date().toISOString(),
-        };
-        set((s) => ({
-          pagos: [pago, ...s.pagos],
-          inscritos: s.inscritos.includes(partidoId) ? s.inscritos : [...s.inscritos, partidoId],
-          partidos: s.partidos.map((p) =>
-            p.id === partidoId
-              ? { ...p, cupos_ocupados: Math.min(p.cupos_totales, p.cupos_ocupados + 1) }
-              : p,
-          ),
-        }));
-        return pago;
       },
 
       yaCalifico: (partidoId) => get().calificaciones.some((c) => c.partido_id === partidoId),
 
-      calificarPartido: (partidoId, autorId, data) => {
-        const cal: Calificacion = {
-          id: genId('cal'),
-          partido_id: partidoId,
-          autor_id: autorId,
-          estrellas: data.estrellas,
-          organizador_estrellas: data.organizador_estrellas,
-          hubo_no_show: data.hubo_no_show,
-          comentario: data.comentario.trim(),
-          created_at: new Date().toISOString(),
-        };
-        set((s) => ({ calificaciones: [cal, ...s.calificaciones] }));
+      calificarPartido: async (partidoId, autorId, data) => {
+        if (get().yaCalifico(partidoId)) throw new Error('Ya calificaste este partido.');
+        const partido = get().getPartido(partidoId);
+        if (!partido || !get().estaInscrito(partidoId)) throw new Error('Necesitás participar para calificar.');
+        if (matchDateTime(partido.fecha,partido.hora).getTime() + 2*60*60*1000 > Date.now()) throw new Error('Podés calificar cuando termine el partido.');
+        const version = sesionVersion;
+        const campos = {partido_id:partidoId,autor_id:autorId,...data,comentario:data.comentario.trim()};
+        let cal: Calificacion = {...campos,id:genId('cal'),created_at:new Date().toISOString()};
         if (supabaseConfigurado) {
-          bg(
-            supabase.from('calificaciones').insert({
-              partido_id: partidoId,
-              autor_id: autorId,
-              estrellas: data.estrellas,
-              organizador_estrellas: data.organizador_estrellas,
-              hubo_no_show: data.hubo_no_show,
-              comentario: data.comentario.trim(),
-            } as never),
-          );
+          const fila = comprobarRespuesta(await supabase.from('calificaciones').insert(campos as never).select().single());
+          if (!fila) throw new Error('No pudimos guardar tu calificación.');
+          cal = fila as Calificacion;
         }
+        if (version === sesionVersion) set(s => ({calificaciones:unirPorId([cal],s.calificaciones)}));
       },
 
-      salirse: (partidoId, jugadorId) => {
-        set((s) => ({
-          inscritos: s.inscritos.filter((id) => id !== partidoId),
-          partidos: s.partidos.map((p) =>
-            p.id === partidoId ? { ...p, cupos_ocupados: Math.max(0, p.cupos_ocupados - 1) } : p,
-          ),
-        }));
-        if (supabaseConfigurado) {
-          bg(
-            supabase
-              .from('partido_jugadores')
-              .delete()
-              .eq('partido_id', partidoId)
-              .eq('jugador_id', jugadorId),
-          );
-        }
+      salirse: async (partidoId,jugadorId) => {
+        const partido = get().getPartido(partidoId);
+        if (partido?.organizador_id === jugadorId) throw new Error('Sos el organizador. No podés liberar ese cupo.');
+        if (!get().estaInscrito(partidoId)) return;
+        const version = sesionVersion;
+        if (supabaseConfigurado) comprobarRespuesta(await supabase.from('partido_jugadores').delete()
+          .eq('partido_id',partidoId).eq('jugador_id',jugadorId));
+        if (version !== sesionVersion) return;
+        set(s => ({inscritos:s.inscritos.filter(id => id !== partidoId),
+          partidos:s.partidos.map(p => p.id === partidoId ? {...p,cupos_ocupados:Math.max(1,p.cupos_ocupados-1)} : p)}));
+        if (supabaseConfigurado) await get().cargarPartido(partidoId);
       },
     }),
     {
@@ -623,7 +618,7 @@ export const useStore = create<StoreState>()(
       // rehidratan desde Supabase en cada arranque (evita mostrar datos viejos).
       partialize: (s) => ({
         temaId: s.temaId,
-        bloqueados: s.bloqueados,
+        ...(USAR_SEEDS ? { bloqueados: s.bloqueados, usuarioId: s.usuarioId } : {}),
         // En modo demo (sin backend) sí conservamos lo que generó el usuario:
         ...(USAR_SEEDS
           ? {
@@ -638,6 +633,10 @@ export const useStore = create<StoreState>()(
             }
           : {}),
       }),
+      merge: (persistido, actual) => {
+        const datos = persistido as Partial<StoreState> | undefined;
+        return USAR_SEEDS ? { ...actual, ...datos } : { ...actual, temaId: datos?.temaId ?? actual.temaId };
+      },
       onRehydrateStorage: () => (state) => {
         // Al recuperar el tema persistido, sincronizamos el proxy de Colors (JS)
         if (state?.temaId) setActiveColors(state.temaId);

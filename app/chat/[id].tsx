@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
@@ -13,6 +13,9 @@ import { useAuth } from '@/lib/auth';
 import { useChatMensajes } from '@/lib/chat';
 import { MENSAJE_BLOQUEO_FILTRO, contieneContenidoObjetable } from '@/lib/moderation';
 import { useStore } from '@/lib/store';
+import { useGuardInvitado } from '@/lib/useGuardInvitado';
+import GlowButton from '@/components/GlowButton';
+import { CardListSkeleton } from '@/components/Skeleton';
 import { useTheme } from '@/lib/theme';
 import type { Mensaje } from '@/types/database';
 
@@ -23,25 +26,35 @@ export default function Chat() {
 
   const partido = useStore((s) => s.getPartido(id));
   const bloqueados = useStore((s) => s.bloqueados);
-  const { mensajes: mensajesRaw, enviar: enviarMensaje, enVivo } = useChatMensajes(id);
+  const { mensajes: mensajesRaw, enviar: enviarMensaje, enVivo, errorCarga, cargando, hayMas, cargarAnteriores, reintentar } = useChatMensajes(id);
 
   // Ocultamos los mensajes de usuarios bloqueados (moderación UGC)
   const mensajes = mensajesRaw.filter((m) => !bloqueados.includes(m.autor_id));
 
+  const guardInvitado = useGuardInvitado();
+  const enviandoRef = useRef(false);
+  const [enviando,setEnviando] = useState(false);
   const [texto, setTexto] = useState('');
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<FlatList<Mensaje>>(null);
 
-  const enviar = () => {
-    if (!texto.trim()) return;
+  const enviar = async () => {
+    if (guardInvitado('Creá una cuenta para escribir en el chat.')) return;
+    if (!texto.trim() || enviandoRef.current) return;
     if (contieneContenidoObjetable(texto)) {
       setError(MENSAJE_BLOQUEO_FILTRO);
       return;
     }
     setError(null);
-    enviarMensaje({ id: profile?.id ?? 'demo', nombre: profile?.nombre ?? 'Vos' }, texto);
-    setTexto('');
-    requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+    enviandoRef.current = true;
+    setEnviando(true);
+    const borrador = texto;
+    try {
+      await enviarMensaje({id:profile?.id ?? 'demo',nombre:profile?.nombre ?? 'Vos'},borrador);
+      setTexto(actual => actual === borrador ? '' : actual);
+      requestAnimationFrame(() => listRef.current?.scrollToEnd({animated:true}));
+    } catch (e) { setError(e instanceof Error ? e.message : 'No pudimos enviar el mensaje.'); }
+    finally { enviandoRef.current = false; setEnviando(false); }
   };
 
   return (
@@ -73,9 +86,9 @@ export default function Chat() {
           data={mensajes}
           keyExtractor={(m) => m.id}
           contentContainerStyle={{ padding: 16, paddingBottom: 8, gap: 8 }}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
+          ListHeaderComponent={hayMas ? <GlowButton label="Mensajes anteriores" variant="outline" onPress={() => void cargarAnteriores()} /> : null}
+          ListEmptyComponent={cargando ? <CardListSkeleton rows={3} /> :
             <EmptyState
               icon="chatbubbles-outline"
               titulo="Rompé el hielo"
@@ -89,7 +102,8 @@ export default function Chat() {
 
         {/* Input */}
         <SafeAreaView edges={['bottom']} className="border-t border-border bg-card">
-          <ErrorBanner message={error} className="mx-3 mt-2" />
+          <ErrorBanner message={error ?? errorCarga} className="mx-3 mt-2" />
+          {errorCarga ? <GlowButton label="Reintentar chat" variant="outline" onPress={reintentar} /> : null}
           <View className="flex-row items-end gap-2 px-3 py-2">
             <TextInput
               value={texto}
@@ -100,11 +114,12 @@ export default function Chat() {
               placeholder="Escribí algo…"
               placeholderTextColor={c.muted}
               multiline
+              maxLength={500}
               className="max-h-28 flex-1 rounded-sm border border-border bg-background px-4 py-3 font-body text-base text-cream"
             />
             <Pressable
               onPress={enviar}
-              disabled={!texto.trim()}
+              disabled={!texto.trim() || enviando}
               className="h-12 w-12 items-center justify-center rounded-full"
               style={{ backgroundColor: texto.trim() ? c.primary : c.border }}>
               <Ionicons name="send" size={18} color={texto.trim() ? c.ink : c.muted} />

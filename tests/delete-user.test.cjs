@@ -1,0 +1,14 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const {loadTs}=require('./load-ts.cjs');
+function fixture({user={id:'caller'},authError=null,storageError=null,deleteError=null}={}){
+ const calls=[];let handler;let files=[{bucket_id:'media',name:'caller/avatar.jpg'},{bucket_id:'canchas',name:'old-court.jpg'}];
+ const admin={rpc:async(name,args)=>{calls.push({rpc:name,args});return {data:files,error:null};},storage:{from:bucket=>({remove:async paths=>{calls.push({bucket,paths});if(!storageError)files=files.filter(f=>f.bucket_id!==bucket);return {error:storageError};}})},auth:{admin:{deleteUser:async id=>{calls.push({deleteUser:id});return {error:deleteError};}}}};
+ const old=global.Deno;const env={SUPABASE_URL:'https://example.test',SUPABASE_ANON_KEY:'anon',SUPABASE_SERVICE_ROLE_KEY:'service'};
+ global.Deno={serve:fn=>{handler=fn},env:{get:k=>env[k]}};
+ try{loadTs('supabase/functions/delete-user/index.ts',{'jsr:@supabase/supabase-js@2':{createClient:(_url,key)=>key==='service'?admin:{auth:{getUser:async()=>({data:{user},error:authError})}}}});}finally{global.Deno=old;}
+ return {calls,invoke:async(req)=>{const prev=global.Deno,log=console.error;global.Deno={env:{get:k=>env[k]}};console.error=()=>{};try{return await handler(req);}finally{global.Deno=prev;console.error=log;}}};
+}
+const req=(method='POST',auth=true)=>new Request('https://example.test/delete-user',{method,headers:auth?{Authorization:'Bearer token'}:{}});
+test('account deletion rejects missing/invalid auth and non-POST requests',async()=>{const f=fixture({user:null});assert.equal((await f.invoke(req())).status,401);assert.equal((await f.invoke(req('POST',false))).status,401);assert.equal((await f.invoke(req('GET'))).status,405);assert.deepEqual(f.calls,[]);});
+test('account deletion cleans owned files then deletes only authenticated caller',async()=>{const f=fixture();const r=await f.invoke(req());assert.equal(r.status,200);assert.equal((await r.json()).ok,true);assert.equal(f.calls[0].args.p_usuario,'caller');assert.deepEqual(f.calls.filter(c=>c.bucket),[{bucket:'media',paths:['caller/avatar.jpg']},{bucket:'canchas',paths:['old-court.jpg']}]);assert.deepEqual(f.calls.at(-1),{deleteUser:'caller'});});
+test('failed storage cleanup preserves account and returns retryable failure',async()=>{const f=fixture({storageError:{message:'private storage error'}});const r=await f.invoke(req());assert.equal(r.status,500);assert.equal(f.calls.filter(c=>c.deleteUser).length,0);assert.doesNotMatch(await r.text(),/private storage/);});
+test('failed Auth deletion never reports success or deletes profile separately',async()=>{const f=fixture({deleteError:{message:'internal secret error'}});const r=await f.invoke(req());assert.equal(r.status,500);assert.doesNotMatch(await r.text(),/internal secret/);});

@@ -1,12 +1,10 @@
 import '../global.css';
 
-import { Anton_400Regular } from '@expo-google-fonts/anton';
-import {
-  Archivo_400Regular,
-  Archivo_500Medium,
-  Archivo_600SemiBold,
-  Archivo_700Bold,
-} from '@expo-google-fonts/archivo';
+import { Anton_400Regular } from '@expo-google-fonts/anton/400Regular';
+import { Archivo_400Regular } from '@expo-google-fonts/archivo/400Regular';
+import { Archivo_500Medium } from '@expo-google-fonts/archivo/500Medium';
+import { Archivo_600SemiBold } from '@expo-google-fonts/archivo/600SemiBold';
+import { Archivo_700Bold } from '@expo-google-fonts/archivo/700Bold';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -17,7 +15,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import Dialogo from '@/components/Dialogo';
+import AlertProvider from '@/components/AlertProvider';
 import { AuthProvider } from '@/lib/auth';
 import { configurarNotificaciones } from '@/lib/notifications';
 import { useTheme, useThemeMeta, useThemeVars } from '@/lib/theme';
@@ -49,7 +47,7 @@ export default function RootLayout() {
       {/* La capa de variables del tema: todas las clases de color heredan de acá */}
       <View style={[{ flex: 1 }, vars(themeVars)]}>
       <SafeAreaProvider>
-        <AuthProvider>
+        <AlertProvider><AuthProvider>
           <StatusBar style={themeMeta.dark ? 'light' : 'dark'} />
           <Stack
             screenOptions={{
@@ -96,9 +94,7 @@ export default function RootLayout() {
             <Stack.Screen name="admin/usuarios" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="admin/reportes" options={{ animation: 'slide_from_right' }} />
           </Stack>
-          {/* Una sola instancia para toda la app, por encima del Stack. */}
-          <Dialogo />
-        </AuthProvider>
+        </AuthProvider></AlertProvider>
       </SafeAreaProvider>
       </View>
     </GestureHandlerRootView>

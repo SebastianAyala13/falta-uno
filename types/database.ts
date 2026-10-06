@@ -53,6 +53,7 @@ export interface Amenidades {
 
 /** Una cancha (venue) administrada por un dueño (profiles.roles incluye 'cancha'). */
 export interface Cancha {
+  oculto?: boolean;
   id: string;
   owner_id: string;
   nombre: string;
@@ -161,6 +162,7 @@ export interface DatosDesembolso {
 
 /** Un partido publicado por un usuario. */
 export interface Partido {
+  oculto?: boolean;
   id: string; // uuid
   organizador_id: string; // profiles.id
   cancha: string;
@@ -214,6 +216,8 @@ export interface Post {
   texto: string;
   foto_url: string | null;
   partido_id: string | null; // ligado a un partido (recap/encuentro)
+  like_count?: number;
+  comment_count?: number;
   likes: string[]; // ids de usuarios que dieron like
   created_at: string;
 }
@@ -229,13 +233,14 @@ export interface Comentario {
 }
 
 /** Tipo de contenido que se puede reportar. */
-export type TipoContenido = 'post' | 'comentario' | 'mensaje';
+export type TipoContenido = 'post' | 'comentario' | 'mensaje' | 'partido' | 'cancha' | 'perfil';
 
 /** Motivo por el que se reporta un contenido (moderación UGC). */
 export type MotivoReporte = 'spam' | 'acoso' | 'sexual' | 'odio' | 'otro';
 
 /** Reporte de contenido objetable (requisito App Store 1.2 / Google UGC). */
 export interface Reporte {
+  foto_url?: string | null;
   id: string;
   tipo: TipoContenido;
   contenido_id: string; // id del post/comentario/mensaje reportado
@@ -408,6 +413,7 @@ export interface Database {
       };
     };
     Functions: {
+      admin_metricas: { Args: Record<string, never>; Returns: Record<string, unknown> };
       saldo_cancha: {
         Args: { p_cancha: string };
         Returns: number;

@@ -1,4 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -26,7 +27,6 @@ import {
 } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { crearEstablecimiento, subirFotoCancha } from '@/lib/canchas';
-import { dialogo } from '@/lib/dialogo';
 import { haptics } from '@/lib/haptics';
 import { elegirImagen } from '@/lib/images';
 import { useTheme } from '@/lib/theme';
@@ -125,7 +125,7 @@ export default function RegistrarCancha() {
       const url = await subirFotoCancha(uri);
       setCanchas((prev) => prev.map((cancha, j) => (j === i ? { ...cancha, fotos: [...cancha.fotos, url] } : cancha)));
     } catch (e) {
-      dialogo.mostrar('Ups', e instanceof Error ? e.message : 'No pudimos subir la foto. Probá de nuevo.');
+      Alert.alert('Ups', e instanceof Error ? e.message : 'No pudimos subir la foto. Probá de nuevo.');
     } finally {
       setSubiendo(null);
     }

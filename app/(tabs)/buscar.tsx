@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
+import ErrorCarga from '@/components/ErrorCarga';
 import FadeIn from '@/components/FadeIn';
 import GameCard from '@/components/GameCard';
 import Screen from '@/components/Screen';
@@ -68,6 +69,8 @@ export default function Buscar() {
           <SearchBar value={query} onChangeText={setQuery} placeholder="Cancha, zona, parche..." />
         </View>
       </FadeIn>
+
+      <ErrorCarga className="mx-6 mb-3" />
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: 110 }}

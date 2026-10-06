@@ -6,6 +6,7 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 
 import Avatar from '@/components/Avatar';
 import EmptyState from '@/components/EmptyState';
+import ErrorCarga from '@/components/ErrorCarga';
 import FadeIn from '@/components/FadeIn';
 import GameCard from '@/components/GameCard';
 import Screen from '@/components/Screen';
@@ -72,6 +73,7 @@ export default function Home() {
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} />}>
+        <ErrorCarga className="mx-[22px] mb-0 mt-3" />
         {/* Header */}
         <FadeIn delay={40}>
           <View className="flex-row items-center justify-between px-[22px] pb-4 pt-2">

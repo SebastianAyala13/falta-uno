@@ -59,6 +59,13 @@ interface StoreState {
   reportes: Reporte[]; // reportes de contenido objetable
   temaId: string; // id del tema de color activo
   hidratado: boolean; // ya se trajeron datos reales de Supabase al menos una vez
+  /**
+   * Por qué falló la última carga, o `null` si fue bien. Sin esto, un fallo de red
+   * dejaba la app "hidratada" con las listas vacías: el inicio decía que no hay
+   * partidos y el muro que no hay publicaciones, sin una sola señal de que algo
+   * se rompió — así nadie reintenta. No se persiste (ver `partialize`).
+   */
+  errorCarga: string | null;
 
   setTema: (id: string) => void;
   /** Trae partidos, muro, inscripciones y pagos reales desde Supabase. */
@@ -149,6 +156,7 @@ export const useStore = create<StoreState>()(
       reportes: [],
       temaId: DEFAULT_THEME_ID,
       hidratado: false,
+      errorCarga: null,
 
       setTema: (id) => {
         setActiveColors(id);
@@ -240,10 +248,16 @@ export const useStore = create<StoreState>()(
             // herede los bloqueos de otra cuenta que usó el mismo dispositivo).
             bloqueados: ((bloqRaw ?? []) as { bloqueado_id: string }[]).map((b) => b.bloqueado_id),
             hidratado: true,
+            errorCarga: null,
           });
         } catch {
-          // Si algo falla (red, tabla), dejamos lo que haya y marcamos hidratado
-          set({ hidratado: true });
+          // Dejamos lo que haya y marcamos hidratado para no colgar la interfaz,
+          // pero ahora queda dicho que falló: las pantallas muestran el aviso con
+          // reintentar en vez de fingir que no hay nada.
+          set({
+            hidratado: true,
+            errorCarga: 'No pudimos cargar los datos. Revisá tu conexión e intentá de nuevo.',
+          });
         }
       },
 

@@ -6,6 +6,7 @@ import { FlatList, Pressable, Text, View } from 'react-native';
 import Avatar from '@/components/Avatar';
 import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
+import ErrorCarga from '@/components/ErrorCarga';
 import FadeIn from '@/components/FadeIn';
 import PostCard from '@/components/PostCard';
 import Screen from '@/components/Screen';
@@ -58,6 +59,8 @@ export default function Muro() {
           <Text className="mt-1 font-body text-sm text-muted">Lo que se cuece en la cancha, parce.</Text>
         </View>
       </FadeIn>
+
+      <ErrorCarga className="mx-6 mb-3" />
 
       {/* Compositor */}
       <FadeIn delay={100}>

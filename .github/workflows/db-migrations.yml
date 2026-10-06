@@ -1,22 +1,53 @@
-name: Aplicar migraciones a Supabase (prod)
+name: Migraciones de base de datos (prod)
 
-# Aplica las migraciones pendientes de supabase/migrations/ a producción con
-# `supabase db push` cada vez que se mergea a main un cambio de schema.
+# Aplica las migraciones pendientes de supabase/migrations/ a producción.
 #
-# Autenticación: un único secret del repo, SUPABASE_DB_URL = el connection string
-# del **Session pooler** (Dashboard → Settings → Database → Connection string →
+# ─────────────────────────────────────────────────────────────────────────────
+# POR QUÉ ESTO YA NO ES AUTOMÁTICO
+# ─────────────────────────────────────────────────────────────────────────────
+# Antes este workflow corría `supabase db push` solo porque un merge a main
+# tocaba supabase/migrations/. Eso es cambiar el esquema de producción sin
+# respaldo, sin ensayo y sin que nadie mire — y al mismo tiempo que Dokploy
+# reconstruye el cliente por su lado, que es una carrera que nadie controla.
+# Peor todavía: una migración puede fallar a mitad si los datos que ya existen
+# tienen conflictos, y revertir el commit NO revierte la migración.
+#
+# Ahora el push a main solamente AVISA. Aplicar es una acción manual y
+# explícita: Actions → este workflow → "Run workflow", escribiendo la
+# confirmación. El orden correcto es respaldo → ensayo en staging → aplicar
+# acá → desplegar Edge Functions → publicar cliente.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# AUTENTICACIÓN
+# ─────────────────────────────────────────────────────────────────────────────
+# Un único secret del repo, SUPABASE_DB_URL = el connection string del
+# **Session pooler** (Dashboard → Settings → Database → Connection string →
 # Session pooler → URI), con la DB password embebida. Es una credencial
-# project-scoped (solo esta base) y rotable (reseteás la password cuando quieras).
-# (Edge Functions y secrets NO se despliegan acá — se gestionan en el dashboard.)
+# project-scoped (solo esta base) y rotable (reseteás la password cuando
+# quieras). Las Edge Functions y sus secretos NO se despliegan acá.
 
 on:
+  # Aviso, no aplicación.
   push:
     branches: [main]
     paths:
       - 'supabase/migrations/**'
       - 'supabase/config.toml'
 
-# Least privilege: este workflow solo necesita leer el repo.
+  # La única vía para tocar producción.
+  workflow_dispatch:
+    inputs:
+      confirmacion:
+        description: 'Escribí exactamente: aplicar a produccion'
+        required: true
+        type: string
+      solo_ensayo:
+        description: 'Solo mostrar qué se aplicaría, sin aplicar nada'
+        required: false
+        default: true
+        type: boolean
+
+# Least privilege: estos jobs solo necesitan leer el repo.
 permissions:
   contents: read
 
@@ -26,17 +57,104 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  db-push:
+  # ───────────────────────────────────────────────────────────────────────────
+  # Entró una migración a main: avisar, y nada más.
+  # ───────────────────────────────────────────────────────────────────────────
+  avisar:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      # Actions pinneadas a SHA completo (supply-chain); el comentario indica la versión.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Resumir lo que entró
+        env:
+          ANTERIOR: ${{ github.event.before }}
+          ACTUAL: ${{ github.sha }}
+        run: |
+          {
+            echo "## Migraciones nuevas en main"
+            echo
+            # En el primer push de una rama, `before` viene en ceros y no hay
+            # rango que comparar: mostramos el último commit solo.
+            if [ -z "${ANTERIOR//0/}" ]; then
+              RANGO="${ACTUAL}^!"
+            else
+              RANGO="${ANTERIOR}..${ACTUAL}"
+            fi
+            git diff --name-only "$RANGO" -- supabase/migrations/ supabase/config.toml \
+              | sed 's/^/- /' || true
+            echo
+            echo "**No se aplicó nada a producción.**"
+            echo
+            echo "Para aplicarlas: Actions → *Migraciones de base de datos (prod)*"
+            echo "→ Run workflow. Primero con \`solo_ensayo\` activado para ver el plan,"
+            echo "y después desactivándolo. Antes de eso: respaldo y ensayo en staging."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Aplicación manual.
+  # ───────────────────────────────────────────────────────────────────────────
+  aplicar:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # Si además querés que otra persona apruebe, creá el environment
+    # "produccion" en Settings → Environments y agregale required reviewers.
+    environment: produccion
+    steps:
+      # Una confirmación escrita a mano evita el "Run workflow" por reflejo.
+      - name: Verificar la confirmación
+        env:
+          CONFIRMACION: ${{ inputs.confirmacion }}
+        run: |
+          if [ "$CONFIRMACION" != "aplicar a produccion" ]; then
+            echo "La confirmación no coincide. Escribí exactamente: aplicar a produccion"
+            exit 1
+          fi
+
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1
         with:
           version: 2.109.1
 
-      # El secret (connection string con password) se pasa SOLO a este step.
-      - name: Aplicar migraciones pendientes
-        run: supabase db push --db-url "$SUPABASE_DB_URL"
+      # Preflight: los conflictos en los datos que ya existen son la causa más
+      # probable de que una migración falle a mitad. El script lo escribe quien
+      # trae la migración; su contrato es fallar (exit distinto de 0) cuando
+      # encuentra conflictos, para que esto corte acá y no a mitad del push.
+      - name: Preflight de conflictos
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ ! -f scripts/preflight-fiabilidad.sql ]; then
+            echo "No hay scripts/preflight-fiabilidad.sql; nada que verificar." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if ! command -v psql >/dev/null 2>&1; then
+            echo "psql no está disponible en el runner; no se pudo correr el preflight."
+            exit 1
+          fi
+          psql -v ON_ERROR_STOP=1 -f scripts/preflight-fiabilidad.sql "$SUPABASE_DB_URL"
+
+      # Ensayo: muestra qué migraciones se aplicarían, sin tocar nada.
+      - name: Ensayo (dry run)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          {
+            echo "## Migraciones que se aplicarían"
+            echo '```'
+            supabase db push --db-url "$SUPABASE_DB_URL" --dry-run 2>&1
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Aplicar migraciones pendientes
+        if: ${{ !inputs.solo_ensayo }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: supabase db push --db-url "$SUPABASE_DB_URL"
+
+      - name: Aviso de ensayo
+        if: ${{ inputs.solo_ensayo }}
+        run: |
+          echo "Fue un ensayo: no se aplicó nada. Volvé a correrlo con \`solo_ensayo\` desactivado." >> "$GITHUB_STEP_SUMMARY"

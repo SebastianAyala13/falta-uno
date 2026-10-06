@@ -1,0 +1,74 @@
+name: Controles (tipos, lint y pruebas)
+
+# Puerta de calidad para cualquier cambio que entre al repo. Corre en cada pull
+# request y en cada push a main.
+#
+# Ojo con el alcance: Dokploy reconstruye la web por su cuenta al detectar un
+# push a main, así que este workflow NO puede impedir ese despliegue. Para que
+# sirva de verdad como puerta, el trabajo entra por pull request y se mergea
+# cuando estos controles están verdes, no empujando directo a main.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least privilege: solo necesita leer el repo.
+permissions:
+  contents: read
+
+# Un PR que recibe varios pushes seguidos no necesita correr todas las tandas.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  controles:
+    runs-on: ubuntu-latest
+    steps:
+      # Actions pinneadas a SHA completo (supply-chain); el comentario indica la versión.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      # corepack lee "packageManager" de package.json y usa esa versión exacta de
+      # pnpm. Así no hace falta una action de terceros para instalarlo.
+      - name: Preparar pnpm
+        run: corepack enable
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Tipos
+        run: ./node_modules/.bin/tsc --noEmit
+
+      - name: Lint
+        run: pnpm lint
+        env:
+          CI: '1'
+          EXPO_NO_TELEMETRY: '1'
+
+      # Las pruebas todavía no están en el repo (vienen en el trabajo de
+      # fiabilidad). Mientras no existan, el paso informa y no falla; en cuanto
+      # aparezcan, empiezan a ser obligatorias sin tocar este archivo.
+      - name: Pruebas unitarias
+        run: |
+          if ls tests/*.test.cjs >/dev/null 2>&1; then
+            node --test tests/*.test.cjs
+          else
+            echo "Todavía no hay tests/*.test.cjs en el repo; nada que correr." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Pruebas de base de datos
+        run: |
+          if [ -f tests/database.py ]; then
+            python3 tests/database.py
+          else
+            echo "Todavía no hay tests/database.py en el repo; nada que correr." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # Espacios en blanco al final de línea y conflictos sin resolver.
+      - name: Espacios en blanco
+        run: git diff --check

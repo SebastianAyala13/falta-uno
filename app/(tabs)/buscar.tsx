@@ -1,15 +1,22 @@
-import { useEffect, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, RefreshControl, Text, View } from 'react-native';
 
 import Chip from '@/components/Chip';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import GameCard from '@/components/GameCard';
 import Screen from '@/components/Screen';
 import SearchBar from '@/components/SearchBar';
 import { GameCardSkeleton } from '@/components/Skeleton';
 import { FORMATOS, NIVELES, ZONAS } from '@/constants/config';
+import { matchDateTime } from '@/lib/format';
+import GlowButton from '@/components/GlowButton';
 import { useAuth } from '@/lib/auth';
+import { buscarPartidos } from '@/lib/partidos';
+import { supabaseConfigurado } from '@/lib/supabase';
+import { unirPorId } from '@/lib/data-utils';
+import type { PartidoConOrganizador } from '@/types/database';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 
@@ -19,36 +26,62 @@ export default function Buscar() {
   const hidratado = useStore((s) => s.hidratado);
   const hidratar = useStore((s) => s.hidratar);
   const c = useTheme();
-
   // Mostramos skeletons hasta que la primera hidratación desde Supabase termine
-  const [cargando, setCargando] = useState(!hidratado);
-  useEffect(() => {
-    if (hidratado) {
-      setCargando(false);
-      return;
-    }
-    const t = setTimeout(() => setCargando(false), 650);
-    return () => clearTimeout(t);
-  }, [hidratado]);
-
+  const errorCarga = useStore(s => s.errorCarga);
+  const cargando = !hidratado && !errorCarga;
   const [query, setQuery] = useState('');
   const [zona, setZona] = useState<string | null>(null);
   const [nivel, setNivel] = useState<string | null>(null);
   const [formato, setFormato] = useState<string | null>(null);
+  const [remotos,setRemotos] = useState<PartidoConOrganizador[]>([]);
+  const [hayMas,setHayMas] = useState(false);
+  const [cargandoBusqueda,setCargandoBusqueda] = useState(supabaseConfigurado);
+  const [cargandoMas,setCargandoMas] = useState(false);
+  const [errorMas,setErrorMas] = useState<string | null>(null);
+  const [revision,setRevision] = useState(0);
+  const cursor = useRef<PartidoConOrganizador | undefined>(undefined);
+  const version = useRef(0);
+  useEffect(() => {
+    const actual = ++version.current;
+    if (!supabaseConfigurado) return;
+    setCargandoBusqueda(true);
+    setRemotos([]); setHayMas(false); setErrorMas(null); cursor.current=undefined;
+    const t=setTimeout(() => {
+      buscarPartidos({texto:query,zona,nivel,formato}).then(r=>{
+        if (actual!==version.current) return;
+        setRemotos(r.filas);setHayMas(r.hayMas);cursor.current=r.cursor;
+      }).catch(()=>{if(actual===version.current)setErrorMas('No pudimos buscar partidos. Reintentá.');})
+        .finally(()=>{if(actual===version.current)setCargandoBusqueda(false);});
+    },250);
+    return ()=>{clearTimeout(t);version.current=actual+1;};
+  },[query,zona,nivel,formato,revision,profile?.id]);
+  const mas = async () => {
+    if (cargandoMas || !hayMas) return;
+    const actual=version.current;
+    setCargandoMas(true);
+    try {
+      const r=await buscarPartidos({texto:query,zona,nivel,formato},cursor.current);
+      if(actual!==version.current)return;
+      setRemotos(prev=>unirPorId(prev,r.filas));setHayMas(r.hayMas);cursor.current=r.cursor;setErrorMas(null);
+    } catch {if(actual===version.current)setErrorMas('No pudimos cargar más partidos. Reintentá.');}
+    finally {setCargandoMas(false);}
+  };
+
 
   const toggle = (actual: string | null, valor: string, set: (v: string | null) => void) =>
     set(actual === valor ? null : valor);
 
   const resultados = useMemo(
     () =>
-      partidos.filter((p) => {
+      (supabaseConfigurado ? remotos : partidos).filter((p) => {
+        if (matchDateTime(p.fecha,p.hora).getTime() <= Date.now()) return false;
         if (query && !`${p.cancha} ${p.zona}`.toLowerCase().includes(query.toLowerCase())) return false;
         if (zona && p.zona !== zona) return false;
         if (nivel && p.nivel !== nivel) return false;
         if (formato && p.formato !== formato) return false;
         return true;
       }),
-    [partidos, query, zona, nivel, formato],
+    [partidos, remotos, query, zona, nivel, formato],
   );
 
   const hayFiltros = zona || nivel || formato || query;
@@ -56,7 +89,8 @@ export default function Buscar() {
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = async () => {
     setRefreshing(true);
-    if (profile?.id) await hidratar(profile.id);
+    if (supabaseConfigurado) setRevision(r=>r+1);
+    else if (profile?.id) await hidratar(profile.id, true);
     setRefreshing(false);
   };
 
@@ -69,12 +103,13 @@ export default function Buscar() {
         </View>
       </FadeIn>
 
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 110 }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} />
-        }>
+      <ErrorBanner message={errorCarga ?? errorMas} className="mx-6 mt-2" />
+      <FlatList
+        data={cargando || cargandoBusqueda ? [] : resultados}
+        keyExtractor={p=>p.id}
+        renderItem={({item,index}) => <View className="px-6"><FadeIn delay={60+Math.min(index,6)*50}><GameCard partido={item} /></FadeIn></View>}
+        ListFooterComponent={hayMas ? <View className="px-6"><GlowButton label="Cargar más partidos" variant="outline" loading={cargandoMas} onPress={mas} /></View> : null}
+        ListHeaderComponent={<>
         <FadeIn delay={120}>
           <View className="px-6">
             <Filtro titulo="Zona">
@@ -113,28 +148,13 @@ export default function Buscar() {
           ) : null}
         </View>
 
-        <View className="px-6">
-          {cargando ? (
-            <>
-              <GameCardSkeleton />
-              <GameCardSkeleton />
-              <GameCardSkeleton />
-            </>
-          ) : resultados.length === 0 ? (
-            <EmptyState
-              icon="search-outline"
-              titulo={hayFiltros ? 'Nada con esos filtros' : 'Tu zona está quieta'}
-              texto={hayFiltros ? 'Probá quitando alguno, parce.' : 'Nadie ha armado pichanga por acá. Sé el primero 👟'}
-            />
-          ) : (
-            resultados.map((p, i) => (
-              <FadeIn key={p.id} delay={60 + i * 50}>
-                <GameCard partido={p} />
-              </FadeIn>
-            ))
-          )}
-        </View>
-      </ScrollView>
+        </>}
+        contentContainerStyle={{paddingBottom:110}}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} />}
+        ListEmptyComponent={cargando || cargandoBusqueda ? <View className="px-6"><GameCardSkeleton /><GameCardSkeleton /><GameCardSkeleton /></View> :
+          <EmptyState icon="search-outline" titulo={hayFiltros ? 'Nada con esos filtros' : 'Tu zona está quieta'} texto={hayFiltros ? 'Probá quitando alguno, parce.' : 'Nadie ha armado pichanga por acá. Sé el primero 👟'} />}
+      />
     </Screen>
   );
 }

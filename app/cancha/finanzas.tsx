@@ -1,15 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  Alert,
-  Modal,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { Modal, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import Badge from '@/components/Badge';
 import { ScreenHeader } from '@/components/BackButton';

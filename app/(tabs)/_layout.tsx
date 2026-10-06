@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { BlurView } from 'expo-blur';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform, Text, View } from 'react-native';
 
@@ -11,13 +11,15 @@ import { useTheme, useThemeMeta } from '@/lib/theme';
 export default function TabsLayout() {
   const c = useTheme();
   const meta = useThemeMeta();
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
   const hidratar = useStore((s) => s.hidratar);
 
   // Al entrar a la app autenticado, traemos los datos reales desde Supabase.
   useEffect(() => {
     if (profile?.id) hidratar(profile.id);
   }, [profile?.id, hidratar]);
+  if (loading) return null;
+  if (!profile) return <Redirect href="/(auth)/welcome" />;
   return (
     <Tabs
       screenOptions={{

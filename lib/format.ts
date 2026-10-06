@@ -30,11 +30,10 @@ export function precioCOP(valor: number): string {
   return '$' + valor.toLocaleString('es-CO');
 }
 
-/** Combina fecha ("2026-06-23") + hora ("20:00") en un Date local. */
+/** Los partidos y turnos se publican en hora de Colombia (UTC-5, sin DST). */
 export function matchDateTime(fecha: string, hora: string): Date {
-  const [y, m, d] = fecha.split('-').map(Number);
-  const [hh, mm] = hora.split(':').map(Number);
-  return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0);
+  const hhmm = hora.slice(0,5);
+  return new Date(`${fecha}T${hhmm}:00-05:00`);
 }
 
 /** ISO -> "hace 2 h", "hace 5 min", "ahora". */

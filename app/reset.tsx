@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useURL } from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -35,7 +35,9 @@ export default function Reset() {
 
   // Extrae los tokens del enlace y arma la sesión de recuperación
   useEffect(() => {
+    setListo(false);
     if (!url || !supabaseConfigurado) return;
+    let vigente = true;
     const frag = url.includes('#') ? url.split('#')[1] : url.split('?')[1];
     if (!frag) return;
     const params = new URLSearchParams(frag);
@@ -44,9 +46,13 @@ export default function Reset() {
     if (access_token && refresh_token) {
       supabase.auth
         .setSession({ access_token, refresh_token })
-        .then(() => setListo(true))
-        .catch(() => setError('El enlace expiró o no es válido. Pedí uno nuevo.'));
+        .then(({error}) => {
+          if (error) throw error;
+          if (vigente) setListo(true);
+        })
+        .catch(() => { if (vigente) setError('El enlace expiró o no es válido. Pedí uno nuevo.'); });
     }
+    return () => { vigente = false; };
   }, [url]);
 
   const guardar = async () => {

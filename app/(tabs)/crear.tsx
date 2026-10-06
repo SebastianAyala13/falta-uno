@@ -1,4 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
+import { contieneContenidoObjetable, MENSAJE_BLOQUEO_FILTRO } from '@/lib/moderation';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -75,6 +76,7 @@ export default function Crear() {
       setError('Completá cancha, zona, fecha, hora, nivel y precio.');
       return;
     }
+    if (contieneContenidoObjetable(cancha+' '+descripcion)) {setError(MENSAJE_BLOQUEO_FILTRO);return;}
     setPublicando(true);
     try {
       const id = await crearPartido(

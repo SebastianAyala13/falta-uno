@@ -1,9 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Alert, Pressable } from 'react-native';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Pressable } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
 import { MOTIVOS_REPORTE } from '@/lib/moderation';
+import { useGuardInvitado } from '@/lib/useGuardInvitado';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import type { MotivoReporte, TipoContenido } from '@/types/database';
@@ -38,13 +40,15 @@ export default function ModeracionBoton({
   const col = color ?? c.muted;
   const { profile } = useAuth();
   const uid = profile?.id ?? 'demo';
+  const guardInvitado = useGuardInvitado();
   const reportarContenido = useStore((s) => s.reportarContenido);
   const bloquearUsuario = useStore((s) => s.bloquearUsuario);
 
   if (autorId === uid || autorId === 'sistema') return null;
 
-  const confirmarReporte = (motivo: MotivoReporte) => {
-    reportarContenido({
+  const confirmarReporte = async (motivo: MotivoReporte) => {
+    try {
+    await reportarContenido({
       tipo,
       contenido_id: contenidoId,
       autor_id: autorId,
@@ -56,6 +60,7 @@ export default function ModeracionBoton({
       'Gracias, parce',
       'Recibimos tu reporte. Lo revisamos en menos de 24 horas y tomamos acción si incumple las normas de la comunidad.',
     );
+    } catch(e) { Alert.alert('No pudimos enviar el reporte',e instanceof Error ? e.message : 'Reintentá.'); }
   };
 
   const menuReportar = () => {
@@ -74,9 +79,9 @@ export default function ModeracionBoton({
         {
           text: 'Bloquear',
           style: 'destructive',
-          onPress: () => {
-            bloquearUsuario(autorId, uid);
-            Alert.alert('Listo', `Bloqueaste a ${autorNombre}.`);
+          onPress: async () => {
+            try { await bloquearUsuario(autorId,uid); Alert.alert('Listo',`Bloqueaste a ${autorNombre}.`); }
+            catch(e) { Alert.alert('No pudimos bloquear',e instanceof Error ? e.message : 'Reintentá.'); }
           },
         },
       ],
@@ -84,6 +89,7 @@ export default function ModeracionBoton({
   };
 
   const abrirMenu = () => {
+    if (guardInvitado('Creá una cuenta para reportar o bloquear.')) return;
     Alert.alert('Opciones', undefined, [
       { text: 'Reportar contenido', onPress: menuReportar },
       { text: `Bloquear a ${autorNombre}`, style: 'destructive', onPress: confirmarBloqueo },

@@ -1,8 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { ScreenHeader } from '@/components/BackButton';
@@ -12,6 +13,9 @@ import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { COMISION_SERVICIO, MEDIOS_PAGO_ACTIVOS, type MedioPago } from '@/constants/config';
 import { Duration, MotionEasing } from '@/constants/motion';
+import { usePartido } from '@/lib/usePartido';
+import ErrorBanner from '@/components/ErrorBanner';
+import { CardListSkeleton } from '@/components/Skeleton';
 import { useAuth } from '@/lib/auth';
 import { precioCOP } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
@@ -31,7 +35,8 @@ export default function Checkout() {
   const c = useTheme();
   const guardInvitado = useGuardInvitado();
 
-  const partido = useStore((s) => s.getPartido(id));
+  const {partido,cargando,error,reintentar} = usePartido(id);
+  const pagoPendiente = useRef(false);
   const inscribirse = useStore((s) => s.inscribirse);
 
   const [paso, setPaso] = useState<Paso>('metodo');
@@ -39,15 +44,17 @@ export default function Checkout() {
   const [pago, setPago] = useState<Pago | null>(null);
   const [recordatorio, setRecordatorio] = useState(false);
 
+  if (!partido && cargando) return <Screen><CardListSkeleton rows={3} /></Screen>;
   if (!partido) {
     return (
       <Screen edges={['top', 'bottom']}>
         <ScreenHeader title="Pagar cupo" titleSize="2xl" backIcon="chevron-down" className="px-6 pb-2 pt-2" />
+        <ErrorBanner message={error} className="mx-6 mt-2" />
         <EmptyState
           icon="alert-circle-outline"
           titulo="Partido no encontrado"
           texto="Este partido ya no está disponible o cerró la inscripción."
-          cta={{ label: 'Volver', onPress: () => router.back() }}
+          cta={error ? {label:'Reintentar',onPress:reintentar} : {label:'Volver',onPress:() => router.back()}}
         />
       </Screen>
     );
@@ -60,6 +67,8 @@ export default function Checkout() {
 
   const pagar = async () => {
     if (guardInvitado('Creá una cuenta para unirte a un partido.')) return;
+    if (pagoPendiente.current) return;
+    pagoPendiente.current = true;
     setPaso('procesando');
     try {
       let nuevoPago: Pago;
@@ -77,7 +86,7 @@ export default function Checkout() {
           partidoId: id,
           jugadorId: profile?.id ?? 'demo',
           monto: total,
-          referencia,
+          referencia: nuevoPago.referencia,
           email: profile?.email,
         });
         await WebBrowser.openBrowserAsync(url);
@@ -96,7 +105,7 @@ export default function Checkout() {
         'No se pudo procesar el pago',
         e instanceof Error ? e.message : 'Intentá de nuevo en un momento, parce.',
       );
-    }
+    } finally { pagoPendiente.current = false; }
   };
 
   return (
@@ -195,7 +204,7 @@ function Procesando({ medio }: { medio: MedioPago }) {
       <Text className="mt-6 font-display text-2xl uppercase text-cream">Procesando…</Text>
       <Text className="mt-2 text-center font-body text-sm text-muted">
         {medio.id === 'online'
-          ? 'Te llevamos al pago seguro de PayU en tu navegador.'
+          ? 'Te llevamos al pago seguro de Rapyd en tu navegador.'
           : `Confirmando tu pago con ${medio.nombre}. No cierres la app, parce.`}
       </Text>
     </View>

@@ -1,19 +1,22 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
 import { ScreenHeader } from '@/components/BackButton';
 import DateTimeField from '@/components/DateTimeField';
+import ErrorBanner from '@/components/ErrorBanner';
 import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import { SkeletonBlock } from '@/components/Skeleton';
-import { COMISION_CANCHA_DEFAULT, PAGOS_ONLINE_CONFIGURADO } from '@/constants/config';
+import { COMISION_CANCHA_DEFAULT, CUPOS_POR_FORMATO, PAGOS_ONLINE_CONFIGURADO } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { crearReserva, getCancha, slotsDelDia, type Slot } from '@/lib/canchas';
+import { hoyColombia } from '@/lib/data-utils';
 import { fechaLarga, precioCOP } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { crearCheckoutReserva } from '@/lib/payments';
@@ -22,7 +25,7 @@ import { useTheme } from '@/lib/theme';
 import { useGuardInvitado } from '@/lib/useGuardInvitado';
 import type { Cancha } from '@/types/database';
 
-const hoy = () => new Date().toISOString().slice(0, 10);
+const hoy = () => hoyColombia();
 
 /** Grilla skeleton (3 col) que imita los turnos mientras cargan. */
 function SlotsGridSkeleton() {
@@ -45,6 +48,9 @@ export default function Reservar() {
   const c = useTheme();
   const guardInvitado = useGuardInvitado();
 
+  const [errorCarga,setErrorCarga] = useState<string | null>(null);
+  const [revision,setRevision] = useState(0);
+  const reservarPendiente = useRef(false);
   const [cancha, setCancha] = useState<Cancha | null>(null);
   const [cargando, setCargando] = useState(true);
   const [fecha, setFecha] = useState(hoy());
@@ -59,33 +65,30 @@ export default function Reservar() {
 
   useEffect(() => {
     if (!id) return;
-    getCancha(id)
-      .then(setCancha)
-      .finally(() => setCargando(false));
-  }, [id]);
+    let vigente = true;
+    setCargando(true);
+    getCancha(id).then(c => { if (vigente) { setCancha(c); setErrorCarga(null); } })
+      .catch(() => { if (vigente) setErrorCarga('No pudimos cargar la cancha. Reintentá.'); })
+      .finally(() => { if (vigente) setCargando(false); });
+    return () => { vigente = false; };
+  },[id,revision]);
 
   useEffect(() => {
     if (!id || !fecha) return;
     let vigente = true;
-    setCargandoSlots(true);
-    setSlot(null);
-    slotsDelDia(id, fecha)
-      .then((s) => {
-        if (vigente) setSlots(s);
-      })
-      .finally(() => {
-        if (vigente) setCargandoSlots(false);
-      });
-    return () => {
-      vigente = false;
-    };
-  }, [id, fecha]);
+    setCargandoSlots(true); setSlot(null); setSlots([]);
+    slotsDelDia(id,fecha).then(s => { if (vigente) setSlots(s); })
+      .catch(() => { if (vigente) setErrorCarga('No pudimos cargar los horarios. Reintentá.'); })
+      .finally(() => { if (vigente) setCargandoSlots(false); });
+    return () => { vigente = false; };
+  },[id,fecha,revision]);
 
   const pagaOnline = medio === 'online' && PAGOS_ONLINE_CONFIGURADO;
 
   const reservar = async () => {
     if (guardInvitado('Creá una cuenta para reservar una cancha.')) return;
-    if (!id || !cancha || !slot || !profile) return;
+    if (!id || !cancha || !slot || !profile || reservarPendiente.current) return;
+    reservarPendiente.current = true;
     setLoading(true);
     try {
       // Online: la reserva nace 'pendiente' y Rapyd la confirma por webhook.
@@ -103,6 +106,8 @@ export default function Reservar() {
         estado: pagaOnline ? 'pendiente' : 'confirmada',
       });
 
+      setOnline(pagaOnline);
+      setReferencia(r.referencia);
       if (pagaOnline) {
         const { url } = await crearCheckoutReserva({
           reservaId: r.id,
@@ -113,7 +118,7 @@ export default function Reservar() {
       }
 
       if (abrirPartido) {
-        await crearPartido(
+        try { await crearPartido(
           {
             cancha: cancha.nombre,
             zona: cancha.zona,
@@ -121,23 +126,24 @@ export default function Reservar() {
             hora: slot.hora_inicio,
             formato: cancha.formatos[0] ?? '5v5',
             nivel: 'Casual',
-            precio: slot.precio,
+            precio: Math.ceil(slot.precio / CUPOS_POR_FORMATO[cancha.formatos[0] ?? '5v5']),
             descripcion: `Reserva en ${cancha.nombre}`,
             foto_url: cancha.foto_portada,
           },
           { id: profile.id, nombre: profile.nombre ?? 'Vos' },
-        );
+        ); } catch { Alert.alert('Reserva confirmada', 'Tu reserva está confirmada, pero no pudimos publicar el partido. Podés crearlo desde Crear partido.'); }
       }
       setOnline(pagaOnline);
       setReferencia(r.referencia);
     } catch (e) {
-      Alert.alert('No se pudo reservar', e instanceof Error ? e.message : 'Probá de nuevo.');
+      Alert.alert('No se pudo completar', e instanceof Error ? e.message : 'Probá de nuevo.');
     } finally {
+      reservarPendiente.current = false;
       setLoading(false);
     }
   };
 
-  // Comprobante (estado "listo"). Online → pendiente hasta que PayU confirme.
+  // Comprobante (estado "listo"). Online → pendiente hasta que Rapyd confirme.
   if (referencia && cancha && slot) {
     const tint = online ? c.warning : c.primary;
     return (
@@ -155,7 +161,7 @@ export default function Reservar() {
           </Text>
           <Text className="mt-3 text-center font-body text-sm text-muted">
             {online
-              ? 'Tu cupo se confirma apenas PayU verifique el pago. Lo ves en "Mis reservas".'
+              ? 'Tu cupo se confirma apenas Rapyd verifique el pago. Lo ves en "Mis reservas".'
               : `Pagás en la cancha al llegar.`}
           </Text>
           <View className="mt-8 w-full">
@@ -168,6 +174,7 @@ export default function Reservar() {
 
   return (
     <Screen edges={['top']}>
+      <ErrorBanner message={errorCarga} className="mx-6 mt-2" action={{label:"Reintentar",onPress:() => setRevision(r => r+1)}} />
       <ScreenHeader title="Reservar" className="px-6 pb-2 pt-2" />
 
       {cargando ? (
@@ -241,7 +248,7 @@ export default function Reservar() {
               />
             </View>
 
-            {/* Medio de pago (online con PayU solo si está habilitado) */}
+            {/* Medio de pago (online con Rapyd solo si está habilitado) */}
             {PAGOS_ONLINE_CONFIGURADO ? (
               <View className="mt-4">
                 <Text className="mb-2 font-body-semibold text-sm text-cream">¿Cómo pagás?</Text>
@@ -275,7 +282,7 @@ export default function Reservar() {
                 </View>
                 <Text className="mt-2 font-body text-xs text-muted">
                   {pagaOnline
-                    ? 'Pago seguro con PayU (Nequi, PSE o tarjeta). Tu cupo se confirma al pagar.'
+                    ? 'Pago seguro con Rapyd (Nequi, PSE o tarjeta). Tu cupo se confirma al pagar.'
                     : 'Pagás en la cancha al llegar. Tu cupo queda reservado.'}
                 </Text>
               </View>

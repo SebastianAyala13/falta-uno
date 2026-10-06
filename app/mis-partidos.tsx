@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text } from 'react-native';
 
@@ -7,6 +7,7 @@ import EmptyState from '@/components/EmptyState';
 import FadeIn from '@/components/FadeIn';
 import GameCard from '@/components/GameCard';
 import Screen from '@/components/Screen';
+import { matchDateTime } from '@/lib/format';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import { useShallow } from 'zustand/react/shallow';
@@ -33,17 +34,18 @@ export default function MisPartidos() {
         ) : (
           misPartidos.map((p, i) => {
             const calificado = yaCalifico(p.id);
+            const terminado = matchDateTime(p.fecha,p.hora).getTime()+2*60*60*1000 <= Date.now();
             return (
               <FadeIn key={p.id} delay={60 + i * 60}>
                 <GameCard partido={p} />
                 <Pressable
                   onPress={() => !calificado && router.push({ pathname: '/calificar/[id]', params: { id: p.id } })}
-                  disabled={calificado}
+                  disabled={calificado || !terminado}
                   className="-mt-2 mb-4 flex-row items-center justify-center gap-2 rounded-md border py-3"
                   style={{ borderColor: calificado ? c.border : c.accent + '66', backgroundColor: calificado ? 'transparent' : c.accent + '12' }}>
                   <Ionicons name={calificado ? 'checkmark-circle' : 'star'} size={16} color={calificado ? c.muted : c.accent} />
                   <Text className="font-body-bold text-sm uppercase tracking-wide" style={{ color: calificado ? c.muted : c.accent }}>
-                    {calificado ? 'Calificado' : 'Calificar partido'}
+                    {calificado ? 'Calificado' : terminado ? 'Calificar partido' : 'Calificá cuando termine'}
                   </Text>
                 </Pressable>
               </FadeIn>

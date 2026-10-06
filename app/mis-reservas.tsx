@@ -1,7 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/BackButton';
 import EmptyState from '@/components/EmptyState';
@@ -12,6 +13,7 @@ import { CardListSkeleton } from '@/components/Skeleton';
 import type { Palette } from '@/constants/themes';
 import { useAuth } from '@/lib/auth';
 import { cancelarReserva, listarCanchas, misReservas } from '@/lib/canchas';
+import { hoyColombia } from '@/lib/data-utils';
 import { fechaLarga, precioCOP } from '@/lib/format';
 import { useTheme } from '@/lib/theme';
 import type { EstadoReserva, Reserva } from '@/types/database';
@@ -86,7 +88,7 @@ export default function MisReservas() {
     ]);
   };
 
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyColombia();
 
   return (
     <Screen edges={['top']}>
@@ -112,7 +114,7 @@ export default function MisReservas() {
         ) : (
           reservas.map((r, i) => {
             const color = colorEstado(r.estado, c);
-            const cancelable = (r.estado === 'confirmada' || r.estado === 'pendiente') && r.fecha >= hoy;
+            const cancelable = (r.estado === 'pendiente' || (r.estado === 'confirmada' && r.medio === 'efectivo')) && r.fecha >= hoy;
             return (
               <FadeIn key={r.id} delay={60 + i * 50}>
                 <View className="mb-3 rounded-md border border-border bg-card p-4">

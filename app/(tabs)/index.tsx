@@ -1,17 +1,18 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import Avatar from '@/components/Avatar';
 import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import GameCard from '@/components/GameCard';
 import Screen from '@/components/Screen';
 import { GameCardSkeleton } from '@/components/Skeleton';
 import UrgencyPill from '@/components/UrgencyPill';
-import { precioCOP } from '@/lib/format';
+import { matchDateTime, precioCOP } from '@/lib/format';
 import { useAuth } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
 import { useTheme, useThemeMeta } from '@/lib/theme';
@@ -35,24 +36,17 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
 
   // Skeletons hasta que la primera hidratación desde Supabase termine (igual que buscar)
-  const [cargando, setCargando] = useState(!hidratado);
-  useEffect(() => {
-    if (hidratado) {
-      setCargando(false);
-      return;
-    }
-    const t = setTimeout(() => setCargando(false), 650);
-    return () => clearTimeout(t);
-  }, [hidratado]);
+  const errorCarga = useStore(s => s.errorCarga);
+  const cargando = !hidratado && !errorCarga;
   const onRefresh = async () => {
     setRefreshing(true);
-    if (profile?.id) await hidratar(profile.id);
+    if (profile?.id) await hidratar(profile.id, true);
     setRefreshing(false);
   };
 
   // Priorizamos por urgencia: los que están por llenarse primero; los llenos al final
   const ordenados = useMemo(() => {
-    return [...partidos].sort((a, b) => {
+    return partidos.filter(p => matchDateTime(p.fecha,p.hora).getTime() > Date.now()).sort((a, b) => {
       const fa = faltanDe(a);
       const fb = faltanDe(b);
       const ua = fa <= 0 ? 99 : fa; // llenos al final
@@ -68,6 +62,7 @@ export default function Home() {
 
   return (
     <Screen edges={['top']}>
+      <ErrorBanner message={errorCarga} className="mx-6 mt-2" />
       <ScrollView
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}

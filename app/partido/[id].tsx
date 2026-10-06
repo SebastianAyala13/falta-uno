@@ -1,9 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
+import ModeracionBoton from '@/components/ModeracionBoton';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, Linking, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Avatar from '@/components/Avatar';
@@ -18,9 +19,11 @@ import Screen from '@/components/Screen';
 import { SkeletonBlock } from '@/components/Skeleton';
 import StatCard from '@/components/StatCard';
 import UrgencyPill from '@/components/UrgencyPill';
-import { COMISION_SERVICIO } from '@/constants/config';
+import ErrorBanner from '@/components/ErrorBanner';
+import { usePartido } from '@/lib/usePartido';
+import { THEMES } from '@/constants/themes';
 import { useAuth } from '@/lib/auth';
-import { fechaLarga, precioCOP, urgencyLabel } from '@/lib/format';
+import { fechaLarga, matchDateTime, precioCOP, urgencyLabel } from '@/lib/format';
 import { coordsDePartido } from '@/lib/geo';
 import { cancelarRecordatorio } from '@/lib/notifications';
 import { useStore } from '@/lib/store';
@@ -28,7 +31,8 @@ import { useTheme, useThemeMeta } from '@/lib/theme';
 
 // Texto sobre el scrim oscuro de una foto: claro fijo (el scrim es siempre oscuro, por
 // eso no puede seguir a `cream`, que en el tema Blanco es casi negro).
-const HERO_TEXTO_SOBRE_FOTO = '#F6F9F6';
+const FOTO_PALETA = THEMES[0].palette;
+const HERO_TEXTO_SOBRE_FOTO = FOTO_PALETA.cream;
 
 export default function PartidoDetalle() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,36 +41,20 @@ export default function PartidoDetalle() {
   const c = useTheme();
   const heroDark = useThemeMeta().dark;
 
-  const partido = useStore((s) => s.getPartido(id));
+  const {partido,cargando,error,reintentar} = usePartido(id);
   const inscrito = useStore((s) => s.estaInscrito(id));
   const salirse = useStore((s) => s.salirse);
-  const hidratado = useStore((s) => s.hidratado);
-  const hidratar = useStore((s) => s.hidratar);
-
-  // Deep-link directo (sin pasar por las tabs): disparamos la carga si hace falta. El
-  // backstop de 800ms evita que el skeleton se cuelgue si nunca hidrata (p.ej. sin sesión,
-  // donde profile?.id es falsy y hidratar no puede dispararse).
-  const [cargando, setCargando] = useState(!hidratado);
-  useEffect(() => {
-    if (hidratado) {
-      setCargando(false);
-      return;
-    }
-    if (profile?.id) hidratar(profile.id);
-    const t = setTimeout(() => setCargando(false), 800);
-    return () => clearTimeout(t);
-  }, [hidratado, profile?.id, hidratar]);
-
   if (!partido) {
     // Mientras hidrata → skeleton; ya resuelto y sin partido → de verdad no existe.
     if (cargando) return <PartidoSkeleton />;
     return (
       <Screen edges={['top']}>
+        <ErrorBanner message={error} className="mx-6 mt-2" />
         <EmptyState
           icon="alert-circle-outline"
           titulo="Este partido ya no existe"
           texto="Puede que lo hayan cancelado o que el cupo ya se haya cerrado."
-          cta={{ label: 'Volver', icon: 'arrow-back', onPress: () => router.back() }}
+          cta={error ? {label:'Reintentar',onPress:reintentar} : {label:'Volver',icon:'arrow-back',onPress:() => router.back()}}
         />
       </Screen>
     );
@@ -74,8 +62,9 @@ export default function PartidoDetalle() {
 
   const faltan = partido.cupos_totales - partido.cupos_ocupados;
   const lleno = faltan <= 0;
-  const comision = Math.round(partido.precio * COMISION_SERVICIO);
-  const total = partido.precio + comision;
+  const total = partido.precio;
+  const iniciado = !!partido.oculto || matchDateTime(partido.fecha,partido.hora).getTime() <= Date.now();
+  const organizador = partido.organizador_id === profile?.id;
   const coords = coordsDePartido(partido);
 
   const conFoto = !!partido.foto_url;
@@ -114,10 +103,12 @@ export default function PartidoDetalle() {
       {
         text: 'Salir',
         style: 'destructive',
-        onPress: () => {
-          salirse(id, profile?.id ?? 'demo');
-          cancelarRecordatorio(id);
-          router.back();
+        onPress: async () => {
+          try {
+            await salirse(id,profile?.id ?? 'demo');
+            await cancelarRecordatorio(id);
+            router.back();
+          } catch(e) { Alert.alert('No pudimos liberar el cupo',e instanceof Error ? e.message : 'Reintentá.'); }
         },
       },
     ]);
@@ -125,6 +116,7 @@ export default function PartidoDetalle() {
 
   return (
     <View className="flex-1 bg-background">
+      <ErrorBanner message={error} className="mx-6 mt-2" />
       <ScrollView contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View className="overflow-hidden">
@@ -134,7 +126,7 @@ export default function PartidoDetalle() {
           <LinearGradient
             colors={
               conFoto
-                ? ['rgba(11,15,13,0.30)', 'rgba(11,15,13,0.94)']
+                ? [FOTO_PALETA.background+'4D', FOTO_PALETA.background+'F0']
                 : heroDark
                   ? [c.secondary, c.background]
                   : [c.primary, c.secondary]
@@ -147,8 +139,8 @@ export default function PartidoDetalle() {
             <SafeAreaView edges={['top']}>
               <View className="flex-row items-center justify-between px-5 pt-2">
                 <BackButton variant="overlay" />
-                <Pressable onPress={compartir} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full bg-black/30">
-                  <Ionicons name="share-social-outline" size={20} color={c.cream} />
+                <Pressable onPress={compartir} hitSlop={12} className="h-10 w-10 items-center justify-center rounded-full" style={{backgroundColor:FOTO_PALETA.background+'4D'}}>
+                  <Ionicons name="share-social-outline" size={20} color={HERO_TEXTO_SOBRE_FOTO} />
                 </Pressable>
               </View>
 
@@ -210,7 +202,7 @@ export default function PartidoDetalle() {
                     <Text className="mt-1 font-body text-xs text-cream" numberOfLines={1}>{nombre}</Text>
                   </View>
                 ))}
-                {!lleno && !inscrito ? (
+                {!lleno && !inscrito && !iniciado ? (
                   <Pressable
                     onPress={() => router.push({ pathname: '/checkout/[id]', params: { id } })}
                     style={{ width: 58 }}
@@ -227,14 +219,17 @@ export default function PartidoDetalle() {
             </View>
           </FadeIn>
 
+          {partido.oculto ? <ErrorBanner message="Este partido fue retirado de la búsqueda por moderación. No admite nuevas inscripciones." /> : null}
+          <View className="mb-3 flex-row items-center justify-end"><Text className="mr-2 font-body text-xs text-muted">Opciones del partido</Text><ModeracionBoton tipo="partido" contenidoId={partido.id} autorId={partido.organizador_id} autorNombre={partido.organizador?.nombre ?? 'Organizador'} texto={partido.descripcion ?? partido.cancha} /></View>
           {/* Organizador */}
           <FadeIn delay={180}>
             <View className="mb-4 flex-row items-center rounded-lg border border-border bg-card p-4">
-              <Avatar nombre={partido.organizador?.nombre ?? '?'} size={48} />
+              <Avatar uri={partido.organizador?.avatar_url} nombre={partido.organizador?.nombre ?? '?'} size={48} />
               <View className="ml-3 flex-1">
                 <Text className="font-body text-xs uppercase tracking-wide text-muted">Organiza</Text>
                 <Text className="font-body-bold text-base text-cream">{partido.organizador?.nombre}</Text>
               </View>
+              <ModeracionBoton tipo="perfil" contenidoId={partido.organizador_id} autorId={partido.organizador_id} autorNombre={partido.organizador?.nombre ?? 'Organizador'} texto={partido.organizador?.nombre ?? ''} />
               <View className="flex-row items-center gap-1 rounded-full bg-background px-3 py-1.5">
                 <Ionicons name="star" size={14} color={c.accentText} />
                 <Text className="font-body-semibold text-sm text-cream">{partido.organizador?.rating?.toFixed(1)}</Text>
@@ -282,7 +277,7 @@ export default function PartidoDetalle() {
           <FadeIn delay={260}>
             <View className="rounded-lg border border-border bg-card p-4">
               <Linea label="Cupo" valor={precioCOP(partido.precio)} />
-              <Linea label="Servicio Falta Uno" valor={precioCOP(comision)} />
+              <Text className="font-body text-xs text-muted">En efectivo no hay comisión. El pago online muestra su comisión antes de confirmar.</Text>
               <View className="my-2 h-px bg-border" />
               <Linea label="Total" valor={precioCOP(total)} total />
             </View>
@@ -298,11 +293,11 @@ export default function PartidoDetalle() {
               <Ionicons name="checkmark-circle" size={20} color={c.primary} />
               <Text className="font-body-bold text-base text-primary">¡Ya estás cuadrado!</Text>
             </View>
-            <Pressable onPress={confirmarSalida} className="py-1">
+            {!organizador ? <Pressable onPress={confirmarSalida} className="py-1">
               <Text className="text-center font-body-semibold text-sm text-muted">Salir del partido</Text>
-            </Pressable>
+            </Pressable> : null}
           </View>
-        ) : lleno ? (
+        ) : iniciado ? (<GlowButton label="Partido iniciado" variant="dark" disabled icon="time" />) : lleno ? (
           <GlowButton label="Cupo lleno" variant="dark" disabled icon="lock-closed" />
         ) : (
           <View className="flex-row items-center gap-3">

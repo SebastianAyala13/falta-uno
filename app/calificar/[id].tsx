@@ -1,8 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Switch, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, Switch, Text, View } from 'react-native';
 
+import EmptyState from '@/components/EmptyState';
+import ErrorBanner from '@/components/ErrorBanner';
+import { CardListSkeleton } from '@/components/Skeleton';
+import { usePartido } from '@/lib/usePartido';
 import Avatar from '@/components/Avatar';
 import { ScreenHeader } from '@/components/BackButton';
 import FadeIn from '@/components/FadeIn';
@@ -23,21 +28,27 @@ export default function Calificar() {
   const c = useTheme();
   const guardInvitado = useGuardInvitado();
 
-  const partido = useStore((s) => s.getPartido(id));
+  const {partido,cargando,error:errorCarga} = usePartido(id);
   const calificarPartido = useStore((s) => s.calificarPartido);
 
+  const [error,setError] = useState<string | null>(null);
+  const [enviando,setEnviando] = useState(false);
+  const pendiente = useRef(false);
   const [estrellas, setEstrellas] = useState(0);
   const [orgEstrellas, setOrgEstrellas] = useState(0);
   const [noShow, setNoShow] = useState(false);
   const [comentario, setComentario] = useState('');
 
-  const enviar = () => {
+  const enviar = async () => {
+    if (pendiente.current) return;
     if (guardInvitado('Creá una cuenta para calificar.')) return;
     if (estrellas === 0) {
       Alert.alert('Ponele estrellas', 'Calificá la experiencia del partido para enviar.');
       return;
     }
-    calificarPartido(id, profile?.id ?? 'demo', {
+    pendiente.current = true; setEnviando(true); setError(null);
+    try {
+    await calificarPartido(id, profile?.id ?? 'demo', {
       estrellas,
       organizador_estrellas: orgEstrellas || estrellas,
       hubo_no_show: noShow,
@@ -47,7 +58,11 @@ export default function Calificar() {
     Alert.alert('¡Gracias, parce! 🙌', 'Tu calificación ayuda a que la comunidad juegue mejor.', [
       { text: 'Listo', onPress: () => router.back() },
     ]);
+    } catch(e) { setError(e instanceof Error ? e.message : 'No pudimos guardar la calificación.'); }
+    finally { pendiente.current = false; setEnviando(false); }
   };
+
+  if (!partido) return <Screen>{cargando ? <CardListSkeleton rows={3} /> : <EmptyState titulo="Partido no disponible" texto={errorCarga ?? 'Buscá el partido en Mis partidos.'} icon="football-outline" cta={{label:"Volver",onPress:() => router.back()}} />}</Screen>;
 
   return (
     <Screen edges={['top']}>
@@ -98,7 +113,8 @@ export default function Calificar() {
 
           <FadeIn delay={280}>
             <Field label="Comentario (opcional)" icon="chatbubble-outline" placeholder="Contanos qué tal estuvo..." value={comentario} onChangeText={setComentario} multiline />
-            <GlowButton label="Enviar calificación" variant="accent" icon="send" onPress={enviar} />
+            <ErrorBanner message={error} />
+            <GlowButton label="Enviar calificación" variant="accent" icon="send" loading={enviando} onPress={enviar} />
           </FadeIn>
         </ScrollView>
       </KeyboardAvoidingView>

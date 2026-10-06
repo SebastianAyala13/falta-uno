@@ -1,13 +1,16 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
 import Avatar from '@/components/Avatar';
 import { ScreenHeader } from '@/components/BackButton';
+import ErrorBanner from '@/components/ErrorBanner';
+import GlowButton from '@/components/GlowButton';
 import EmptyState from '@/components/EmptyState';
 import ModeracionBoton from '@/components/ModeracionBoton';
 import Screen from '@/components/Screen';
@@ -38,27 +41,38 @@ export default function PostDetalle() {
   const hidratado = useStore((s) => s.hidratado);
   const hidratar = useStore((s) => s.hidratar);
 
+  const cargarPost = useStore(s => s.cargarPost);
+  const cargarComentarios = useStore(s => s.cargarComentarios);
+  const hayMasComentarios = useStore(s => s.hayMasComentarios[id]);
+  const [error,setError] = useState<string | null>(null);
+  const enviandoRef = useRef(false);
+  const [enviando,setEnviando] = useState(false);
+  const [revision,setRevision] = useState(0);
   const [texto, setTexto] = useState('');
   const [cargando, setCargando] = useState(!hidratado);
   const uid = profile?.id ?? 'demo';
 
-  // Deep-link directo (sin pasar por las tabs): disparamos la carga si hace falta. Backstop
-  // de 800ms para no colgar el skeleton si nunca hidrata (p.ej. sin sesión).
   useEffect(() => {
-    if (hidratado) {
-      setCargando(false);
-      return;
-    }
-    if (profile?.id) hidratar(profile.id);
-    const t = setTimeout(() => setCargando(false), 800);
-    return () => clearTimeout(t);
-  }, [hidratado, profile?.id, hidratar]);
+    let activo = true;
+    setCargando(true);
+    setError(null);
+    void (async () => {
+      try {
+        if (profile?.id) await hidratar(profile.id);
+        await cargarPost(id);
+        await cargarComentarios(id);
+      } catch { if (activo) setError('No pudimos cargar la publicación. Reintentá.'); }
+      finally { if (activo) setCargando(false); }
+    })();
+    return () => { activo = false; };
+  },[id,profile?.id,hidratar,cargarPost,cargarComentarios,revision]);
 
   if (!post || postBloqueado) {
     // Mientras hidrata → skeleton; ya resuelto y sin post (o autor bloqueado) → no disponible.
     return (
       <Screen edges={['top']}>
         <ScreenHeader title="Publicación" titleSize="xl" borderBottom backClassName="mr-2" className="px-4 pb-3 pt-1" />
+        <ErrorBanner message={error} className="mx-6 mt-2" action={{label:"Reintentar",onPress:() => setRevision(r => r+1)}} />
         {cargando ? (
           <View style={{ padding: 16 }}>
             <CardListSkeleton rows={3} />
@@ -78,20 +92,27 @@ export default function PostDetalle() {
   const liked = post.likes.includes(uid);
   const esRecap = post.tipo === 'recap';
 
-  const enviar = () => {
+  const enviar = async () => {
     if (guardInvitado('Creá una cuenta para comentar.')) return;
-    if (!texto.trim()) return;
+    if (!texto.trim() || enviandoRef.current) return;
     if (contieneContenidoObjetable(texto)) {
       Alert.alert('Revisá tu comentario', MENSAJE_BLOQUEO_FILTRO);
       return;
     }
-    comentar(id, { id: uid, nombre: profile?.nombre ?? 'Vos', avatar_url: profile?.avatar_url }, texto);
-    setTexto('');
+    enviandoRef.current = true; setEnviando(true);
+    const borrador = texto;
+    try {
+      await comentar(id,{id:uid,nombre:profile?.nombre ?? 'Vos',avatar_url:profile?.avatar_url},borrador);
+      setTexto(actual => actual === borrador ? '' : actual); setError(null);
+    } catch(e) { setError(e instanceof Error ? e.message : 'No pudimos guardar tu comentario.'); }
+    finally { enviandoRef.current = false; setEnviando(false); }
   };
 
-  const onLike = () => {
+  const onLike = async () => {
+    if (guardInvitado('Creá una cuenta para dar me gusta.')) return;
     haptics.light();
-    toggleLike(post.id, uid);
+    try { await toggleLike(post.id,uid); setError(null); }
+    catch(e) { setError(e instanceof Error ? e.message : 'No pudimos guardar el me gusta.'); }
   };
 
   return (
@@ -105,12 +126,14 @@ export default function PostDetalle() {
         className="px-4 pb-3 pt-1"
       />
 
+      <ErrorBanner message={error} className="mx-4 mt-2" action={{label:"Reintentar",onPress:() => setRevision(r => r+1)}} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
         className="flex-1">
         <FlatList
           data={comentarios}
+          ListFooterComponent={hayMasComentarios ? <GlowButton label="Comentarios anteriores" variant="outline" onPress={() => { cargarComentarios(id,true).catch(() => setError('No pudimos cargar más comentarios.')); }} /> : null}
           keyExtractor={(com: Comentario) => com.id}
           contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
           showsVerticalScrollIndicator={false}
@@ -156,12 +179,12 @@ export default function PostDetalle() {
                 <Pressable onPress={onLike} hitSlop={8} className="flex-row items-center gap-1.5">
                   <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? c.danger : c.muted} />
                   <Text className="font-body-semibold text-sm" style={{ color: liked ? c.danger : c.muted }}>
-                    {post.likes.length}
+                    {post.like_count ?? post.likes.length}
                   </Text>
                 </Pressable>
                 <View className="flex-row items-center gap-1.5">
                   <Ionicons name="chatbubble-outline" size={18} color={c.muted} />
-                  <Text className="font-body-semibold text-sm text-muted">{comentarios.length}</Text>
+                  <Text className="font-body-semibold text-sm text-muted">{post.comment_count ?? comentarios.length}</Text>
                 </View>
               </View>
             </View>
@@ -206,11 +229,12 @@ export default function PostDetalle() {
               placeholder="Escribí un comentario…"
               placeholderTextColor={c.muted}
               multiline
+              maxLength={500}
               className="max-h-28 flex-1 rounded-sm border border-border bg-background px-4 py-3 font-body text-base text-cream"
             />
             <Pressable
               onPress={enviar}
-              disabled={!texto.trim()}
+              disabled={!texto.trim() || enviando}
               className="h-12 w-12 items-center justify-center rounded-full"
               style={{ backgroundColor: texto.trim() ? c.primary : c.border }}>
               <Ionicons name="send" size={18} color={texto.trim() ? c.ink : c.muted} />

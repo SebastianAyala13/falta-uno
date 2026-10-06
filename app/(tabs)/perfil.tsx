@@ -1,14 +1,15 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Alert } from '@/lib/alert';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 
 import Avatar from '@/components/Avatar';
 import Badge from '@/components/Badge';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import StatCard from '@/components/StatCard';
-import { URL_PRIVACIDAD } from '@/constants/config';
+import { URL_PRIVACIDAD, URL_TERMINOS, URL_COMUNIDAD, URL_SOPORTE } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
 import { useStore } from '@/lib/store';
@@ -23,7 +24,7 @@ export default function Perfil() {
 
   const abrirPrivacidad = () => {
     haptics.tap();
-    Linking.openURL(URL_PRIVACIDAD).catch(() => {});
+    Linking.openURL(URL_PRIVACIDAD).catch(() => Alert.alert('No pudimos abrir la política', URL_PRIVACIDAD));
   };
   const borrarCuenta = () => {
     haptics.tap();
@@ -56,8 +57,10 @@ export default function Perfil() {
   const racha = Math.min(jugados, 5); // racha simple basada en partidos jugados
   const cerrarSesion = async () => {
     haptics.tap();
-    await signOut();
-    router.replace('/(auth)/welcome');
+    try {
+      await signOut();
+      router.replace('/(auth)/welcome');
+    } catch (e) { Alert.alert('No pudimos cerrar sesión', e instanceof Error ? e.message : 'Reintentá.'); }
   };
 
   return (
@@ -207,11 +210,26 @@ export default function Perfil() {
         {/* Cuenta y legal */}
         <FadeIn delay={210}>
           <View className="mx-6 mt-4 overflow-hidden rounded-md border border-border bg-card">
+            <Pressable accessibilityRole="button" onPress={() => Linking.openURL(URL_TERMINOS).catch(() => Alert.alert('Términos', URL_TERMINOS))} className="flex-row items-center border-b border-border px-4 py-4 active:bg-border/40">
+              <Ionicons name="document-text-outline" size={20} color={c.muted} />
+              <Text className="ml-3 flex-1 font-body-semibold text-base text-cream">Términos de uso</Text>
+              <Ionicons name="chevron-forward" size={16} color={c.muted} />
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => Linking.openURL(URL_COMUNIDAD).catch(() => Alert.alert('Normas de la comunidad', URL_COMUNIDAD))} className="flex-row items-center border-b border-border px-4 py-4 active:bg-border/40">
+              <Ionicons name="shield-checkmark-outline" size={20} color={c.muted} />
+              <Text className="ml-3 flex-1 font-body-semibold text-base text-cream">Normas de la comunidad</Text>
+              <Ionicons name="chevron-forward" size={16} color={c.muted} />
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => Linking.openURL(URL_SOPORTE).catch(() => Alert.alert('Soporte', 'Escribinos a vasecom22@gmail.com para recibir ayuda o denunciar contenido.'))} className="flex-row items-center border-b border-border px-4 py-4 active:bg-border/40">
+              <Ionicons name="help-circle-outline" size={20} color={c.muted} />
+              <Text className="ml-3 flex-1 font-body-semibold text-base text-cream">Ayuda y contacto</Text>
+              <Ionicons name="chevron-forward" size={16} color={c.muted} />
+            </Pressable>
             <Pressable onPress={abrirPrivacidad} className="flex-row items-center border-b border-border px-4 py-4 active:bg-border/40">
               <View className="h-9 w-9 items-center justify-center rounded-sm bg-primary/15">
                 <Ionicons name="shield-checkmark-outline" size={18} color={c.primary} />
               </View>
-              <Text className="ml-3 flex-1 font-body-semibold text-base text-cream">Privacidad y términos</Text>
+              <Text className="ml-3 flex-1 font-body-semibold text-base text-cream">Política de privacidad</Text>
               <Ionicons name="open-outline" size={18} color={c.muted} />
             </Pressable>
             <Pressable onPress={borrarCuenta} className="flex-row items-center px-4 py-4 active:bg-border/40">

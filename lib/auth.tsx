@@ -1,10 +1,15 @@
+import { cancelarTodosRecordatorios } from '@/lib/notifications';
+import { subirImagen } from '@/lib/media';
+import { Alert } from '@/lib/alert';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Alert } from 'react-native';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+
 
 import { APP, POLITICA_VERSION, type Nivel, type Posicion } from '@/constants/config';
 import { supabase, supabaseConfigurado } from '@/lib/supabase';
+import { useStore } from '@/lib/store';
+import { comprobarRespuesta } from '@/lib/data-utils';
 import type { Profile } from '@/types/database';
 
 const DEMO_KEY = 'faltauno.demo.profile';
@@ -70,73 +75,107 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Carga inicial de la sesión
-  useEffect(() => {
-    let activo = true;
+  const activo = useRef(true);
+  const version = useRef(0);
+  const perfilActual = useRef<Profile | null>(null);
+  const cargaPerfil = useRef<{ id: string; promesa: Promise<void> } | null>(null);
 
-    async function init() {
-      if (!supabaseConfigurado) {
-        // Modo demo: recuperamos perfil guardado localmente (si existe)
-        const raw = await AsyncStorage.getItem(DEMO_KEY);
-        if (activo) {
-          setProfile(raw ? (JSON.parse(raw) as Profile) : null);
-          setLoading(false);
-        }
-        return;
-      }
-
-      const { data } = await supabase.auth.getSession();
-      if (data.session) await cargarPerfil(data.session);
-      if (activo) setLoading(false);
-
-      supabase.auth.onAuthStateChange((_event, session) => {
-        if (session) cargarPerfil(session);
-        else setProfile(null);
-      });
-    }
-
-    init();
-    return () => {
-      activo = false;
-    };
+  const aplicarPerfil = useCallback((p: Profile | null) => {
+    if (!activo.current) return;
+    perfilActual.current = p;
+    useStore.getState().reiniciarSesion(p?.id ?? null);
+    setProfile(p);
   }, []);
 
-  async function cargarPerfil(session: Session) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .maybeSingle();
-    if (data) {
-      if ((data as Profile).suspendido) {
-        // Cuenta suspendida por moderación: cerramos sesión y avisamos (Apple 1.2: expulsar abusivos).
-        await supabase.auth.signOut();
-        setProfile(null);
-        Alert.alert(
-          'Cuenta suspendida',
-          'Tu cuenta fue suspendida por incumplir las normas de la comunidad. Si creés que es un error, escribinos.',
-        );
+  const cargarPerfil = useCallback((session: Session): Promise<void> => {
+    if (cargaPerfil.current?.id === session.user.id) return cargaPerfil.current.promesa;
+    const actual = version.current;
+    const promesa = (async () => {
+      let data = comprobarRespuesta(await supabase.from('profiles').select('*').eq('id',session.user.id).maybeSingle()) as Profile | null;
+      if (!activo.current || actual !== version.current) return;
+      if (!data) {
+        const raw = await AsyncStorage.getItem(PENDING_KEY);
+        let pendiente: Record<string, unknown> | null = null;
+        try {
+          const p = raw ? JSON.parse(raw) : null;
+          // Never attach another account's pending profile to the new session.
+          if (p?.id === session.user.id && p.email === session.user.email) pendiente = p;
+        } catch { /* A corrupt local draft is not an authenticated profile. */ }
+        const metadata = session.user.user_metadata?.profile;
+        const fuente = pendiente ?? (metadata && typeof metadata === 'object' ? metadata : null);
+        if (!fuente) throw new Error('No pudimos recuperar tu perfil. Intentá iniciar sesión de nuevo.');
+        const nuevo = { id:session.user.id,email:session.user.email,
+          nombre:fuente.nombre,ciudad:fuente.ciudad,posicion:fuente.posicion,nivel:fuente.nivel,
+          celular:fuente.celular,avatar_url:null,roles:fuente.roles ?? ['jugador'],
+          politica_version:fuente.politica_version,politica_aceptada_at:fuente.politica_aceptada_at };
+        comprobarRespuesta(await supabase.from('profiles').upsert(nuevo as never,{onConflict:'id',ignoreDuplicates:true}));
+        data = comprobarRespuesta(await supabase.from('profiles').select('*').eq('id',session.user.id).single()) as Profile;
+        if (pendiente) await AsyncStorage.removeItem(PENDING_KEY);
+      }
+      if (!activo.current || actual !== version.current) return;
+      if (data.suspendido) {
+        const {error} = await supabase.auth.signOut();
+        if (error) throw new Error('Tu cuenta está suspendida.');
+        aplicarPerfil(null);
+        Alert.alert('Cuenta suspendida','Tu cuenta fue suspendida por incumplir las normas de la comunidad. Si creés que es un error, escribinos.');
+        throw new Error('Tu cuenta está suspendida.');
+      }
+      aplicarPerfil(data);
+    })().finally(() => {
+      if (cargaPerfil.current?.promesa === promesa) cargaPerfil.current = null;
+    });
+    cargaPerfil.current = { id:session.user.id,promesa };
+    return promesa;
+  }, [aplicarPerfil]);
+
+  useEffect(() => {
+    activo.current = true;
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const subscription = supabaseConfigurado ? supabase.auth.onAuthStateChange((event,session) => {
+      // No Supabase awaits inside the auth callback: it runs under the auth lock.
+      if (!session) {
+        version.current++;
+        cargaPerfil.current = null;
+        aplicarPerfil(null);
         return;
       }
-      setProfile(data as Profile);
-      return;
-    }
-    // No hay perfil aún: si quedó uno pendiente del registro (caso confirmación
-    // de email activada), lo creamos ahora que ya hay sesión válida.
-    const raw = await AsyncStorage.getItem(PENDING_KEY);
-    if (raw) {
-      const pendiente = JSON.parse(raw) as Record<string, unknown>;
-      pendiente.id = session.user.id;
-      await supabase.from('profiles').insert(pendiente as never);
-      await AsyncStorage.removeItem(PENDING_KEY);
-      const { data: creado } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .maybeSingle();
-      if (creado) setProfile(creado as Profile);
-    }
-  }
+      if ((event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') && perfilActual.current?.id === session.user.id) return;
+      if (perfilActual.current && perfilActual.current.id !== session.user.id) {
+        version.current++;
+        cargaPerfil.current = null;
+        aplicarPerfil(null);
+      }
+      const eventVersion = version.current;
+      const t = setTimeout(() => {
+        timers.delete(t);
+        if (activo.current && eventVersion === version.current) void cargarPerfil(session).catch(() => {
+          if (activo.current) setLoading(false);
+        });
+      },0);
+      timers.add(t);
+    }).data.subscription : null;
+    const initialVersion = version.current;
+    void (async () => {
+      try {
+        if (!supabaseConfigurado) {
+          const raw = await AsyncStorage.getItem(DEMO_KEY);
+          aplicarPerfil(raw ? JSON.parse(raw) as Profile : null);
+        } else {
+          const {data,error} = await supabase.auth.getSession();
+          if (error) throw error;
+          if (data.session && initialVersion === version.current) await cargarPerfil(data.session);
+        }
+      } catch { if (activo.current && initialVersion === version.current) aplicarPerfil(null); }
+      finally { if (activo.current) setLoading(false); }
+    })();
+    return () => {
+      activo.current = false;
+      version.current++;
+      cargaPerfil.current = null;
+      subscription?.unsubscribe();
+      timers.forEach(clearTimeout);
+    };
+  }, [aplicarPerfil,cargarPerfil]);
 
   const value = useMemo<AuthState>(
     () => ({
@@ -151,11 +190,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const raw = await AsyncStorage.getItem(DEMO_KEY);
           const p = raw ? (JSON.parse(raw) as Profile) : perfilDemo({ email });
           await AsyncStorage.setItem(DEMO_KEY, JSON.stringify(p));
-          setProfile(p);
+          aplicarPerfil(p);
           return;
         }
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email:email.trim().toLowerCase(), password });
         if (error) throw new Error(traducirError(error.message));
+        if (data.session) await cargarPerfil(data.session);
       },
 
       async resetPassword(email) {
@@ -170,94 +210,96 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!supabaseConfigurado) {
           const p = perfilDemo(datos);
           await AsyncStorage.setItem(DEMO_KEY, JSON.stringify(p));
-          setProfile(p);
+          aplicarPerfil(p);
           return { needsConfirmation: false };
         }
-        const { data, error } = await supabase.auth.signUp({
-          email: datos.email,
-          password: datos.password,
+        const nuevo = {
+          nombre:datos.nombre,email:datos.email.trim().toLowerCase(),ciudad:datos.ciudad,
+          posicion:datos.posicion,nivel:datos.nivel,celular:datos.celular,
+          roles:datos.roles ?? ['jugador'],politica_version:POLITICA_VERSION,
+          politica_aceptada_at:new Date().toISOString(),
+        };
+        const {data,error} = await supabase.auth.signUp({
+          email:nuevo.email,password:datos.password,options:{data:{profile:nuevo}},
         });
         if (error) throw new Error(traducirError(error.message));
-
-        // cast: el cliente tipado de supabase-js degrada el insert a `never`
-        // con tipos de Database escritos a mano; el objeto es correcto en runtime.
-        const nuevo = {
-          id: data.user?.id,
-          nombre: datos.nombre,
-          email: datos.email,
-          ciudad: datos.ciudad,
-          posicion: datos.posicion,
-          nivel: datos.nivel,
-          celular: datos.celular,
-          avatar_url: null,
-          roles: datos.roles ?? ['jugador'],
-          // Prueba de autorización de tratamiento de datos (Ley 1581/2012)
-          politica_version: POLITICA_VERSION,
-          politica_aceptada_at: new Date().toISOString(),
-        };
-
         if (data.session) {
-          // Sesión inmediata (confirmación de email desactivada): creamos el perfil ya.
-          const { error: perr } = await supabase.from('profiles').insert(nuevo as never);
-          if (perr) throw new Error(traducirError(perr.message));
           await cargarPerfil(data.session);
-          return { needsConfirmation: false };
+          return {needsConfirmation:false};
         }
-
         // Confirmación pendiente: guardamos el perfil para crearlo al primer login.
-        await AsyncStorage.setItem(PENDING_KEY, JSON.stringify(nuevo));
+        await AsyncStorage.setItem(PENDING_KEY, JSON.stringify({...nuevo,id:data.user?.id}));
         return { needsConfirmation: true };
       },
 
       async signInAsGuest() {
+        if (supabaseConfigurado) {
+          const {error} = await supabase.auth.signOut();
+          if (error) throw new Error('No pudimos cambiar a modo invitado.');
+        }
+        version.current++;
+        cargaPerfil.current = null;
         // Invitado arranca en cero: nada de estadísticas ficticias que parezcan reales.
         const p = perfilDemo({ nombre: 'Invitado', email: 'invitado@faltauno.app', partidos_jugados: 0, no_shows: 0, rating: 0 });
         await AsyncStorage.setItem(DEMO_KEY, JSON.stringify(p));
-        setProfile(p);
+        aplicarPerfil(p);
       },
 
       async signOut() {
-        if (supabaseConfigurado) await supabase.auth.signOut();
+        if (supabaseConfigurado) {
+          const {error} = await supabase.auth.signOut();
+          if (error) throw new Error('No pudimos cerrar sesión. Revisá tu conexión.');
+        }
+        version.current++;
+        cargaPerfil.current = null;
+        await cancelarTodosRecordatorios();
         await AsyncStorage.removeItem(DEMO_KEY);
-        setProfile(null);
+        aplicarPerfil(null);
       },
 
       async eliminarCuenta() {
         if (!supabaseConfigurado) {
           // Modo demo: borramos los datos locales del usuario
           await AsyncStorage.multiRemove([DEMO_KEY, PENDING_KEY]);
-          setProfile(null);
+          aplicarPerfil(null);
           return;
         }
         // La eliminación real (perfil + usuario de Auth) la hace la Edge Function
         // `delete-user` con service_role (el cliente no tiene policy de DELETE).
         // Si falla, NO cerramos sesión y propagamos el error para avisar al usuario.
-        const { error } = await supabase.functions.invoke('delete-user');
-        if (error) {
+        const { data, error } = await supabase.functions.invoke('delete-user');
+        if (error || data?.ok !== true) {
           throw new Error('No pudimos eliminar tu cuenta. Intentá de nuevo o escribinos a soporte.');
         }
-        await supabase.auth.signOut();
-        await AsyncStorage.removeItem(DEMO_KEY);
-        setProfile(null);
+        await supabase.auth.signOut({scope:'local'});
+        version.current++;
+        cargaPerfil.current = null;
+        await cancelarTodosRecordatorios();
+        await AsyncStorage.multiRemove([DEMO_KEY,PENDING_KEY]);
+        aplicarPerfil(null);
       },
 
       async updateProfile(cambios) {
         if (!profile) return;
+        const actual = version.current;
         const actualizado = { ...profile, ...cambios };
         if (!supabaseConfigurado) {
           await AsyncStorage.setItem(DEMO_KEY, JSON.stringify(actualizado));
-          setProfile(actualizado);
+          if (actual === version.current && perfilActual.current?.id === profile.id) aplicarPerfil(actualizado);
           return;
         }
+        const guardados = { ...cambios };
+        if ('avatar_url' in guardados) guardados.avatar_url = await subirImagen(guardados.avatar_url,profile.id);
+        if (actual !== version.current) throw new Error('La sesión cambió. Volvé a entrar.');
         const { error } = await supabase
           .from('profiles')
-          .update(cambios as never)
+          .update(guardados as never)
           .eq('id', profile.id);
         if (error) throw new Error(traducirError(error.message));
-        setProfile(actualizado);
+        if (actual === version.current && perfilActual.current?.id === profile.id) aplicarPerfil({...profile,...guardados});
       },
     }),
-    [profile, loading],
+    [profile, loading, aplicarPerfil, cargarPerfil],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

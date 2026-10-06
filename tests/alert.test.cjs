@@ -22,11 +22,20 @@ test('web confirmations are visible, queued and never execute destructive callba
   stop();
 });
 
-test('native alerts keep their native implementation', () => {
-  let received;
-  const api=loadTs('lib/alert.ts',{'react-native':{Platform:{OS:'android'},Alert:{alert(...args){received=args}}}});
-  api.Alert.alert('Título','Mensaje');
-  assert.equal(received[0],'Título');
+// El diseño acordado es el modal propio en todas las plataformas, para que la
+// app se vea igual en el navegador y en el teléfono. Antes esta prueba afirmaba
+// lo contrario: que en celular se delegaba en el diálogo del sistema.
+test('every platform gets the in-app modal, so the design stays the same', () => {
+  for (const OS of ['android','ios']) {
+    let nativeCalls=0, current;
+    const api=loadTs('lib/alert.ts',{'react-native':{Platform:{OS},Alert:{alert(){nativeCalls++}}}});
+    const stop=api.escucharAvisos(a=>{current=a});
+    api.Alert.alert('Título','Mensaje');
+    assert.equal(nativeCalls,0,OS+' no debe usar el diálogo del sistema');
+    assert.equal(current.title,'Título');
+    assert.equal(current.message,'Mensaje');
+    stop();
+  }
 });
 
 test('Android report menus preserve every reason instead of truncating to three native buttons',()=>{

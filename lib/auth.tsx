@@ -1,6 +1,7 @@
 import { cancelarTodosRecordatorios } from '@/lib/notifications';
 import { subirImagen } from '@/lib/media';
 import { Alert } from '@/lib/alert';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -11,6 +12,27 @@ import { supabase, supabaseConfigurado } from '@/lib/supabase';
 import { useStore } from '@/lib/store';
 import { comprobarRespuesta } from '@/lib/data-utils';
 import type { Profile } from '@/types/database';
+
+/**
+ * A dónde vuelve el usuario al abrir el enlace del correo de recuperación.
+ *
+ * En la web ese enlace lo abre un navegador, así que tiene que ser una URL http(s)
+ * de la propia app: un esquema nativo como `faltauno://reset` el navegador no lo
+ * sabe abrir y el enlace queda muerto. Tomamos el origen desde el que se sirve la
+ * app, así funciona igual en producción que en local sin configurar nada. En
+ * celular sí va el deep link, que es lo que entiende el sistema.
+ *
+ * Ojo: el destino tiene que estar en Supabase → Authentication → URL Configuration
+ * → Redirect URLs. Verificado el 6 de octubre de 2026: la lista blanca acepta
+ * https://falta-uno.kodarify.com/** y faltauno://reset, y rechaza dominios
+ * parecidos y http sin cifrar.
+ */
+function destinoReset() {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return `${window.location.origin}/reset`;
+  }
+  return 'faltauno://reset';
+}
 
 const DEMO_KEY = 'faltauno.demo.profile';
 const PENDING_KEY = 'faltauno.pendingProfile';
@@ -201,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async resetPassword(email) {
         if (!supabaseConfigurado) return; // demo: no-op (la UI muestra el mensaje)
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: 'faltauno://reset',
+          redirectTo: destinoReset(),
         });
         if (error) throw new Error(traducirError(error.message));
       },

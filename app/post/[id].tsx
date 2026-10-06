@@ -38,6 +38,7 @@ export default function PostDetalle() {
   const comentar = useStore((s) => s.comentar);
   const hidratado = useStore((s) => s.hidratado);
   const hidratar = useStore((s) => s.hidratar);
+  const errorCarga = useStore((s) => s.errorCarga);
 
   const [texto, setTexto] = useState('');
   const [cargando, setCargando] = useState(!hidratado);
@@ -64,6 +65,20 @@ export default function PostDetalle() {
           <View style={{ padding: 16 }}>
             <CardListSkeleton rows={3} />
           </View>
+        ) : errorCarga && !postBloqueado ? (
+          // Falló la carga: no es que el post no exista, es que no lo pudimos leer.
+          <EmptyState
+            icon="cloud-offline-outline"
+            titulo="No pudimos cargar la publicación"
+            texto={errorCarga}
+            cta={{
+              label: 'Reintentar',
+              icon: 'refresh',
+              onPress: () => {
+                if (profile?.id) hidratar(profile.id);
+              },
+            }}
+          />
         ) : (
           <EmptyState
             icon="document-outline"

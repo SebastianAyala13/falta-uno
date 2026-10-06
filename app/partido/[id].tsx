@@ -43,6 +43,7 @@ export default function PartidoDetalle() {
   const salirse = useStore((s) => s.salirse);
   const hidratado = useStore((s) => s.hidratado);
   const hidratar = useStore((s) => s.hidratar);
+  const errorCarga = useStore((s) => s.errorCarga);
 
   // Deep-link directo (sin pasar por las tabs): disparamos la carga si hace falta. El
   // backstop de 800ms evita que el skeleton se cuelgue si nunca hidrata (p.ej. sin sesión,
@@ -61,6 +62,25 @@ export default function PartidoDetalle() {
   if (!partido) {
     // Mientras hidrata → skeleton; ya resuelto y sin partido → de verdad no existe.
     if (cargando) return <PartidoSkeleton />;
+    // Salvo que la última carga haya fallado: ahí no sabemos si existe, y darlo por
+    // muerto es mentirle al usuario. Le ofrecemos reintentar.
+    if (errorCarga)
+      return (
+        <Screen edges={['top']}>
+          <EmptyState
+            icon="cloud-offline-outline"
+            titulo="No pudimos cargar el partido"
+            texto={errorCarga}
+            cta={{
+              label: 'Reintentar',
+              icon: 'refresh',
+              onPress: () => {
+                if (profile?.id) hidratar(profile.id);
+              },
+            }}
+          />
+        </Screen>
+      );
     return (
       <Screen edges={['top']}>
         <EmptyState

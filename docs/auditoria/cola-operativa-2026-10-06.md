@@ -162,3 +162,79 @@ porque el trigger (correctamente) no permite sembrar reservas en una cancha ya
 retirada. Default de 40 canchas fue generado y medido exitosamente después del ajuste.
 No se modificó cliente; lib/store.ts:216/222 y lib/canchas.ts:110 quedan como
 referencias para controlar frecuencia/caché y consultas del feed/búsqueda con Claude.
+
+## 4. Programación y observabilidad de conciliación
+
+Preparado `scripts/db/programar_conciliacion.sql`, instalador explícito para
+Claude, fuera de migrations/CI; NO se instaló cron/net/Vault en producción.
+Requiere pg_cron, pg_net y Vault habilitados en staging/producción, Edge
+conciliar-pagos desplegada con autenticación propia y RPCs de caducidad instaladas.
+El test local usa doubles SQL de cron/net/Vault y PostgreSQL real para funciones,
+permisos, fallos, conteos y estado; no certifica scheduler/HTTP reales de Supabase.
+
+Provisionar vía panel/Vault (sin imprimir): faltauno_conciliacion_url = URL HTTPS
+exacta de esa función en el proyecto, faltauno_conciliacion_secret = el mismo
+secreto exclusivo configurado como CONCILIACION_JOB_SECRET en Edge. No colocar el
+valor en SQL versionado ni EXPO_PUBLIC. La URL acepta sólo dominios supabase.co y
+path exacto, evitando enviar ese secreto a un destino arbitrario. Si se utiliza
+un dominio custom, extender/ensayar la allowlist expresamente.
+
+Aplicación por Claude después del ensayo y verificación de proyecto:
+
+```bash
+psql -X -v ON_ERROR_STOP=1 -f scripts/db/programar_conciliacion.sql
+psql -X -c 'select public.estado_conciliacion();'
+```
+
+Conexión segura por PGSERVICE/PGPASSFILE, no contraseña en argv. Reinstalar actualiza
+el mismo nombre de job: faltauno-conciliacion, cron '* * * * *'. Cadencia de un
+minuto frente a vencimiento de 15 minutos: agrega como máximo aproximadamente un
+minuto de retención nominal si no hay backlog/fallo. Edge procesa 100 vencimientos
+de cada tipo por llamada y una devolución: techo nominal 100/min por tipo y
+1 devolución/min; NO garantiza vaciar una avalancha. Alertas de vencidos/deuda
+vieja requieren aumentar frecuencia/lotes/workers de forma ensayada si exceden
+ese caudal, no esconder atraso ni prometer «15 minutos exactos».
+
+HTTP asíncrono net con timeout 50 s. Un heartbeat encolada NO significa éxito:
+la próxima ejecución observa respuesta real 200 + ok + conteos enteros válidos;
+500/cuerpo inválido/timeout es fallida; sin respuesta a los 2 min es sin_respuesta.
+Evita encolar otro request mientras el anterior está pendiente <2 min. La
+función Edge limita fetch Rapyd a 20 s y leases de refund a 2 min; los reintentos
+ambiguos siguen requiriendo revisión, no duplican POST de devolución.
+
+`estado_conciliacion()` muestra: última ejecución/HTTP/estado/cantidades,
+último ok, totales liberados del registro duradero ejecuciones_caducidad,
+pendientes vencidos, devoluciones pendientes, revisión manual, deuda más antigua,
+último estado cron (sin return_message ni headers) y alarma. Alarma si falta ok
+reciente >3 min, hay fallo/sin respuesta reciente, vencidos >3 min, revisión
+manual o deuda no devuelta >15 min. Admin tiene acceso; jugador recibe null,
+no puede encolar ni observar ni leer registros ajenos. No expone secretos/raw body.
+
+SQL de diagnóstico administrativo:
+
+```sql
+select public.estado_conciliacion();
+select encolada_at,terminada_at,estado,http_status,pagos_liberados,reservas_liberadas,error_codigo
+from public.ejecuciones_conciliacion order by encolada_at desc limit 20;
+select estado,count(*),min(created_at) from public.conciliaciones_pago group by estado;
+```
+
+Configurar monitor EXTERNO con responsable/canal que consulte ese estado y alerte;
+un indicador dentro de la misma base no avisa por sí solo si la base está caída.
+Verificar cron.job activo y logging de cron.job_run_details en Supabase. Definir
+retención de registros/pg_net sin borrar transacciones financieras; el instalador
+no elimina logs ni deudas para hacer pasar nada. Cuando devoluciones están
+desactivadas, el heartbeat puede responder ok para caducidad: revisar también
+reembolso_estado, deuda/alarma, y mantener pagos online desactivados hasta sandbox.
+
+Prueba: instalación repetida produce un job; configuración ausente visible;
+conteos HTTP 2/3 observados; estado saludable tras ok; HTTP 500 visible; respuesta
+faltante visible; permisos jugador denegados; secreto ausente del status. Resultado
+en conciliacion-programacion-2026-10-06.json. Pendiente concreto: habilitar
+extensiones reales, provisionar Vault, instalar/observar dos ciclos y ensayar
+fallo de Edge en staging. No se afirma que un cron real ya haya corrido.
+
+Requiere cambio de cliente sólo si Claude incorpora este estado al panel:
+lib/admin.ts:45 y app/admin/index.ts: invocar estado_conciliacion como admin,
+mostrar última ejecución/alarma/deuda; no sustituye monitor externo ni hacer
+llamadas al scheduler con el secreto desde el navegador.

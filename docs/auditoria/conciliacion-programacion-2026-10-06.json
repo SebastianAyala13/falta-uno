@@ -1,0 +1,39 @@
+{
+  "scope": "PostgreSQL logic only; pg_cron/pg_net/Vault doubles, not installed or deployed",
+  "idempotent_install": true,
+  "one_job": true,
+  "missing_config_visible": true,
+  "counts_observed": {
+    "pagos": 2,
+    "reservas": 3
+  },
+  "http_failure_visible": true,
+  "missing_response_visible": true,
+  "secrets_absent_from_status": true,
+  "player_denied": true,
+  "final_status": {
+    "alarma": true,
+    "ultimo_ok": "2026-10-06T19:03:04.419033+00:00",
+    "ultimo_cron": null,
+    "ultima_ejecucion": {
+      "id": "71b1e5fb-8ca8-4fff-a762-cfebe1ecd20c",
+      "estado": "fallida",
+      "request_id": 2,
+      "encolada_at": "2026-10-06T19:03:04.824902+00:00",
+      "http_status": 500,
+      "error_codigo": "HTTP_O_RESPUESTA_INVALIDA",
+      "terminada_at": "2026-10-06T19:03:04.940327+00:00",
+      "pagos_liberados": null,
+      "reembolso_estado": null,
+      "reservas_liberadas": null
+    },
+    "deuda_mas_antigua": null,
+    "pendientes_vencidos": 0,
+    "devoluciones_revision": 0,
+    "vencimientos_liberados": {
+      "pagos": 0,
+      "reservas": 0
+    },
+    "devoluciones_pendientes": 0
+  }
+}

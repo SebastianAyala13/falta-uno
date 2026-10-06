@@ -56,3 +56,37 @@ su retención requieren política explícita (no hay plazo implementado automát
 No demuestra recuperación integral de Supabase ni sustitución del backup de Auth.
 No requiere cambios de cliente. Claude debe completar el ensayo Supabase real
 separado y política de protección/retención antes de aplicar migraciones.
+
+## 2. Datos representativos
+
+`scripts/db/generate_fixture.py` admite --courts, --players, --reservations,
+--matches, --payments y --posts. Default: 40/1.000/15.000/2.000/50.000/10.000.
+Sólo admite Docker con etiqueta faltauno.isolated-test=true y esquema app ya
+migrado sin perfiles; rechaza volver a sembrar, no borra nada. Una transacción
+crea todas las relaciones, así que un fallo revierte la siembra. Datos sintéticos,
+correos example.test, sin SMTP/Auth remoto/Storage remoto. UUIDs se derivan de
+índices de fixture; fecha ancla 2026-10-06 para reproducir distribución temporal.
+
+```bash
+python3 tests/representative_data.py
+python3 scripts/db/generate_fixture.py --container "$LOCAL_CONTAINER" --courts 40 --players 1000 --reservations 15000 --matches 2000 --payments 50000 --posts 10000
+```
+
+El test instala migrations en DB vacía aislada, genera 12 canchas, 600 jugadores,
+2.400 reservas, 300 partidos, 12.000 pagos y 1.200 posts. Comprueba cantidades,
+preflight sin conflictos, no modificación al reintentar, contadores sociales
+exactos y presencia de cada caso difícil. Salida/tiempo en
+datos-representativos-2026-10-06.json. Mantiene casos válidos de apertura 08:00 y
+cierre 23:00, reservas pendientes vencidas/canceladas, pagos caducados, retiros
+pendientes, perfiles suspendidos, canchas pausadas/ocultas y posts reportados.
+No genera solapamientos inválidos: ésos pertenecen al test preflight previo.
+25 % de los pagos se concentra en un jugador para probar historias largas;
+fecha+hora de reserva sigue una cuadrícula por cancha sin solapamientos, repartida
+antes/después del ancla. Saldo/ingresos/comisiones se sembraron en ledger, no se
+estiman desde una página. Un usuario final admin y dueños iniciales son ficticios.
+
+Limitaciones: no usuarios Auth reales, fotos binarias ni entrega Realtime; las
+filas se insertan como backend confiable para generar volumen y estados históricos.
+No simula un recorrido de producto ni constituye evidencia de la pasarela.
+No requiere cambio de cliente. La carga usa >=500 actores activos de este dataset;
+si se solicitan menos jugadores, el benchmark debe rechazar ese escalón.

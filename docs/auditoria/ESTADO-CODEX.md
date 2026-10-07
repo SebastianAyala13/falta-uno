@@ -4,7 +4,7 @@ Rama: codex/fiabilidad. Sin producción ni push a main. La primera tanda de 8 (9
 
 ## 1 · Verificación posterior a primera tanda
 
-Commit: el commit que añade scripts/db/verificar_produccion_tanda1.sql (resolver `git log -1 --format=%h -- scripts/db/verificar_produccion_tanda1.sql`).
+Commit: **f57765a**.
 
 Antes faltaba una comprobación posterior con roles reales y evidencia de rollback: historial de migraciones o deploy verde no prueban RPC, RLS ni defensas. Se entrega SQL compatible con SQL Editor, salida nombre | ok/falla | detalle. Requiere sesión autorizada de base y ejecutar completo, nunca sustituir ROLLBACK por COMMIT. Usa Juan del seed, UUID a0e00000-0000-4000-a000-000000000005, no admin/no suspendido, con reserva y pago pendientes propios. Si falta, informa falla; no crea ni borra filas. No se ejecuta seed-demo.sql (ese archivo limpia datos y contiene credenciales de ejemplo).
 
@@ -13,7 +13,14 @@ Antes faltaba una comprobación posterior con roles reales y evidencia de rollba
 Controles comunes: 54 unitarias, regresiones database.py, TypeScript y Expo lint pasaron; diff --check limpio. Pendiente: responsable ejecuta SQL después de primera tanda y guarda filas redactadas, antes de avanzar. Cero resultado remoto afirmado. No requiere cambios de cliente; inventario cotejado con RPC de main 795cd59.
 
 ## 2 · Preflight segunda tanda
-Pendiente en esta cola.
+
+Commit: este punto en scripts/preflight-fiabilidad.sql (`git log -1 --format=%h -- scripts/preflight-fiabilidad.sql`).
+
+Antes solo se comprobaban los conflictos de primera tanda. La novena no copia datos a las tablas nuevas ni agrega un NOT NULL existente: dinero pendiente, suspensión y Storage antiguo no provocan fallo de instalación y no deben cortar workflow. Se agregan colisiones reales de relaciones/índices/tipos, columna, firmas de función, triggers y prerrequisitos. Solo inspección con READ ONLY REPEATABLE READ, formato tipo|cantidad|detalles; sin secretos, cambios de datos ni excepciones silenciosas. Se activa tras primera tanda, y no trata los objetos de una novena ya registrada como conflictos. No predice permisos de schema administrado, locks, falta de extensiones ni SQL modificado; cero conflictos no certifica instalación en cloud.
+
+Pruebas: preflight_retencion.py → 10 tipos cero en esquema de 17 con reserva/pago pendiente, saldo/retiro en curso, suspendido y Storage heredado; mismo estado tras consulta; migración real pasó. Cinco colisiones preparadas en bases separadas → cada una detectada y migración realmente rechazada; ninguna limpieza para lograr éxito. Reconsulta con versión 18 registrada → cero colisiones falsas. JSON preflight-retencion-local-2026-10-06.json. representative_data.py pasó con el formato ampliado; el fixture ahora registra versiones simuladas como Supabase. database.py conserva cuatro conflictos intencionales y seis tipos nuevos cero en etapa anterior; todas sus regresiones pasaron. 54 unitarias, tsc, lint y diff --check pasaron.
+
+Pendiente: responsable ejecuta preflight en ensayo propio de segunda tanda; workflow de main ya interpreta cantidades y corta (inspeccionado, sin editar .github). Ningún cambio de cliente requerido. No aprobaron plazos ni se aplicó la novena a producción.
 
 ## 3 · Ficha Edge
 Pendiente en esta cola.

@@ -1,0 +1,77 @@
+{
+  "scope": "PostgreSQL 17 isolated; before-9th baseline has exactly 17 migrations; no production",
+  "healthy_17_all_zero": {
+    "disponibilidad_invalida": {
+      "cantidad": 0,
+      "detalles": []
+    },
+    "intervalos_invalidos": {
+      "cantidad": 0,
+      "detalles": []
+    },
+    "referencias_duplicadas": {
+      "cantidad": 0,
+      "detalles": []
+    },
+    "reservas_solapadas": {
+      "cantidad": 0,
+      "detalles": []
+    },
+    "retencion_columna_existente": {
+      "cantidad": 0,
+      "detalles": []
+    },
+    "retencion_funcion_existente": {
+      "cantidad": 0,
+      "detalles": []
+    },
+    "retencion_prerrequisito_ausente": {
+      "cantidad": 0,
+      "detalles": []
+    },
+    "retencion_relacion_existente": {
+      "cantidad": 0,
+      "detalles": []
+    },
+    "retencion_tipo_existente": {
+      "cantidad": 0,
+      "detalles": []
+    },
+    "retencion_trigger_existente": {
+      "cantidad": 0,
+      "detalles": []
+    }
+  },
+  "read_only_state_equal": true,
+  "collisions": [
+    {
+      "case": "retencion_relacion_existente",
+      "preflight_detected": true,
+      "actual_migration_rejected": true
+    },
+    {
+      "case": "retencion_tipo_existente",
+      "preflight_detected": true,
+      "actual_migration_rejected": true
+    },
+    {
+      "case": "retencion_columna_existente",
+      "preflight_detected": true,
+      "actual_migration_rejected": true
+    },
+    {
+      "case": "retencion_funcion_existente",
+      "preflight_detected": true,
+      "actual_migration_rejected": true
+    },
+    {
+      "case": "retencion_trigger_existente",
+      "preflight_detected": true,
+      "actual_migration_rejected": true
+    }
+  ],
+  "pending_money_suspended_profile_legacy_storage_no_false_positive": true,
+  "healthy_actual_migration_passed": true,
+  "recorded_18th_no_false_collision": true,
+  "limits": "Does not predict permissions, missing extensions, locks/timeouts, SQL edits or cloud-managed trigger restrictions; money outstanding is NOT an install conflict"
+}

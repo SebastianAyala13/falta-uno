@@ -1,0 +1,113 @@
+{
+  "scope": "PostgreSQL 17 isolated, 18 to 19 real migrations plus former installer objects; no production, live cron/HTTP/Vault/Windows",
+  "checks": {
+    "preflight_18_reports_five_objects_absent": true,
+    "preflight_18_all_zero": true,
+    "migration_without_cron_net_vault": true,
+    "migration_did_not_schedule_or_invoke": true,
+    "compatible_objects_not_false_collisions": true,
+    "repeat_migration_preserves_rows_and_catalog": true,
+    "history_has_19": true,
+    "recorded_19_preflight_zero": true,
+    "effective_execute_roles": true,
+    "editor_requires_extensions": true,
+    "old_installer_rows_and_compatible_extras_preserved": true,
+    "old_installer_also_no_cron_activation": true
+  },
+  "count": 12,
+  "passed": true,
+  "preflight_18_inventory": [
+    {
+      "tipo": null,
+      "existe": false,
+      "objeto": "public.conciliacion_ejecuciones_fecha_idx"
+    },
+    {
+      "tipo": null,
+      "existe": false,
+      "objeto": "public.ejecuciones_conciliacion"
+    },
+    {
+      "tipo": null,
+      "existe": false,
+      "objeto": "public.encolar_conciliacion()",
+      "retorno": null
+    },
+    {
+      "tipo": null,
+      "existe": false,
+      "objeto": "public.estado_conciliacion()",
+      "retorno": null
+    },
+    {
+      "tipo": null,
+      "existe": false,
+      "objeto": "public.observar_conciliacion()",
+      "retorno": null
+    }
+  ],
+  "collision_cases": [
+    {
+      "case": "conciliacion_relacion_incompatible",
+      "detected": true,
+      "actual_migration_rejected": true,
+      "rollback_equal": true
+    },
+    {
+      "case": "conciliacion_tipo_incompatible",
+      "detected": true,
+      "actual_migration_rejected": true,
+      "rollback_equal": true
+    },
+    {
+      "case": "conciliacion_columna_incompatible",
+      "detected": true,
+      "actual_migration_rejected": true,
+      "rollback_equal": true
+    },
+    {
+      "case": "conciliacion_columna_incompatible",
+      "detected": true,
+      "actual_migration_rejected": true,
+      "rollback_equal": true
+    },
+    {
+      "case": "conciliacion_default_incompatible",
+      "detected": true,
+      "actual_migration_rejected": true,
+      "rollback_equal": true
+    },
+    {
+      "case": "conciliacion_restriccion_incompatible",
+      "detected": true,
+      "actual_migration_rejected": true,
+      "rollback_equal": true
+    },
+    {
+      "case": "conciliacion_indice_incompatible",
+      "detected": true,
+      "actual_migration_rejected": true,
+      "rollback_equal": true
+    },
+    {
+      "case": "conciliacion_rpc_incompatible",
+      "detected": true,
+      "actual_migration_rejected": true,
+      "rollback_equal": true
+    },
+    {
+      "case": "conciliacion_rpc_incompatible",
+      "detected": true,
+      "actual_migration_rejected": true,
+      "rollback_equal": true
+    },
+    {
+      "case": "conciliacion_politica_incompatible",
+      "detected": true,
+      "actual_migration_rejected": true,
+      "rollback_equal": true
+    }
+  ],
+  "collision_count": 10,
+  "migration_no_activation": true
+}

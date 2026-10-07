@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -33,8 +33,10 @@ import {
   ZONAS,
   type Formato,
 } from '@/constants/config';
+import { Alert } from '@/lib/alert';
 import { useAuth } from '@/lib/auth';
 import { diaInicial, diasDesdeFranjas, franjasDesdeDias, type DiaConfig } from '@/lib/disponibilidad';
+import { huellaFormulario } from '@/lib/formulario-cancha';
 import {
   actualizarCancha,
   crearCancha,
@@ -58,6 +60,8 @@ export default function EditarCancha() {
 
   const [cargandoFranjas, setCargandoFranjas] = useState(false);
   const [cancha, setCancha] = useState<Cancha | null>(null);
+  /** Huella de los datos tal como se cargaron. `null` mientras no hay cancha. */
+  const [huellaCargada, setHuellaCargada] = useState<string | null>(null);
 
   const [nombre, setNombre] = useState('');
   const [direccion, setDireccion] = useState('');
@@ -94,7 +98,21 @@ export default function EditarCancha() {
       try {
         const franjas = await getDisponibilidad(cch.id);
         if (!activo) return;
-        setDias(diasDesdeFranjas(franjas));
+        const diasCargados = diasDesdeFranjas(franjas);
+        setDias(diasCargados);
+        setHuellaCargada(
+          huellaFormulario({
+            nombre: cch.nombre,
+            direccion: cch.direccion,
+            zona: cch.zona,
+            telefono: cch.telefono ?? '',
+            descripcion: cch.descripcion ?? '',
+            formatos: cch.formatos ?? [],
+            amenidades: cch.amenidades ?? {},
+            fotos: cch.fotos ?? [],
+            dias: diasCargados,
+          }),
+        );
       } finally {
         if (activo) setCargandoFranjas(false);
       }
@@ -106,6 +124,37 @@ export default function EditarCancha() {
   }, [canchaActiva]);
 
   const cargando = cargandoLista || cargandoFranjas;
+
+  const hayCambiosSinGuardar = useMemo(() => {
+    if (huellaCargada === null) return false;
+    return (
+      huellaFormulario({ nombre, direccion, zona, telefono, descripcion, formatos, amenidades, fotos, dias }) !==
+      huellaCargada
+    );
+  }, [huellaCargada, nombre, direccion, zona, telefono, descripcion, formatos, amenidades, fotos, dias]);
+
+  /**
+   * Cambia de cancha, preguntando primero si hay trabajo sin guardar.
+   *
+   * Cargar otra cancha reemplaza todo el formulario. Hacerlo sin avisar le
+   * borraría al dueño los precios que acaba de escribir, y acá se escriben siete
+   * días a mano: es trabajo que no quiere repetir.
+   */
+  const cambiarDeCancha = (id: string) => {
+    if (id === cancha?.id) return;
+    if (!hayCambiosSinGuardar) {
+      elegir(id);
+      return;
+    }
+    Alert.alert(
+      'Antes de cambiar de cancha',
+      `Tenés cambios sin guardar en ${cancha?.nombre?.trim() || 'esta cancha'}. ¿Descartarlos?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Descartar', style: 'destructive', onPress: () => elegir(id) },
+      ],
+    );
+  };
 
   const setDia = (idx: number, cambios: Partial<DiaConfig>) =>
     setDias((prev) => prev.map((d, i) => (i === idx ? { ...d, ...cambios } : d)));
@@ -224,12 +273,12 @@ export default function EditarCancha() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <FadeIn delay={60}>
-            <SelectorCancha canchas={canchas} activaId={cancha?.id ?? null} onElegir={elegir} className="mb-3" />
-            {canchas.length > 1 ? (
-              <Text className="mb-4 font-body text-xs text-muted">
-                Si cambiás de cancha acá, se descartan los cambios que no hayas guardado.
-              </Text>
-            ) : null}
+            <SelectorCancha
+              canchas={canchas}
+              activaId={cancha?.id ?? null}
+              onElegir={cambiarDeCancha}
+              className="mb-4"
+            />
             <Text className="mb-6 font-body text-sm text-muted">
               {esEdicion
                 ? 'Actualizá los datos, fotos y horarios de tu cancha. Los cambios se ven al toque.'

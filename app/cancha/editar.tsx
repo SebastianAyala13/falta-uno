@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -22,8 +22,10 @@ import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
+import SelectorCancha from '@/components/SelectorCancha';
 import { SkeletonBlock } from '@/components/Skeleton';
 import {
+  DURACIONES_TURNO,
   FORMATOS,
   LEGAL_CANCHA_VERSION,
   URL_MANDATO_RECAUDO,
@@ -31,38 +33,35 @@ import {
   ZONAS,
   type Formato,
 } from '@/constants/config';
+import { Alert } from '@/lib/alert';
 import { useAuth } from '@/lib/auth';
+import { diaInicial, diasDesdeFranjas, franjasDesdeDias, type DiaConfig } from '@/lib/disponibilidad';
+import { huellaFormulario } from '@/lib/formulario-cancha';
 import {
   actualizarCancha,
   crearCancha,
   getDisponibilidad,
-  misCanchas,
   setDisponibilidad,
   subirFotoCancha,
 } from '@/lib/canchas';
 import { haptics } from '@/lib/haptics';
 import { elegirImagen } from '@/lib/images';
 import { useTheme } from '@/lib/theme';
+import { useCanchasDelDueno } from '@/lib/useCanchasDelDueno';
 import type { Amenidades, Cancha } from '@/types/database';
 
 const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-interface DiaConfig {
-  abierto: boolean;
-  apertura: string; // 'HH:mm'
-  cierre: string; // 'HH:mm'
-  precio: string; // texto del input numérico
-}
-
-const diaInicial = (): DiaConfig => ({ abierto: false, apertura: '08:00', cierre: '22:00', precio: '' });
-
 export default function EditarCancha() {
   const router = useRouter();
-  const { profile, updateProfile, loading: authCargando } = useAuth();
+  const { profile, updateProfile } = useAuth();
   const c = useTheme();
+  const { canchas, cancha: canchaActiva, elegir, cargando: cargandoLista } = useCanchasDelDueno();
 
-  const [cargando, setCargando] = useState(true);
+  const [cargandoFranjas, setCargandoFranjas] = useState(false);
   const [cancha, setCancha] = useState<Cancha | null>(null);
+  /** Huella de los datos tal como se cargaron. `null` mientras no hay cancha. */
+  const [huellaCargada, setHuellaCargada] = useState<string | null>(null);
 
   const [nombre, setNombre] = useState('');
   const [direccion, setDireccion] = useState('');
@@ -82,53 +81,80 @@ export default function EditarCancha() {
   const esEdicion = !!cancha;
 
   useEffect(() => {
+    const cch = canchaActiva;
+    if (!cch) return;
     let activo = true;
     const cargar = async () => {
-      if (!profile?.id) {
-        // Auth aún resolviendo → mantenemos el skeleton; ya resolvió sin perfil → cerramos.
-        if (activo && !authCargando) setCargando(false);
-        return;
-      }
+      setCancha(cch);
+      setNombre(cch.nombre);
+      setDireccion(cch.direccion);
+      setZona(cch.zona);
+      setTelefono(cch.telefono ?? '');
+      setDescripcion(cch.descripcion ?? '');
+      setFormatos(cch.formatos ?? []);
+      setAmenidades(cch.amenidades ?? {});
+      setFotos(cch.fotos ?? []);
+      setCargandoFranjas(true);
       try {
-        const canchas = await misCanchas(profile.id);
+        const franjas = await getDisponibilidad(cch.id);
         if (!activo) return;
-        const cch = canchas[0];
-        if (cch) {
-          setCancha(cch);
-          setNombre(cch.nombre);
-          setDireccion(cch.direccion);
-          setZona(cch.zona);
-          setTelefono(cch.telefono ?? '');
-          setDescripcion(cch.descripcion ?? '');
-          setFormatos(cch.formatos ?? []);
-          setAmenidades(cch.amenidades ?? {});
-          setFotos(cch.fotos ?? []);
-          const franjas = await getDisponibilidad(cch.id);
-          if (!activo) return;
-          setDias(() => {
-            const sig = DIAS.map(() => diaInicial());
-            for (const f of franjas) {
-              if (f.dia_semana >= 0 && f.dia_semana <= 6) {
-                sig[f.dia_semana] = {
-                  abierto: true,
-                  apertura: f.hora_apertura.slice(0, 5),
-                  cierre: f.hora_cierre.slice(0, 5),
-                  precio: String(f.precio),
-                };
-              }
-            }
-            return sig;
-          });
-        }
+        const diasCargados = diasDesdeFranjas(franjas);
+        setDias(diasCargados);
+        setHuellaCargada(
+          huellaFormulario({
+            nombre: cch.nombre,
+            direccion: cch.direccion,
+            zona: cch.zona,
+            telefono: cch.telefono ?? '',
+            descripcion: cch.descripcion ?? '',
+            formatos: cch.formatos ?? [],
+            amenidades: cch.amenidades ?? {},
+            fotos: cch.fotos ?? [],
+            dias: diasCargados,
+          }),
+        );
       } finally {
-        if (activo) setCargando(false);
+        if (activo) setCargandoFranjas(false);
       }
     };
     cargar();
     return () => {
       activo = false;
     };
-  }, [profile?.id, authCargando]);
+  }, [canchaActiva]);
+
+  const cargando = cargandoLista || cargandoFranjas;
+
+  const hayCambiosSinGuardar = useMemo(() => {
+    if (huellaCargada === null) return false;
+    return (
+      huellaFormulario({ nombre, direccion, zona, telefono, descripcion, formatos, amenidades, fotos, dias }) !==
+      huellaCargada
+    );
+  }, [huellaCargada, nombre, direccion, zona, telefono, descripcion, formatos, amenidades, fotos, dias]);
+
+  /**
+   * Cambia de cancha, preguntando primero si hay trabajo sin guardar.
+   *
+   * Cargar otra cancha reemplaza todo el formulario. Hacerlo sin avisar le
+   * borraría al dueño los precios que acaba de escribir, y acá se escriben siete
+   * días a mano: es trabajo que no quiere repetir.
+   */
+  const cambiarDeCancha = (id: string) => {
+    if (id === cancha?.id) return;
+    if (!hayCambiosSinGuardar) {
+      elegir(id);
+      return;
+    }
+    Alert.alert(
+      'Antes de cambiar de cancha',
+      `Tenés cambios sin guardar en ${cancha?.nombre?.trim() || 'esta cancha'}. ¿Descartarlos?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Descartar', style: 'destructive', onPress: () => elegir(id) },
+      ],
+    );
+  };
 
   const setDia = (idx: number, cambios: Partial<DiaConfig>) =>
     setDias((prev) => prev.map((d, i) => (i === idx ? { ...d, ...cambios } : d)));
@@ -180,16 +206,7 @@ export default function EditarCancha() {
       return;
     }
 
-    const franjas = dias
-      .map((d, dia_semana) => ({ d, dia_semana }))
-      .filter(({ d }) => d.abierto)
-      .map(({ d, dia_semana }) => ({
-        dia_semana,
-        hora_apertura: d.apertura,
-        hora_cierre: d.cierre,
-        duracion_min: 60,
-        precio: Number(d.precio) || 0,
-      }));
+    const franjas = franjasDesdeDias(dias);
 
     setGuardando(true);
     try {
@@ -256,6 +273,12 @@ export default function EditarCancha() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <FadeIn delay={60}>
+            <SelectorCancha
+              canchas={canchas}
+              activaId={cancha?.id ?? null}
+              onElegir={cambiarDeCancha}
+              className="mb-4"
+            />
             <Text className="mb-6 font-body text-sm text-muted">
               {esEdicion
                 ? 'Actualizá los datos, fotos y horarios de tu cancha. Los cambios se ven al toque.'
@@ -362,7 +385,7 @@ export default function EditarCancha() {
           <FadeIn delay={220}>
             <Text className="mb-2 font-body-semibold text-sm text-cream">Horarios y precios</Text>
             <Text className="mb-3 font-body text-xs text-muted">
-              Marcá los días que abrís. Los turnos duran 60 minutos.
+              Marcá los días que abrís y cuánto dura cada turno en ese día.
             </Text>
 
             {DIAS.map((nombreDia, idx) => {
@@ -412,8 +435,19 @@ export default function EditarCancha() {
                           />
                         </View>
                       </View>
+                      <Text className="mb-2 mt-1 font-body-semibold text-sm text-cream">Duración del turno</Text>
+                      <View className="mb-1 flex-row flex-wrap">
+                        {DURACIONES_TURNO.map((min) => (
+                          <Chip
+                            key={min}
+                            label={`${min} min`}
+                            selected={d.duracion === min}
+                            onPress={() => setDia(idx, { duracion: min })}
+                          />
+                        ))}
+                      </View>
                       <Field
-                        label="Precio por turno (60 min)"
+                        label={`Precio por turno (${d.duracion} min)`}
                         icon="cash-outline"
                         placeholder="Ej: 80000"
                         value={d.precio}

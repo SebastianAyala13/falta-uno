@@ -13,6 +13,7 @@ import FadeIn from '@/components/FadeIn';
 import Field from '@/components/Field';
 import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
+import SelectorCancha from '@/components/SelectorCancha';
 import { CardListSkeleton, SkeletonBlock } from '@/components/Skeleton';
 import { BANCOS, COMISION_CANCHA_DEFAULT, MEMBRESIA } from '@/constants/config';
 import { useAuth } from '@/lib/auth';
@@ -20,7 +21,6 @@ import {
   getDatosDesembolso,
   guardarDatosDesembolso,
   membresiaActiva,
-  misCanchas,
   movimientos,
   retirosDeCancha,
   saldoCancha,
@@ -28,6 +28,7 @@ import {
 } from '@/lib/canchas';
 import { precioCOP, tiempoRelativo } from '@/lib/format';
 import { useTheme } from '@/lib/theme';
+import { useCanchasDelDueno } from '@/lib/useCanchasDelDueno';
 import type { Cancha, DatosDesembolso, MovimientoCancha, Retiro } from '@/types/database';
 
 const TIPOS_CUENTA: { id: DatosDesembolso['tipo_cuenta']; label: string }[] = [
@@ -53,15 +54,17 @@ const ESTADO_RETIRO: Record<Retiro['estado'], { label: string; tone: 'primary' |
 
 export default function Finanzas() {
   const router = useRouter();
-  const { profile, loading: authCargando } = useAuth();
+  const { profile } = useAuth();
   const c = useTheme();
+  const { canchas, cancha, elegir, cargando, error: errorCanchas, recargar } = useCanchasDelDueno();
 
-  const [cancha, setCancha] = useState<Cancha | null>(null);
   const [saldo, setSaldo] = useState(0);
   const [movs, setMovs] = useState<MovimientoCancha[]>([]);
   const [retiros, setRetiros] = useState<Retiro[]>([]);
   const [esPro, setEsPro] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // Arranca en `true`: acá se muestra plata, y un cero prematuro se lee como
+  // "me desapareció el saldo".
+  const [cargandoDatos, setCargandoDatos] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -92,42 +95,55 @@ export default function Finanzas() {
     setEsPro(pro);
   }, []);
 
-  const cargarTodo = useCallback(async () => {
+  // La cuenta de desembolso es del dueño, no de una cancha: se pide una vez.
+  const cargarDesembolso = useCallback(async () => {
     if (!profile?.id) return;
-    setError(null);
-    setLoading(true);
     try {
-      const [canchas, dd] = await Promise.all([misCanchas(profile.id), getDatosDesembolso(profile.id)]);
-      const cch = canchas[0] ?? null;
-      setCancha(cch);
-      setDesembolso(dd);
-      if (cch) await cargarDatos(cch);
+      setDesembolso(await getDatosDesembolso(profile.id));
+    } catch {
+      setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
+    }
+  }, [profile?.id]);
+
+  useEffect(() => {
+    cargarDesembolso();
+  }, [cargarDesembolso]);
+
+  // Saldo, movimientos y retiros sí son por cancha. Al cambiar de cancha hay
+  // que volver a pedirlos: dejar los de la anterior le diría al dueño que tiene
+  // una plata que en esta cancha no existe, y desde acá se piden retiros.
+  useEffect(() => {
+    if (!cancha) return;
+    let vigente = true;
+    (async () => {
+      setCargandoDatos(true);
+      setError(null);
+      try {
+        await cargarDatos(cancha);
+      } catch {
+        if (vigente) setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
+      } finally {
+        if (vigente) setCargandoDatos(false);
+      }
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, [cancha, cargarDatos]);
+
+  const loading = cargando || (!!cancha && cargandoDatos);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([recargar(), cargarDesembolso()]);
+      if (cancha) await cargarDatos(cancha);
     } catch {
       setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
     } finally {
-      setLoading(false);
-    }
-  }, [profile?.id, cargarDatos]);
-
-  useEffect(() => {
-    if (!profile?.id) {
-      // Auth aún resolviendo → mantenemos el skeleton; ya resolvió sin perfil → cerramos
-      // (evita mostrar "Sin cancha registrada" en la ventana de carga de sesión).
-      if (!authCargando) setLoading(false);
-      return;
-    }
-    cargarTodo();
-  }, [profile?.id, authCargando, cargarTodo]);
-
-  const onRefresh = useCallback(async () => {
-    if (!cancha) return;
-    setRefreshing(true);
-    try {
-      await cargarDatos(cancha);
-    } finally {
       setRefreshing(false);
     }
-  }, [cancha, cargarDatos]);
+  }, [cancha, cargarDatos, cargarDesembolso, recargar]);
 
   const confirmarRetiro = async () => {
     if (!cancha) return;
@@ -205,9 +221,9 @@ export default function Finanzas() {
           <View style={{ height: 14 }} />
           <CardListSkeleton rows={3} />
         </View>
-      ) : error && !cancha ? (
+      ) : errorCanchas && !cancha ? (
         <View className="px-6 pt-4">
-          <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: cargarTodo }} />
+          <ErrorBanner message={errorCanchas} action={{ label: 'Reintentar', onPress: recargar }} />
         </View>
       ) : !cancha ? (
         <EmptyState
@@ -223,6 +239,11 @@ export default function Finanzas() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />
           }>
+          <FadeIn delay={40}>
+            <SelectorCancha canchas={canchas} activaId={cancha.id} onElegir={elegir} className="mb-4" />
+            <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: onRefresh }} />
+          </FadeIn>
+
           {/* Saldo disponible */}
           <FadeIn delay={40}>
             <View className="rounded-lg border border-borderStrong bg-card p-6">

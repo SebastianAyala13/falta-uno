@@ -16,10 +16,10 @@ import GlowButton from '@/components/GlowButton';
 import Screen from '@/components/Screen';
 import UbicacionPicker, { type Ubicacion } from '@/components/UbicacionPicker';
 import {
+  CORREO_SOPORTE,
   DURACIONES_TURNO,
   FORMATOS,
   LEGAL_CANCHA_VERSION,
-  TIPOS_ACCESO,
   URL_MANDATO_RECAUDO,
   URL_TERMINOS_MARKETPLACE,
   ZONAS,
@@ -35,7 +35,6 @@ import type { Amenidades } from '@/types/database';
 
 const CIUDADES = ['Pereira', 'Cali', 'Medellín', 'Bogotá', 'Manizales', 'Armenia'];
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-const POLITICAS_CANCELACION = ['24h gratis', '12h gratis', 'Sin reembolso'];
 const TOTAL_PASOS = 8;
 
 const TITULOS = [
@@ -43,8 +42,8 @@ const TITULOS = [
   '¿Cuántas canchas tenés?',
   'Contanos de cada cancha',
   'Fotos de las canchas',
-  '¿Ya tenés partidos agendados?',
-  'Servicios y zonas',
+  '¿Ya tenés turnos vendidos?',
+  'Servicios del establecimiento',
   'Horarios del establecimiento',
   'Contacto y confirmación',
 ];
@@ -86,12 +85,10 @@ export default function RegistrarCancha() {
   const [cantidad, setCantidad] = useState(1);
   const [canchas, setCanchas] = useState<CanchaForm[]>([nuevaCancha(0)]);
   const [amenidades, setAmenidades] = useState<Amenidades>({});
-  const [tipoAcceso, setTipoAcceso] = useState<string>('privado');
   const [horarios, setHorarios] = useState<HorarioDia[]>(
     DIAS.map((_, i) => ({ abierto: i !== 0, apertura: '08:00', cierre: '23:00' })),
   );
   const [telefono, setTelefono] = useState('');
-  const [cancelacion, setCancelacion] = useState('24h');
   const [acepta, setAcepta] = useState(false);
   const [yaTienePartidos, setYaTienePartidos] = useState<boolean | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -148,7 +145,7 @@ export default function RegistrarCancha() {
         return null;
       }
       case 5:
-        return yaTienePartidos === null ? 'Contanos si ya tenés partidos agendados.' : null;
+        return yaTienePartidos === null ? 'Contanos si ya tenés turnos vendidos por fuera de la app.' : null;
       case 8:
         return acepta ? null : 'Para crear tu cancha tenés que aceptar el mandato de recaudo y los Términos.';
       default:
@@ -218,7 +215,11 @@ export default function RegistrarCancha() {
       // trigger impide que la app se cambie los roles por su cuenta. Acá solo
       // releemos el perfil para que la navegación ya lo vea como dueño.
       await refrescarPerfil();
-      router.replace(yaTienePartidos ? '/cancha/agenda' : '/cancha/panel');
+      // Antes, decir "sí tengo turnos vendidos" llevaba a la agenda, como si ahí
+      // se pudieran cargar. La agenda es de solo lectura: no existe forma de
+      // bloquear un turno comprometido por fuera de la app. Mandar a una pantalla
+      // que no resuelve el problema es peor que no ofrecerlo.
+      router.replace('/cancha/panel');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos crear tu cancha.');
     } finally {
@@ -407,7 +408,7 @@ export default function RegistrarCancha() {
             {paso === 5 ? (
               <View>
                 <Text className="mb-4 font-body text-sm text-muted">
-                  Si ya tenés turnos vendidos por fuera de la app, los cargás en la agenda para que nadie reserve encima.
+                  Necesitamos saber si ya comprometiste turnos por fuera de la app, para no venderlos de nuevo.
                 </Text>
                 <View className="flex-row gap-3">
                   {[
@@ -436,27 +437,24 @@ export default function RegistrarCancha() {
                   })}
                 </View>
                 {yaTienePartidos === true ? (
-                  <View className="mt-4 flex-row items-center gap-2 rounded-sm border border-border bg-card px-3 py-2.5">
-                    <Ionicons name="information-circle-outline" size={16} color={c.primary} />
-                    <Text className="flex-1 font-body text-sm text-muted">
-                      Al terminar te llevamos a la agenda para cargarlos.
+                  <View
+                    className="mt-4 flex-row items-start gap-2 rounded-sm border px-3 py-2.5"
+                    style={{ borderColor: c.warning, backgroundColor: c.warning + '14' }}>
+                    <Ionicons name="alert-circle-outline" size={16} color={c.warning} style={{ marginTop: 1 }} />
+                    <Text className="flex-1 font-body text-sm text-cream">
+                      Todavía no podemos bloquear esos turnos desde la app: si publicás esas horas, un jugador puede
+                      reservar encima. Escribinos a {CORREO_SOPORTE} antes de abrir tu cancha a los jugadores.
                     </Text>
                   </View>
                 ) : null}
               </View>
             ) : null}
 
-            {/* Paso 6 — Amenidades + tipo de acceso */}
+            {/* Paso 6 — Amenidades */}
             {paso === 6 ? (
               <View>
                 <Text className="mb-2 font-body-semibold text-sm text-cream">¿Qué hay en tu establecimiento?</Text>
                 <AmenidadPicker value={amenidades} onChange={setAmenidades} />
-                <Text className="mb-2 mt-4 font-body-semibold text-sm text-cream">Tipo de acceso</Text>
-                <View className="flex-row flex-wrap">
-                  {TIPOS_ACCESO.map((t) => (
-                    <Chip key={t.id} label={t.label} selected={tipoAcceso === t.id} onPress={() => setTipoAcceso(t.id)} />
-                  ))}
-                </View>
               </View>
             ) : null}
 
@@ -517,12 +515,13 @@ export default function RegistrarCancha() {
                   keyboardType="phone-pad"
                   hint="Para coordinar con los jugadores si hace falta."
                 />
-                <Text className="mb-2 font-body-semibold text-sm text-cream">Política de cancelación</Text>
-                <View className="mb-4 flex-row flex-wrap">
-                  {POLITICAS_CANCELACION.map((p) => (
-                    <Chip key={p} label={p} selected={cancelacion === p} onPress={() => setCancelacion(p)} />
-                  ))}
-                </View>
+                {/* Acá se elegía una política de cancelación, pero no había columna
+                    donde guardarla ni cálculo que la aplicara: el dueño creía que la
+                    app la iba a hacer cumplir. Hasta que exista, se dice cómo es. */}
+                <Text className="mb-4 font-body text-xs text-muted">
+                  La política de cancelación la acordás vos con los jugadores: por ahora la app no la guarda ni la
+                  aplica.
+                </Text>
 
                 <Pressable
                   onPress={() => { haptics.light(); setAcepta((v) => !v); }}

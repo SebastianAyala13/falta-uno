@@ -9,13 +9,14 @@ import EmptyState from '@/components/EmptyState';
 import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import SelectorCancha from '@/components/SelectorCancha';
 import { SkeletonBlock } from '@/components/Skeleton';
 import StatCard from '@/components/StatCard';
-import { useAuth } from '@/lib/auth';
-import { misCanchas, reservasDeCancha, saldoCancha, slotsDelDia } from '@/lib/canchas';
+import { reservasDeCancha, saldoCancha, slotsDelDia } from '@/lib/canchas';
 import { precioCOP } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { useTheme } from '@/lib/theme';
+import { useCanchasDelDueno } from '@/lib/useCanchasDelDueno';
 import type { Cancha, Reserva } from '@/types/database';
 
 const ESTADO_TONE: Record<Reserva['estado'], 'warning' | 'primary' | 'accent' | 'danger'> = {
@@ -40,26 +41,21 @@ const NAV_ITEMS: { icon: keyof typeof Ionicons.glyphMap; label: string; ruta: st
 
 export default function PanelCancha() {
   const router = useRouter();
-  const { profile, loading: authCargando } = useAuth();
   const c = useTheme();
+  const { canchas, cancha, elegir, cargando, error: errorCanchas, recargar } = useCanchasDelDueno();
 
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [cancha, setCancha] = useState<Cancha | null>(null);
+  // Arranca en `true` para no mostrar un saldo de cero antes de pedirlo: un
+  // dueño que ve "$0" donde tiene plata abre un ticket, no un refresh.
+  const [cargandoDatos, setCargandoDatos] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saldo, setSaldo] = useState(0);
   const [reservasHoy, setReservasHoy] = useState<Reserva[]>([]);
   const [ocupacion, setOcupacion] = useState(0);
 
-  const cargar = useCallback(async () => {
-    if (!profile?.id) return;
+  const cargarDatos = useCallback(async (cch: Cancha) => {
     setError(null);
     try {
-      const canchas = await misCanchas(profile.id);
-      const cch = canchas[0] ?? null;
-      setCancha(cch);
-      if (!cch) return;
-
       const hoy = new Date().toISOString().slice(0, 10);
       const [plata, reservas, slots] = await Promise.all([
         saldoCancha(cch.id),
@@ -73,26 +69,31 @@ export default function PanelCancha() {
     } catch {
       setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
     }
-  }, [profile?.id]);
+  }, []);
 
+  // Al cambiar de cancha se piden de nuevo saldo, reservas y ocupación: son
+  // cifras por cancha y dejarlas de la anterior sería mostrar plata ajena.
   useEffect(() => {
-    if (!profile?.id) {
-      // Auth aún resolviendo → mantenemos el skeleton; ya resolvió sin perfil → cerramos.
-      if (!authCargando) setLoading(false);
-      return;
-    }
+    if (!cancha) return;
+    let vigente = true;
     (async () => {
-      setLoading(true);
-      await cargar();
-      setLoading(false);
+      setCargandoDatos(true);
+      await cargarDatos(cancha);
+      if (vigente) setCargandoDatos(false);
     })();
-  }, [profile?.id, authCargando, cargar]);
+    return () => {
+      vigente = false;
+    };
+  }, [cancha, cargarDatos]);
+
+  const loading = cargando || (!!cancha && cargandoDatos);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await cargar();
+    await recargar();
+    if (cancha) await cargarDatos(cancha);
     setRefreshing(false);
-  }, [cargar]);
+  }, [cancha, cargarDatos, recargar]);
 
   // Header una sola vez; el body cambia por estado (evita repetir el título ×3).
   return (
@@ -122,12 +123,9 @@ export default function PanelCancha() {
             <View className="flex-1"><SkeletonBlock height={92} radius={18} /></View>
           </View>
         </View>
-      ) : error && !cancha ? (
+      ) : errorCanchas && !cancha ? (
         <View className="px-6 pt-4">
-          <ErrorBanner
-            message={error}
-            action={{ label: 'Reintentar', onPress: () => { setLoading(true); cargar().finally(() => setLoading(false)); } }}
-          />
+          <ErrorBanner message={errorCanchas} action={{ label: 'Reintentar', onPress: recargar }} />
         </View>
       ) : !cancha ? (
         <EmptyState
@@ -141,6 +139,11 @@ export default function PanelCancha() {
         contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />}>
+        <FadeIn delay={40}>
+          <SelectorCancha canchas={canchas} activaId={cancha.id} onElegir={elegir} className="mb-4" />
+          <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: onRefresh }} />
+        </FadeIn>
+
         {/* Nombre + editar */}
         <FadeIn delay={40}>
           <View className="flex-row items-center justify-between">

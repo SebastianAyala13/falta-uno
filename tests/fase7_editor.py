@@ -2,6 +2,7 @@
 import ast,json,re
 from postgres_fixture import Postgres,ROOT
 from tanda1_fixture import seed_targets
+from backup_restore import state
 
 doc=(ROOT/'docs/auditoria/PASOS-FASE-7.md').read_text()
 blocks=dict(re.findall(r'<!-- SQL: ([a-z_]+) -->\s*```sql\n(.*?)```',doc,re.S))
@@ -20,12 +21,15 @@ with Postgres() as db:
     db.sql("create view vault.secrets as select name from vault.decrypted_secrets;create function cron.alter_job(job_id bigint,active boolean) returns void language sql as $$update cron.job set active=$2 where jobid=$1$$;set cron.timezone='GMT';set cron.log_run='on';")
     db.sql("insert into vault.decrypted_secrets values ('faltauno_conciliacion_url','https://fixture.supabase.co/functions/v1/conciliar-pagos'),('faltauno_conciliacion_secret','EDITOR_FIXTURE_NOT_A_REAL_SECRET')")
     requirements=db.sql(blocks['requisitos'])
-    checks['requirements_sql_editor_syntax']=all(name+'|true' in requirements for name in ['cron','pg_net','vault','novena'])
+    assert len(requirements.splitlines())==11,requirements
+    checks['requirements_sql_editor_syntax']=all(name+'|true' in requirements for name in ['cron','pg_net','vault','novena','migracion_19','conciliacion_tabla_y_rpc','conciliacion_rls'])
     # Per-session custom GUCs above do not persist into a new psql connection.
     # Only test-prescribed timezone/log settings in the isolated DB, not globals.
     timezone=db.sql("set cron.timezone='GMT';set cron.log_run='on';"+blocks['requisitos'])
     checks['timezone_and_logging_probe']='zona_cron|GMT' in timezone and 'historial_cron|on' in timezone
+    before_install=state(db,'postgres')
     db.sql(blocks['programar_conciliacion']);db.sql(blocks['programar_retencion'])
+    checks['schema_not_changed_by_editor_installer']=before_install==state(db,'postgres')
     checks['two_unique_active_jobs']=db.sql('select count(*) from cron.job where active')=='2'
     checks['no_http_or_purge_during_install']=db.sql('select count(*) from net.requests')=='0' and db.sql('select count(*) from public.ejecuciones_retencion')=='0'
     checks['daily_retention_schedule']=db.sql("select schedule from cron.job where jobname='faltauno-retencion'")=='15 8 * * *'
@@ -66,6 +70,6 @@ with Postgres() as db:
     checks['retention_never_manually_executed']=db.sql('select count(*) from public.ejecuciones_retencion')=='0'
     checks['verifier_has_no_secret_headers_or_values']=True
     assert all(checks.values()),checks
-    report={'scope':'PostgreSQL 17 isolated with 18 migrations; guide SQL pasted without psql commands, SQL doubles for Vault/pg_cron/pg_net; not Dashboard, Windows, live HTTP, cron worker or production','checks':checks,'count':len(checks),'passed':True,'first_three_simulated_cycles':cycles,'retention_not_invoked':True}
+    report={'scope':'PostgreSQL 17 isolated with 19 migrations; guide SQL pasted without psql commands, SQL doubles for Vault/pg_cron/pg_net; not Dashboard, Windows, live HTTP, cron worker or production','checks':checks,'count':len(checks),'passed':True,'first_three_simulated_cycles':cycles,'retention_not_invoked':True}
     (ROOT/'docs/auditoria/fase7-editor-local-2026-10-06.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))

@@ -1,8 +1,8 @@
 # Fase 7: activar y comprobar los dos horarios
 
-Para Valen, desde Windows y el panel de Supabase, sin terminal. Preparado el 6 de octubre. **No ejecutado por Codex contra producción.** Estado informado: novena aplicada (18 migraciones, Actions #9), delete-user nuevo redesplegándose y merge del PR pendiente. Antes de empezar, confirmar con el responsable que terminó el despliegue y que habilita esta fase en el proyecto correcto. Tener respaldo y responsable disponible. Si se está actualizando una configuración que ya tiene jobs activos, usar primero la pausa del paso 9 antes de cambiar la clave; así no quedan llamadas con las dos copias distintas. No habilitar pagos online ni reembolsos reales para esta prueba.
+Para Valen, desde Windows y el panel de Supabase, sin terminal. Actualizado el 6 de octubre de 2026, hora de Colombia. **No ejecutado por Codex contra producción.** Estado informado: novena aplicada (18 migraciones, Actions #9), delete-user nuevo redesplegándose y merge del PR pendiente. **Antes de seguir esta fase, el responsable debe aplicar por el workflow la migración `20261007120000_conciliacion_programada.sql`: primero ensayo y después aplicar.** Eso lleva el historial a 19 migraciones. No pegar esa migración en SQL Editor ni asumir que existe por estar en el repositorio. Confirmar que terminó el despliegue y que se habilita esta fase en el proyecto correcto. Tener respaldo y responsable disponible. Si se está actualizando una configuración que ya tiene jobs activos, usar primero la pausa del paso 9 antes de cambiar la clave; así no quedan llamadas con las dos copias distintas. No habilitar pagos online ni reembolsos reales para esta prueba.
 
-⚠️ significa que una operación puede causar cambios que no se deshacen pausando el horario. Guardar evidencia solo de nombres, fechas, estados y conteos; nunca de valores de secretos, cabeceras o datos de jugadores. Este documento no aprueba los plazos de 10 años/90 días.
+⚠️ significa que una operación puede causar cambios que no se deshacen pausando el horario. Guardar evidencia solo de nombres, fechas, estados y conteos; nunca de valores de secretos, cabeceras o datos de jugadores. **Valen aprobó el 6 de octubre los plazos: 10 años para archivo contable y 90 días para reportes y recibos. El paso 7 ya no está bloqueado por esa aprobación.** Siguen siendo necesarios el respaldo y la migración 19 antes de continuar.
 
 ## 1. Generar una clave fuerte en Windows
 
@@ -41,6 +41,9 @@ SELECT requisito,resultado FROM (
  UNION ALL SELECT 'pg_net',(to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') IS NOT NULL)::text
  UNION ALL SELECT 'vault',(to_regclass('vault.decrypted_secrets') IS NOT NULL)::text
  UNION ALL SELECT 'novena',(to_regprocedure('public.aplicar_retencion(integer)') IS NOT NULL)::text
+ UNION ALL SELECT 'migracion_19',EXISTS(SELECT 1 FROM supabase_migrations.schema_migrations WHERE version='20261007120000')::text
+ UNION ALL SELECT 'conciliacion_tabla_y_rpc',(to_regclass('public.ejecuciones_conciliacion') IS NOT NULL AND to_regprocedure('public.observar_conciliacion()') IS NOT NULL AND to_regprocedure('public.encolar_conciliacion()') IS NOT NULL AND to_regprocedure('public.estado_conciliacion()') IS NOT NULL)::text
+ UNION ALL SELECT 'conciliacion_rls',coalesce((SELECT relrowsecurity FROM pg_class WHERE oid=to_regclass('public.ejecuciones_conciliacion')),false)::text
  UNION ALL SELECT 'faltauno_conciliacion_secret',count(*)::text FROM vault.secrets WHERE name='faltauno_conciliacion_secret'
  UNION ALL SELECT 'faltauno_conciliacion_url',count(*)::text FROM vault.secrets WHERE name='faltauno_conciliacion_url'
  UNION ALL SELECT 'zona_cron',coalesce(current_setting('cron.timezone',true),'NO_CONFIRMADA')
@@ -49,104 +52,38 @@ SELECT requisito,resultado FROM (
 COMMIT;
 ```
 
-Devuelve **ocho filas** en una sola tabla. cron/pg_net/vault/novena deben mostrar true; los dos nombres Vault deben mostrar **1** cada uno; zona_cron debe mostrar UTC/GMT/Etc/UTC e historial_cron debe mostrar on. Si zona/historial no está confirmado o es diferente, no adivinar: el responsable debe comprobar la configuración efectiva antes de seguir. **No cambies la zona del cron:** afectaría otros horarios del proyecto. Si falta la vista Vault o cualquier requisito y aparece error, detenerse, no empezar con horarios.
+Devuelve **once filas** en una sola tabla. cron/pg_net/vault/novena/migracion_19/conciliacion_tabla_y_rpc/conciliacion_rls deben mostrar true; los dos nombres Vault deben mostrar **1** cada uno; zona_cron debe mostrar UTC/GMT/Etc/UTC e historial_cron debe mostrar on. Si falta migracion_19 o las piezas de conciliación, detenerse y pedir al responsable que complete el workflow; no usar un instalador anterior que creaba esas piezas desde el editor. Si zona/historial no está confirmado o es diferente, no adivinar: el responsable debe comprobar la configuración efectiva antes de seguir. **No cambies la zona del cron:** afectaría otros horarios del proyecto. Si falta la vista Vault o cualquier requisito y aparece error, detenerse, no empezar con horarios.
 
 ## 6. Instalar el horario de conciliación
 
 **⚠️ Al confirmar este bloque queda activo el job cada minuto.** Liberará pagos/reservas online ya vencidos: cambia estados históricos y libera plazas/turnos. Pausarlo no vuelve a reservar esos lugares. Verificar respaldo y autorización antes de Run.
 
-En SQL Editor → New query, pegar **todo** este bloque y Run. Es programar_conciliacion.sql sin la primera línea `\set`, que pertenece a terminal y no sirve en el editor. No escribir secretos dentro del bloque. Si aparece error, no continuar con retención; usar la pausa del paso 9 si ya había un job previo.
+En SQL Editor → New query, pegar **todo** este bloque y Run. Corresponde al nuevo programar_conciliacion.sql: solo comprueba requisitos y programa el job; la tabla, RLS, índices, funciones y permisos ya deben venir de la migración 19 aplicada por el workflow. No crea esas piezas desde el editor. No escribir secretos dentro del bloque. Si el archivo descargado contiene una línea `\set`, omitirla: pertenece a terminal y no sirve en el editor. Si aparece error, no continuar con retención; usar la pausa del paso 9 si ya había un job previo.
 
 <!-- SQL: programar_conciliacion -->
 ```sql
--- Prepared installer, NOT run by migrations/CI. Claude installs first in staging.
--- Pre-req: pg_cron, pg_net, Vault installed; secrets provisioned privately via panel.
+-- SQL Editor: omit only the \set line. Schema belongs to migration 19.
+-- This installer checks prerequisites and schedules a job; it creates no schema.
 BEGIN;
-DO $$begin
- if to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') is null
-   or to_regclass('cron.job') is null or to_regclass('vault.decrypted_secrets') is null
- then raise exception 'Habilitar pg_cron, pg_net y Vault antes de instalar'; end if;
-end $$;
-CREATE TABLE IF NOT EXISTS public.ejecuciones_conciliacion(
- id uuid primary key default gen_random_uuid(),request_id bigint unique,
- encolada_at timestamptz not null default clock_timestamp(),terminada_at timestamptz,
- estado text not null check(estado in ('encolada','ok','fallida','sin_respuesta')),
- http_status integer,pagos_liberados integer,reservas_liberadas integer,
- reembolso_estado text,error_codigo text
-);
-ALTER TABLE public.ejecuciones_conciliacion ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON public.ejecuciones_conciliacion FROM anon,authenticated;
-GRANT SELECT ON public.ejecuciones_conciliacion TO authenticated,service_role;
-DROP POLICY IF EXISTS conciliacion_ejecuciones_admin ON public.ejecuciones_conciliacion;
-CREATE POLICY conciliacion_ejecuciones_admin ON public.ejecuciones_conciliacion FOR SELECT TO authenticated USING(public.is_admin());
-CREATE INDEX IF NOT EXISTS conciliacion_ejecuciones_fecha_idx ON public.ejecuciones_conciliacion(encolada_at desc);
-
-CREATE OR REPLACE FUNCTION public.observar_conciliacion() RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
-declare job record;response record;body jsonb;valid boolean;
+DO $$declare aplicada boolean;
 begin
- for job in select * from public.ejecuciones_conciliacion where estado in ('encolada','sin_respuesta') for update skip locked loop
-   select status_code,content,timed_out,error_msg into response from net._http_response where id=job.request_id;
-   if not found then
-     if job.encolada_at<clock_timestamp()-interval '2 minutes' then
-       update public.ejecuciones_conciliacion set estado='sin_respuesta',error_codigo='HTTP_AUSENTE',terminada_at=clock_timestamp() where id=job.id;
-     end if;
-     continue;
-   end if;
-   body:=null;
-   begin body:=response.content::jsonb; exception when others then body:=null; end;
-   valid:=response.status_code=200 and not coalesce(response.timed_out,false) and body->>'ok'='true'
-     and jsonb_typeof(body->'caducados'->'pagos')='number' and jsonb_typeof(body->'caducados'->'reservas')='number'
-     and body->'caducados'->>'pagos' ~ '^[0-9]{1,9}$' and body->'caducados'->>'reservas' ~ '^[0-9]{1,9}$';
-   update public.ejecuciones_conciliacion set estado=case when coalesce(valid,false) then 'ok' else 'fallida' end,
-     terminada_at=clock_timestamp(),http_status=response.status_code,
-     pagos_liberados=case when coalesce(valid,false) then (body->'caducados'->>'pagos')::integer else null end,
-     reservas_liberadas=case when coalesce(valid,false) then (body->'caducados'->>'reservas')::integer else null end,
-     reembolso_estado=case when coalesce(valid,false) then coalesce(body->>'reembolso',body->>'reembolsos') else null end,
-     error_codigo=case when coalesce(valid,false) then null else 'HTTP_O_RESPUESTA_INVALIDA' end where id=job.id;
- end loop;
-end $$;
-CREATE OR REPLACE FUNCTION public.encolar_conciliacion() RETURNS bigint
-LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
-declare endpoint text;secret text;request bigint;
-begin
- perform public.observar_conciliacion();
- if exists(select 1 from public.ejecuciones_conciliacion where estado='encolada' and encolada_at>clock_timestamp()-interval '2 minutes') then return null; end if;
- select decrypted_secret into endpoint from vault.decrypted_secrets where name='faltauno_conciliacion_url';
- select decrypted_secret into secret from vault.decrypted_secrets where name='faltauno_conciliacion_secret';
- if endpoint is null or endpoint !~ '^https://[a-z0-9]+\.supabase\.co/functions/v1/conciliar-pagos$' or nullif(secret,'') is null then
-   insert into public.ejecuciones_conciliacion(estado,terminada_at,error_codigo) values('fallida',clock_timestamp(),'CONFIGURACION_AUSENTE_O_INVALIDA');return null;
+ if to_regclass('supabase_migrations.schema_migrations') is null then
+  raise exception 'Se requiere migración 20261007120000 aplicada mediante workflow';
  end if;
- begin
-   select net.http_post(url:=endpoint,headers:=jsonb_build_object('Content-Type','application/json','Authorization','Bearer '||secret),body:='{}'::jsonb,timeout_milliseconds:=50000) into request;
-   if request is null then raise exception 'No se recibió referencia HTTP'; end if;
-   insert into public.ejecuciones_conciliacion(request_id,estado) values(request,'encolada');
-   return request;
- exception when others then
-   insert into public.ejecuciones_conciliacion(estado,terminada_at,error_codigo) values('fallida',clock_timestamp(),'ERROR_AL_ENCOLAR');return null;
- end;
+ execute 'select exists(select 1 from supabase_migrations.schema_migrations where version::text=''20261007120000'')' into aplicada;
+ if not aplicada or to_regclass('public.ejecuciones_conciliacion') is null
+  or to_regprocedure('public.observar_conciliacion()') is null
+  or to_regprocedure('public.encolar_conciliacion()') is null
+  or to_regprocedure('public.estado_conciliacion()') is null then
+  raise exception 'Aplicar migración 20261007120000 antes de programar conciliación';
+ end if;
+ if to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') is null
+  or to_regclass('net._http_response') is null or to_regclass('cron.job') is null
+  or to_regclass('cron.job_run_details') is null or to_regclass('vault.decrypted_secrets') is null
+  or to_regprocedure('cron.schedule(text,text,text)') is null then
+  raise exception 'Habilitar pg_cron, pg_net y Vault antes de instalar el horario';
+ end if;
 end $$;
-CREATE OR REPLACE FUNCTION public.estado_conciliacion() RETURNS jsonb
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$
- select case when auth.role()='authenticated' and not public.is_admin() then null else jsonb_build_object(
- 'ultima_ejecucion',(select to_jsonb(e) from public.ejecuciones_conciliacion e order by encolada_at desc,id desc limit 1),
- 'ultimo_ok',(select max(terminada_at) from public.ejecuciones_conciliacion where estado='ok'),
- 'vencimientos_liberados',(select jsonb_build_object('pagos',coalesce(sum(pagos),0),'reservas',coalesce(sum(reservas),0)) from public.ejecuciones_caducidad),
- 'pendientes_vencidos',(select count(*) from public.pagos where medio='online' and estado='pendiente' and caduca_at<now())+(select count(*) from public.reservas where medio='online' and estado='pendiente' and caduca_at<now()),
- 'devoluciones_pendientes',(select count(*) from public.conciliaciones_pago where estado in ('pendiente','procesando','proveedor_pendiente')),
- 'devoluciones_revision',(select count(*) from public.conciliaciones_pago where estado='revision_manual'),
- 'alarma',not exists(select 1 from public.ejecuciones_conciliacion where estado='ok' and terminada_at>now()-interval '3 minutes')
-   or exists(select 1 from public.ejecuciones_conciliacion where estado in ('fallida','sin_respuesta') and encolada_at>now()-interval '3 minutes')
-   or exists(select 1 from public.conciliaciones_pago where estado='revision_manual' or (estado in ('pendiente','procesando','proveedor_pendiente') and created_at<now()-interval '15 minutes'))
-   or exists(select 1 from public.pagos where medio='online' and estado='pendiente' and caduca_at<now()-interval '3 minutes')
-   or exists(select 1 from public.reservas where medio='online' and estado='pendiente' and caduca_at<now()-interval '3 minutes'),
- 'deuda_mas_antigua',(select min(created_at) from public.conciliaciones_pago where estado<>'reembolsado'),
- 'ultimo_cron',(select jsonb_build_object('status',r.status,'start_time',r.start_time,'end_time',r.end_time) from cron.job_run_details r join cron.job j using(jobid) where j.jobname='faltauno-conciliacion' order by r.start_time desc limit 1)
- ) end;
-$$;
-REVOKE ALL ON FUNCTION public.encolar_conciliacion(),public.observar_conciliacion(),public.estado_conciliacion() FROM public,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.encolar_conciliacion(),public.observar_conciliacion() TO service_role;
-GRANT EXECUTE ON FUNCTION public.estado_conciliacion() TO authenticated,service_role;
 -- Repeated install updates the same named job, not duplicate schedules.
 SELECT cron.schedule('faltauno-conciliacion','* * * * *','select public.observar_conciliacion(); select public.encolar_conciliacion();');
 COMMIT;
@@ -156,11 +93,11 @@ Si termina sin error, comprobar la fila 01_jobs del paso 8; no depende de que el
 
 ## 7. Instalar el horario diario de retención
 
-**⚠️ SOLO con aprobación expresa del responsable de los plazos 10 años/90 días y del respaldo.** Haber aplicado la novena no demuestra esa aprobación. Si sigue pendiente, **no ejecutar este bloque**: continuar observando conciliación y dejar retención pendiente, con su job ausente/inactivo.
+**Los plazos ya están aprobados por Valen desde el 6 de octubre: 10 años para archivo contable y 90 días para reportes y recibos.** Este paso no está bloqueado por una aprobación pendiente de plazos. Antes de Run, comprobar que se cumplieron los requisitos anteriores, que el respaldo está disponible y que el proyecto es el correcto.
 
 **⚠️ La próxima ejecución diaria puede desidentificar evidencia huérfana y borrar definitivamente reportes de más de 90 días, archivo contable vencido de 10 años, recibos completados vencidos, devoluciones ya reembolsadas antiguas y logs viejos.** No borra obligaciones pendientes para hacer pasar nada. Pausar después no restaura lo que ya se borró. Datos demo de julio podrían ya superar 90 días; no asumir que la primera ejecución será vacía.
 
-Con la aprobación confirmada, SQL Editor → New query, pegar todo y Run:
+SQL Editor → New query, pegar todo y Run:
 
 <!-- SQL: programar_retencion -->
 ```sql
@@ -179,7 +116,7 @@ COMMIT;
 -- No production deployment performed by Codex.
 ```
 
-No ejecuta la purga al pegarlo; la programa a **03:15 Bogotá cada día**, solo si cron está en UTC/GMT como se comprobó. No llamar `aplicar_retencion` manualmente. El verificador de tanda 2 esperaba purgador SIN cron antes de esta fase: después de este paso esa comprobación falla deliberadamente; no significa que se rompió la migración.
+No ejecuta la purga al pegarlo; la programa a **03:15 Bogotá cada día**, solo si cron está en UTC/GMT como se comprobó. No llamar `aplicar_retencion` manualmente. El verificador de tanda 2 comprueba exactamente 18 migraciones: corresponde al momento anterior a la 19. Después de aplicar la 19, sus comprobaciones de cantidad/última migración ya no representan esta fase; usar los requisitos de 19 del paso 5. También esperaba purgador SIN cron: después de este paso esa comprobación falla deliberadamente; no significa que se rompió la migración.
 
 ## 8. Comprobar los primeros tres ciclos
 
@@ -226,7 +163,7 @@ Devuelve **seis filas**, columnas comprobacion y resultado. Abrir/expandir el JS
 
 | Fila | Qué debe mostrar |
 |---|---|
-| 01_jobs | Una sola entrada por cada nombre; faltauno-conciliacion, `* * * * *`, active true; y, si autorizado paso 7, faltauno-retencion, `15 8 * * *`, active true. Si retención pendiente de aprobación, su ausencia/inactividad es esperada. |
+| 01_jobs | Una sola entrada por cada nombre: faltauno-conciliacion, `* * * * *`, active true; y faltauno-retencion, `15 8 * * *`, active true después del paso 7. Los plazos están aprobados: si no se ejecutó ese paso por otro bloqueo, anotar ese bloqueo concreto; no declarar que retención está activa. |
 | 02_estado | ultimo_ok, alarma, última ejecución y conteos. Al principio ultimo_ok puede ser null. ultima_ejecucion suele ser **encolada** porque el job acaba de iniciar la petición nueva: mirar también el historial de fila 03. |
 | 03_ultimas_conciliaciones | Primera petición encolada; después filas ok con http_status 200, pagos_liberados/reservas_liberadas enteros no negativos y reembolso_estado **desactivados**. No necesita haber liberados: cero es válido si no había vencidos. |
 | 04_historial_cron | Ejecuciones recientes de faltauno-conciliacion con status **succeeded**. Ese estado prueba que el cron corrió, no que Edge respondió bien. Retención no tiene por qué aparecer antes de la primera 03:15. |
@@ -265,8 +202,8 @@ SQL Editor → New query → pegar esta única línea → Run. Desactiva **los d
 SELECT cron.alter_job(job_id := jobid, active := false) FROM cron.job WHERE jobname IN ('faltauno-conciliacion','faltauno-retencion');
 ```
 
-Después correr de nuevo paso 8: ambos deben mostrar active false si existían. **No cancela una ejecución ya iniciada ni un HTTP ya encolado, y no deshace purgas, liberaciones o reembolsos ya hechos.** Si reembolsos estuvieran activos, dejar RAPYD_REEMBOLSOS_ACTIVOS false en Secrets y avisar al responsable. No reactivar retención sin aprobación; repetir instaladores puede reactivarla. Conservar evidencia y no borrar jobs para esconder un fallo.
+Después correr de nuevo paso 8: ambos deben mostrar active false si existían. **No cancela una ejecución ya iniciada ni un HTTP ya encolado, y no deshace purgas, liberaciones o reembolsos ya hechos.** Si reembolsos estuvieran activos, dejar RAPYD_REEMBOLSOS_ACTIVOS false en Secrets y avisar al responsable. No reactivar hasta resolver la causa de la pausa y confirmar con el responsable; repetir instaladores puede reactivar los jobs. Conservar evidencia y no borrar jobs para esconder un fallo.
 
 ## Evidencia y límites
 
-Bloques SQL completos ensayados desde este documento, en su orden, sobre PostgreSQL 17 aislado con 18 migraciones. Vault, cron y HTTP son dobles de SQL; no hubo worker, panel ni Edge HTTP real. Se comprobaron instalación sin purga inmediata, dos horarios, tres ciclos simulados, verificador sin secretos y pausa de ambos. Resultado detallado en fase7-editor-local-2026-10-06.json y ESTADO-CODEX.md. La interfaz actual del panel y el generador de Windows no se pudieron recorrer aquí; si los rótulos difieren, detenerse ante dudas de proyecto o campos, no pegar secretos en consultas como sustituto.
+El ensayo actualizado de tests/fase7_editor.py pasó 14 controles con 19 migraciones: bloques idénticos a scripts sin línea psql, requisitos de 19, paso 6 sin cambios de esquema, instalación sin purga inmediata, dos horarios, tres ciclos simulados, verificador sin secretos y pausa de ambos. Resultado: fase7-editor-local-2026-10-06.json; evidencia de idempotencia/colisiones de migración en conciliacion-migracion19-local-2026-10-06.json y ESTADO-CODEX.md. Vault, cron y HTTP se simulan con dobles de SQL: ese ensayo no prueba worker, panel ni Edge HTTP real. La interfaz actual del panel y el generador de Windows no se pudieron recorrer aquí; si los rótulos difieren, detenerse ante dudas de proyecto o campos, no pegar secretos en consultas como sustituto.

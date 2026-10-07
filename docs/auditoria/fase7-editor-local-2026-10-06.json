@@ -1,8 +1,9 @@
 {
-  "scope": "PostgreSQL 17 isolated with 18 migrations; guide SQL pasted without psql commands, SQL doubles for Vault/pg_cron/pg_net; not Dashboard, Windows, live HTTP, cron worker or production",
+  "scope": "PostgreSQL 17 isolated with 19 migrations; guide SQL pasted without psql commands, SQL doubles for Vault/pg_cron/pg_net; not Dashboard, Windows, live HTTP, cron worker or production",
   "checks": {
     "requirements_sql_editor_syntax": true,
     "timezone_and_logging_probe": true,
+    "schema_not_changed_by_editor_installer": true,
     "two_unique_active_jobs": true,
     "no_http_or_purge_during_install": true,
     "daily_retention_schedule": true,
@@ -15,7 +16,7 @@
     "retention_never_manually_executed": true,
     "verifier_has_no_secret_headers_or_values": true
   },
-  "count": 13,
+  "count": 14,
   "passed": true,
   "first_three_simulated_cycles": [
     {

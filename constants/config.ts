@@ -77,12 +77,29 @@ export const ZONAS = [
 export type Zona = (typeof ZONAS)[number];
 
 /**
+ * Valores de entorno que cuentan como "encendido". Todo lo demás apaga.
+ *
+ * Por qué existe: `!!process.env.X` devuelve `true` para `'false'` y para `'0'`,
+ * porque en JavaScript cualquier texto no vacío es verdadero. Con la bandera de
+ * pagos eso era grave: quien armaba la build poniendo `EXPO_PUBLIC_PAGOS_ONLINE=false`
+ * para apagarla terminaba publicando un checkout real. Nombrar los valores que
+ * encienden hace que el error se vea en el archivo y no en producción.
+ */
+const VALORES_ENCENDIDO = ['1', 'true', 'si', 'sí', 'on'];
+
+/** `true` solo si el valor es uno de `VALORES_ENCENDIDO`. Ausente o vacío es `false`. */
+export const banderaEncendida = (valor: string | undefined): boolean =>
+  VALORES_ENCENDIDO.includes((valor ?? '').trim().toLowerCase());
+
+/**
  * `true` cuando el pago online está habilitado para esta build. El procesador es
  * Rapyd (PSP sucesor de PayU en LatAm; PSE, tarjeta, efectivo en Colombia). La llave
  * privada NUNCA va en el cliente: vive en las Edge Functions (`rapyd-crear-checkout`,
  * `rapyd-webhook`), sin prefijo EXPO_PUBLIC_.
+ *
+ * Para apagarlo alcanza con dejar la variable ausente, vacía, en `0` o en `false`.
  */
-export const PAGOS_ONLINE_CONFIGURADO = !!process.env.EXPO_PUBLIC_PAGOS_ONLINE;
+export const PAGOS_ONLINE_CONFIGURADO = banderaEncendida(process.env.EXPO_PUBLIC_PAGOS_ONLINE);
 
 export type MedioPagoId = 'efectivo' | 'online';
 
@@ -203,14 +220,6 @@ export const BANCOS = [
   'Banco Popular',
   'Otro',
 ] as const;
-
-/** Tipo de acceso del establecimiento (paso de zonas del onboarding). */
-export const TIPOS_ACCESO = [
-  { id: 'privado', label: 'Privado (dentro del establecimiento)' },
-  { id: 'publico', label: 'Público' },
-  { id: 'calle', label: 'En la calle' },
-] as const;
-export type TipoAcceso = (typeof TIPOS_ACCESO)[number]['id'];
 
 /** Duraciones de turno disponibles por cancha (minutos). */
 export const DURACIONES_TURNO = [60, 90] as const;

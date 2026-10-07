@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import Badge from '@/components/Badge';
@@ -10,13 +10,14 @@ import EmptyState from '@/components/EmptyState';
 import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
+import SelectorCancha from '@/components/SelectorCancha';
 import { CardListSkeleton, SkeletonBlock } from '@/components/Skeleton';
-import { useAuth } from '@/lib/auth';
-import { misCanchas, reservasDeCancha, slotsDelDia, type Slot } from '@/lib/canchas';
+import { reservasDeCancha, slotsDelDia, type Slot } from '@/lib/canchas';
+import { useCanchasDelDueno } from '@/lib/useCanchasDelDueno';
 import { hoyColombia } from '@/lib/data-utils';
 import { precioCOP } from '@/lib/format';
 import { useTheme } from '@/lib/theme';
-import type { Cancha, Reserva } from '@/types/database';
+import type { Reserva } from '@/types/database';
 
 const ESTADO_TONE: Record<Reserva['estado'], 'warning' | 'primary' | 'accent' | 'danger'> = {
   pendiente: 'warning',
@@ -34,39 +35,16 @@ const ESTADO_LABEL: Record<Reserva['estado'], string> = {
 
 export default function AgendaCancha() {
   const router = useRouter();
-  const { profile, loading: authCargando } = useAuth();
   const c = useTheme();
+  // La cancha activa la comparte con panel, editor y finanzas: el dueño elige
+  // una vez y las cuatro pantallas hablan de la misma.
+  const { canchas, cancha, elegir, cargando: loading, error: errorCanchas, recargar } = useCanchasDelDueno();
 
-  const [loading, setLoading] = useState(true);
   const [cargandoDia, setCargandoDia] = useState(false);
-  const [cancha, setCancha] = useState<Cancha | null>(null);
   const [fecha, setFecha] = useState(hoyColombia());
   const [slots, setSlots] = useState<Slot[]>([]);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  const cargarCancha = useCallback(async () => {
-    if (!profile?.id) return;
-    setError(null);
-    setLoading(true);
-    try {
-      const canchas = await misCanchas(profile.id);
-      setCancha(canchas[0] ?? null);
-    } catch {
-      setError('No se pudo cargar. Revisá tu conexión e intentá de nuevo.');
-    } finally {
-      setLoading(false);
-    }
-  }, [profile?.id]);
-
-  useEffect(() => {
-    if (!profile?.id) {
-      // Auth aún resolviendo → mantenemos el skeleton; ya resolvió sin perfil → cerramos.
-      if (!authCargando) setLoading(false);
-      return;
-    }
-    cargarCancha();
-  }, [profile?.id, authCargando, cargarCancha]);
 
   useEffect(() => {
     if (!cancha) return;
@@ -106,9 +84,9 @@ export default function AgendaCancha() {
           <View style={{ height: 12 }} />
           <CardListSkeleton rows={4} />
         </View>
-      ) : error && !cancha ? (
+      ) : errorCanchas && !cancha ? (
         <View className="px-6 pt-4">
-          <ErrorBanner message={error} action={{ label: 'Reintentar', onPress: cargarCancha }} />
+          <ErrorBanner message={errorCanchas} action={{ label: 'Reintentar', onPress: recargar }} />
         </View>
       ) : !cancha ? (
         <EmptyState
@@ -120,7 +98,9 @@ export default function AgendaCancha() {
       ) : (
         <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
           <FadeIn delay={40}>
+            <SelectorCancha canchas={canchas} activaId={cancha.id} onElegir={elegir} className="mb-3" />
             <DateTimeField label="Fecha" mode="date" value={fecha} onChange={setFecha} minToday />
+            <ErrorBanner message={error} className="mb-3" />
           </FadeIn>
 
           {cargandoDia ? (

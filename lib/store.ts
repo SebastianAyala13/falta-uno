@@ -61,6 +61,13 @@ interface StoreState {
   bloqueados: string[]; // ids de usuarios bloqueados por el usuario actual (moderación UGC)
   reportes: Reporte[]; // reportes de contenido objetable
   temaId: string; // id del tema de color activo
+  /**
+   * Cancha que el dueño está gestionando. Se comparte entre panel, agenda,
+   * editor y finanzas: si cada pantalla eligiera la suya, el dueño podría estar
+   * viendo la plata de una cancha y la agenda de otra sin notarlo.
+   * `null` = nunca eligió; las pantallas caen a la primera de su lista.
+   */
+  canchaActivaId: string | null;
   usuarioId: string | null;
   errorCarga: string | null;
   cargando: boolean;
@@ -76,6 +83,8 @@ interface StoreState {
   hidratado: boolean; // ya se trajeron datos reales de Supabase al menos una vez
 
   setTema: (id: string) => void;
+  /** Fija la cancha que gestionan las pantallas del dueño. */
+  setCanchaActiva: (id: string | null) => void;
   /** Trae partidos, muro, inscripciones y pagos reales desde Supabase. */
   hidratar: (userId: string, forzar?: boolean) => Promise<void>;
   getPartido: (id: string) => PartidoConOrganizador | undefined;
@@ -175,6 +184,7 @@ export const useStore = create<StoreState>()(
       bloqueados: [],
       reportes: [],
       temaId: DEFAULT_THEME_ID,
+      canchaActivaId: null,
       hidratado: false,
       usuarioId: null,
       errorCarga: null,
@@ -187,6 +197,8 @@ export const useStore = create<StoreState>()(
         setActiveColors(id);
         set({ temaId: id });
       },
+
+      setCanchaActiva: (id) => set({ canchaActivaId: id }),
 
       // ----------------------------------------------------------------------
       // HIDRATACIÓN: trae los datos reales de Supabase y reemplaza el estado.
@@ -201,7 +213,7 @@ export const useStore = create<StoreState>()(
         consultas.clear();
         likesPendientes.clear();
         inscripcionesPendientes.clear();
-        set({ usuarioId: userId, hidratado: false, cargando: false, errorCarga: null,
+        set({ usuarioId: userId, hidratado: false, cargando: false, errorCarga: null, canchaActivaId: null,
           partidos: USAR_SEEDS ? partidosDisponibles : [], posts: USAR_SEEDS ? postsSeed : [],
           inscritos: [], pagos: [], mensajes: USAR_SEEDS ? mensajesSeed : {}, comentarios: {},
           calificaciones: [], bloqueados: [], reportes: [], hayMasPosts: false, hayMasPartidos: false, hayMasComentarios: {} });
@@ -618,6 +630,7 @@ export const useStore = create<StoreState>()(
       // rehidratan desde Supabase en cada arranque (evita mostrar datos viejos).
       partialize: (s) => ({
         temaId: s.temaId,
+        canchaActivaId: s.canchaActivaId,
         ...(USAR_SEEDS ? { bloqueados: s.bloqueados, usuarioId: s.usuarioId } : {}),
         // En modo demo (sin backend) sí conservamos lo que generó el usuario:
         ...(USAR_SEEDS
@@ -635,7 +648,13 @@ export const useStore = create<StoreState>()(
       }),
       merge: (persistido, actual) => {
         const datos = persistido as Partial<StoreState> | undefined;
-        return USAR_SEEDS ? { ...actual, ...datos } : { ...actual, temaId: datos?.temaId ?? actual.temaId };
+        return USAR_SEEDS
+          ? { ...actual, ...datos }
+          : {
+              ...actual,
+              temaId: datos?.temaId ?? actual.temaId,
+              canchaActivaId: datos?.canchaActivaId ?? actual.canchaActivaId,
+            };
       },
       onRehydrateStorage: () => (state) => {
         // Al recuperar el tema persistido, sincronizamos el proxy de Colors (JS)

@@ -24,11 +24,16 @@ Pendiente: responsable ejecuta preflight en ensayo propio de segunda tanda; work
 
 ## 3 · Ficha Edge
 
-Commit: ficha y pruebas de este punto (`git log -1 --format=%h -- docs/auditoria/DESPLIEGUE-FUNCIONES.md`).
+Commit: **fd219d9**.
 
 Faltaba una ficha operativa que separara autenticación del gateway, del handler y dependencias de migración: desplegar todas las funciones juntas publicaría delete-user antes de la novena. DESPLIEGUE-FUNCIONES.md describe las cinco, secretos solo por nombre, verify_jwt, respuestas sin credenciales y comprobación en ensayo sin datos reales. conciliar-pagos ya rechazaba secreto ausente; no fue necesario modificar el handler. Nueva prueba cubre secreto ausente/vacío y tres tokens, incluido Bearer undefined: 401, cero consultas y cero solicitudes a pasarela. Las cinco funciones rechazan POST anónimo configurado con 401; webhook sin configuración devuelve 500 sin efectos.
 
-Pruebas reales: 61 unitarias pasaron, todas las regresiones database.py, 67 comprobaciones de primera tanda con rollback, TypeScript y Expo lint pasaron. Son handlers con servicios simulados; no certifican gateway Supabase, Deno desplegado ni pagos. diff --check limpio. Pendiente: responsable comprueba configuración efectiva y respuestas en staging; delete-user nuevo solo tras novena. Plazos aún no aprobados. Cliente pendiente: main lib/auth.tsx:302 debe presentar 409 de eliminación como solicitud pendiente, y constants/legal.ts:32 debe acompañar versión de consentimiento del despliegue coordinado; no se editaron.
+Pruebas reales: 61 unitarias pasaron, todas las regresiones database.py, 67 comprobaciones de primera tanda con rollback, TypeScript y Expo lint pasaron. Son handlers con servicios simulados; no certifican gateway Supabase, Deno desplegado ni pagos. diff --check limpio. Pendiente: responsable comprueba configuración efectiva y respuestas en staging; delete-user nuevo solo tras novena. Plazos aún no aprobados. Cliente pendiente: main lib/auth.tsx:302 debe presentar 409 de eliminación como solicitud pendiente, y constants/config.ts:32 debe acompañar versión de consentimiento del despliegue coordinado; no se editaron.
 
 ## 4 · Guion tres cuentas
-Pendiente en esta cola.
+
+Commit: guion de este punto (`git log -1 --format=%h -- docs/auditoria/GUION-FUNCIONAL-3-CUENTAS.md`).
+
+Faltaba un recorrido reproducible con dos teléfonos y navegador que distinguiera resultado esperado de prueba ejecutada. Se entregan 29 pasos con actor, pantalla, esperado y evidencia de fallo: partido/chat, carrera de reserva en efectivo, historiales, muro/bloqueo/reporte/moderación/suspensión y solicitud de borrado con/sin obligaciones. D necesita admin habilitado por responsable solo en ensayo; no se concede automáticamente a dueños. Online apagado exige variable ausente/vacía, no texto false. Saldo ficticio para caso pendiente solo en ensayo autorizado; no hay desembolsos, borrados de datos para pasar ni falsa liquidación. Se termina con D pendiente, no borrando al único admin.
+
+Verificación real: cotejo de rutas y controles actuales, comprobación de estructura de 29 filas, referencias locales existentes y diff --check. Guion NO ejecutado en dispositivos, ni Auth/Storage/gateway reales. No se afirma éxito funcional remoto. Pruebas de código de punto 3: 61 unitarias/regresiones/tsc/lint pasadas, sin presentarlas como ejecución de este recorrido. Pendiente: dos personas completan estados y evidencias en staging; novena + delete-user nuevo + UX de 409 antes de borrado; liquidación final del dueño requiere otro ensayo controlado. Plazos no aprobados. Cliente: lib/auth.tsx:302, constants/config.ts:32 y configuración constants/config.ts:71, descritos en guion; archivos protegidos intactos.

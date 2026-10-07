@@ -49,7 +49,7 @@ def generate(db,courts=40,players=1000,reservations=15000,matches=2000,payments=
     select set_config('request.jwt.claim.sub',md5('fixture-user-3')::uuid::text,true);
     select set_config('request.jwt.claim.role','service_role',true);
     insert into public.reportes(tipo,contenido_id,autor_id,reportado_por,motivo,texto)
-      select 'post',id,autor_id,md5('fixture-user-3')::uuid,'acoso','Reporte ficticio' from public.posts order by id limit least(200,{posts});
+      select 'post',id,autor_id,md5('fixture-user-3')::uuid,'acoso','Reporte ficticio' from public.posts where autor_id<>md5('fixture-user-3')::uuid order by id limit least(200,{posts});
     analyze;
     commit;"""
     db.sql(q)

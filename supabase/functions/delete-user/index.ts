@@ -24,6 +24,12 @@ Deno.serve(async req => {
     const {data:{user},error:authError} = await userClient.auth.getUser();
     if (authError || !user) return json({error:'No autorizado'},401);
     const admin = createClient(url,service);
+    const {data:solicitud,error:requestError} = await admin.rpc('solicitar_eliminacion',{p_usuario:user.id});
+    if (requestError || !solicitud || typeof solicitud.lista !== 'boolean') throw new Error('No se pudo registrar la solicitud');
+    if (!solicitud.lista) return json({
+      ok:false,solicitud_recibida:true,solicitud:solicitud.solicitud,motivos:solicitud.motivos,
+      error:'Registramos tu solicitud de borrado. Primero debemos resolver tus reservas o partidos futuros, pagos, devoluciones, saldo y retiros pendientes. No perdés tu dinero: contactá a soporte para liquidarlos y completar el cierre.',
+    },409);
     // Remove blobs through Storage API before deleting Auth. A failed cleanup
     // leaves the account available to retry, never a fake success response.
     let previousBatch = '';
@@ -47,7 +53,7 @@ Deno.serve(async req => {
     if (deleteError) throw deleteError;
     return json({ok:true});
   } catch (error) {
-    console.error('delete-user:',error);
+    console.error('delete-user: operación incompleta');
     return json({error:'No pudimos eliminar la cuenta. Reintentá o contactá a soporte.'},500);
   }
 });

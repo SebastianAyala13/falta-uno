@@ -1,0 +1,337 @@
+{
+  "checked_at_utc": "2026-10-06T19:12:40.189582+00:00",
+  "scope": "Uncredentialed GET of legal HTML only; no Supabase APIs, login, cookies or mutations. Remote refs fetched separately. Store console values and build env unknown.",
+  "review_ready": false,
+  "source": [
+    {
+      "file": "privacidad.html",
+      "app_sha256": "3061e966bd9574243542a6bbc196bb4acbd924a4e45fab36c5833bdf46b11350",
+      "mirror_worktree_matches": true,
+      "mirror_origin_main_exists": true,
+      "mirror_origin_main_matches": false,
+      "missing_relative_links": []
+    },
+    {
+      "file": "terminos.html",
+      "app_sha256": "180f2ea1843d719fd4159d952c3f6111846668c58302c9a6eb2bf157722c9f8f",
+      "mirror_worktree_matches": true,
+      "mirror_origin_main_exists": true,
+      "mirror_origin_main_matches": false,
+      "missing_relative_links": []
+    },
+    {
+      "file": "eliminar-cuenta.html",
+      "app_sha256": "b49a2bdfae74226b2c83d3e6b500a6045fb7d1efe12693a9483da5750afc128c",
+      "mirror_worktree_matches": true,
+      "mirror_origin_main_exists": true,
+      "mirror_origin_main_matches": false,
+      "missing_relative_links": []
+    },
+    {
+      "file": "normas-comunidad.html",
+      "app_sha256": "685ea4c4589008c5471c0626d4d4d1509601b0dd7e2806aee6ec69606aba5567",
+      "mirror_worktree_matches": true,
+      "mirror_origin_main_exists": false,
+      "mirror_origin_main_matches": false,
+      "missing_relative_links": []
+    },
+    {
+      "file": "mandato-recaudo.html",
+      "app_sha256": "a0e843354fa31441b68fe7e275686747a0fc5e6ed4876c8f9e50e830100d3a7b",
+      "mirror_worktree_matches": true,
+      "mirror_origin_main_exists": false,
+      "mirror_origin_main_matches": false,
+      "missing_relative_links": []
+    },
+    {
+      "file": "terminos-marketplace.html",
+      "app_sha256": "dbb517c1b09dc6440518a34aa54f49ed97735f20ba1fd4b3ef84d890450f0b1f",
+      "mirror_worktree_matches": true,
+      "mirror_origin_main_exists": false,
+      "mirror_origin_main_matches": false,
+      "missing_relative_links": []
+    },
+    {
+      "file": "cancelaciones.html",
+      "app_sha256": "fd75fe38e318c94a9fa15acc323a4e735097b37e544a0dd254677d25ca1a03ef",
+      "mirror_worktree_matches": true,
+      "mirror_origin_main_exists": false,
+      "mirror_origin_main_matches": false,
+      "missing_relative_links": []
+    }
+  ],
+  "local_missing_page_status": 404,
+  "local_http": [
+    {
+      "url": "http://127.0.0.1:37497/legal/privacidad.html",
+      "anonymous": true,
+      "status": 200,
+      "final_url": "http://127.0.0.1:37497/legal/privacidad.html",
+      "content_type": "text/html",
+      "sha256": "3061e966bd9574243542a6bbc196bb4acbd924a4e45fab36c5833bdf46b11350",
+      "matches_app_source": true,
+      "static_legal_content": true
+    },
+    {
+      "url": "http://127.0.0.1:37497/legal/terminos.html",
+      "anonymous": true,
+      "status": 200,
+      "final_url": "http://127.0.0.1:37497/legal/terminos.html",
+      "content_type": "text/html",
+      "sha256": "180f2ea1843d719fd4159d952c3f6111846668c58302c9a6eb2bf157722c9f8f",
+      "matches_app_source": true,
+      "static_legal_content": true
+    },
+    {
+      "url": "http://127.0.0.1:37497/legal/eliminar-cuenta.html",
+      "anonymous": true,
+      "status": 200,
+      "final_url": "http://127.0.0.1:37497/legal/eliminar-cuenta.html",
+      "content_type": "text/html",
+      "sha256": "b49a2bdfae74226b2c83d3e6b500a6045fb7d1efe12693a9483da5750afc128c",
+      "matches_app_source": true,
+      "static_legal_content": true
+    },
+    {
+      "url": "http://127.0.0.1:37497/legal/normas-comunidad.html",
+      "anonymous": true,
+      "status": 200,
+      "final_url": "http://127.0.0.1:37497/legal/normas-comunidad.html",
+      "content_type": "text/html",
+      "sha256": "685ea4c4589008c5471c0626d4d4d1509601b0dd7e2806aee6ec69606aba5567",
+      "matches_app_source": true,
+      "static_legal_content": true
+    },
+    {
+      "url": "http://127.0.0.1:37497/legal/mandato-recaudo.html",
+      "anonymous": true,
+      "status": 200,
+      "final_url": "http://127.0.0.1:37497/legal/mandato-recaudo.html",
+      "content_type": "text/html",
+      "sha256": "a0e843354fa31441b68fe7e275686747a0fc5e6ed4876c8f9e50e830100d3a7b",
+      "matches_app_source": true,
+      "static_legal_content": true
+    },
+    {
+      "url": "http://127.0.0.1:37497/legal/terminos-marketplace.html",
+      "anonymous": true,
+      "status": 200,
+      "final_url": "http://127.0.0.1:37497/legal/terminos-marketplace.html",
+      "content_type": "text/html",
+      "sha256": "dbb517c1b09dc6440518a34aa54f49ed97735f20ba1fd4b3ef84d890450f0b1f",
+      "matches_app_source": true,
+      "static_legal_content": true
+    },
+    {
+      "url": "http://127.0.0.1:37497/legal/cancelaciones.html",
+      "anonymous": true,
+      "status": 200,
+      "final_url": "http://127.0.0.1:37497/legal/cancelaciones.html",
+      "content_type": "text/html",
+      "sha256": "fd75fe38e318c94a9fa15acc323a4e735097b37e544a0dd254677d25ca1a03ef",
+      "matches_app_source": true,
+      "static_legal_content": true
+    }
+  ],
+  "public_http": [
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/privacidad.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/terminos.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/eliminar-cuenta.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/normas-comunidad.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/mandato-recaudo.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/terminos-marketplace.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/cancelaciones.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/privacidad.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/terminos.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/eliminar-cuenta.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/normas-comunidad.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/mandato-recaudo.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/terminos-marketplace.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/cancelaciones.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    }
+  ],
+  "non_200_urls": [
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/privacidad.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/terminos.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/eliminar-cuenta.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/normas-comunidad.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/mandato-recaudo.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/terminos-marketplace.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://sebastianayala13.github.io/falta-uno-legal/cancelaciones.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/privacidad.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/terminos.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/eliminar-cuenta.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/normas-comunidad.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/mandato-recaudo.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/terminos-marketplace.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    },
+    {
+      "url": "https://falta-uno.kodarify.com/legal/cancelaciones.html",
+      "anonymous": true,
+      "status": null,
+      "error": "proxy_connect_rejected",
+      "proxy_connect_status": 403
+    }
+  ],
+  "not_current_or_not_legal": []
+}

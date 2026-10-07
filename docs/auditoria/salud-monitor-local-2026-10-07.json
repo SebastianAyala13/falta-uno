@@ -1,0 +1,58 @@
+{
+  "scope": "PostgreSQL 17 isolated, 20 real migrations; cron/net/Vault doubles; no production, deployment, live scheduler, Auth, HTTP or monitor service",
+  "checks": {
+    "twenty_real_migrations": true,
+    "migration_installs_without_cron_and_does_not_schedule": true,
+    "missing_cron_returns_false_without_sql_error": true,
+    "rpc_is_boolean_definer_with_fixed_search_path": true,
+    "service_only_effective_execute": true,
+    "anon_invocation_denied": true,
+    "authenticated_invocation_denied": true,
+    "migration_reapply_preserves_rows_and_catalog": true,
+    "healthy_before_retention_install": true,
+    "actual_conciliation_alarm_returns_false": true,
+    "paused_conciliation_returns_false_even_with_recent_success": true,
+    "missing_named_conciliation_job_returns_false": true,
+    "conciliation_db_error_returns_false": true,
+    "cron_db_error_returns_false": true,
+    "retention_db_error_returns_false": true,
+    "sql_null_alarm_response_returns_false": true,
+    "json_null_alarm_response_returns_false": true,
+    "missing_alarm_key_returns_false": true,
+    "string_false_alarm_returns_false": true,
+    "null_alarm_key_returns_false": true,
+    "array_alarm_response_returns_false": true,
+    "rpc_query_exception_returns_false_without_detail": true,
+    "newly_installed_retention_waits_for_first_success": true,
+    "actual_successful_purger_receipt_is_healthy": true,
+    "retention_success_at_26_hour_boundary_is_healthy": true,
+    "retention_older_than_26_hours_returns_false": true,
+    "future_retention_receipt_does_not_count": true,
+    "paused_retention_returns_false_with_recent_receipt": true,
+    "missing_retention_job_with_prior_receipt_returns_false": true,
+    "recent_and_old_retention_receipts_are_healthy": true,
+    "all_probes_rollback_public_rows_and_catalog": true,
+    "all_probes_rollback_scheduler_rows": true
+  },
+  "count": 32,
+  "passed": true,
+  "handler_unit_tests": {
+    "passed": 14,
+    "failed": 0,
+    "boundary": "Node handler execution; Supabase RPC simulated"
+  },
+  "all_node_unit_tests": {
+    "passed": 75,
+    "failed": 0
+  },
+  "existing_database_regressions": "All database regression groups passed on isolated PostgreSQL 17 with all 20 migrations",
+  "typescript": "tsc --noEmit exited 0",
+  "expo_lint": "expo lint exited 0; cache paths configured under /tmp",
+  "not_verified": [
+    "Deno runtime and deployed Supabase gateway",
+    "Real pg_cron/pg_net workers",
+    "Free provider plan and UI",
+    "Actual notification and recovery email delivery",
+    "Any production state"
+  ]
+}

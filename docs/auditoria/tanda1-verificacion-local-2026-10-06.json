@@ -1,0 +1,345 @@
+{
+  "scope": "PostgreSQL 17 isolated, exactly 17 migrations; history/Auth/Storage stubs, seed UUIDs with synthetic fields; not production SQL Editor or real Supabase",
+  "checks": [
+    {
+      "nombre": "actor_demo",
+      "estado": "ok",
+      "detalle": "Juan seed UUID a0e00000-0000-4000-a000-000000000005; requiere reserva y pago pendientes propios"
+    },
+    {
+      "nombre": "migracion.20260711225940",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20260711230642",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20260712001946",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20260712002743",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20260712003321",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20260712005302",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20260714203828",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20260715120000",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20260716120000",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20261005200000",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20261006120000",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20261006130000",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20261006140000",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20261006150000",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20261006160000",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20261006170000",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migracion.20261006180000",
+      "estado": "ok",
+      "detalle": "Solo historial versionado; no prueba que el SQL nunca haya sido alterado"
+    },
+    {
+      "nombre": "migraciones_17",
+      "estado": "ok",
+      "detalle": "esperadas=17; aplicadas=17; versiones=20260711225940,20260711230642,20260712001946,20260712002743,20260712003321,20260712005302,20260714203828,20260715120000,20260716120000,20261005200000,20261006120000,20261006130000,20261006140000,20261006150000,20261006160000,20261006170000,20261006180000"
+    },
+    {
+      "nombre": "negativa.aprobar_pago",
+      "estado": "ok",
+      "detalle": "Rechazo expl\u00edcito SQLSTATE=42501; intento revertido"
+    },
+    {
+      "nombre": "negativa.ascender_admin",
+      "estado": "ok",
+      "detalle": "Rechazo expl\u00edcito SQLSTATE=42501; intento revertido"
+    },
+    {
+      "nombre": "negativa.cambiar_precio_reserva",
+      "estado": "ok",
+      "detalle": "Rechazo expl\u00edcito SQLSTATE=42501; intento revertido"
+    },
+    {
+      "nombre": "negativa.confirmar_reserva",
+      "estado": "ok",
+      "detalle": "Trigger rechaza confirmaci\u00f3n; intento revertido"
+    },
+    {
+      "nombre": "rls.public.bloqueos",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.calificaciones",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.cancha_disponibilidad",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.canchas",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.comentarios",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.conciliaciones_pago",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.datos_desembolso",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.ejecuciones_caducidad",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.membresias_cancha",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.mensajes",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.movimientos_cancha",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.operaciones_idempotentes",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.pagos",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.partido_jugadores",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.partidos",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.post_likes",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.posts",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.profiles",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.reportes",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.reservas",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.public.retiros",
+      "estado": "ok",
+      "detalle": "Existe y RLS activo; pol\u00edticas se ensayan por separado"
+    },
+    {
+      "nombre": "rls.storage.objects",
+      "estado": "ok",
+      "detalle": "Storage metadata; no prueba acceso a blobs reales"
+    },
+    {
+      "nombre": "rpc.public.admin_ajuste_saldo(uuid,integer,text)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.admin_metricas()",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.admin_procesar_retiro(uuid,text,text)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.admin_resolver_reporte(uuid,text,boolean)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.admin_set_estado_cancha(uuid,text)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.admin_suspender_usuario(uuid,boolean)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.archivos_reporte(uuid)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=f (esperado f), service_role=t (true)"
+    },
+    {
+      "nombre": "rpc.public.archivos_usuario(uuid)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=f (esperado f), service_role=t (true)"
+    },
+    {
+      "nombre": "rpc.public.caducar_pagos_pendientes(integer)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=f (esperado f), service_role=t (true)"
+    },
+    {
+      "nombre": "rpc.public.confirmar_pago_online(text,integer,text,text)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=f (esperado f), service_role=t (true)"
+    },
+    {
+      "nombre": "rpc.public.crear_establecimiento(text,jsonb)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.feed_posts(timestamp with time zone,uuid,integer,uuid)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=t (esperado t), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.historial_paginado(text,text,uuid,timestamp with time zone,uuid,integer,text,date,text)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.horarios_ocupados(uuid,date)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=t (esperado t), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.inscribirse_partido(uuid,text,text)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.organizadores_partidos(uuid[])",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=t (esperado t), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.reemplazar_disponibilidad(uuid,jsonb)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.registrar_reembolso(uuid,uuid,text,text,text)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=f (esperado f), service_role=t (true)"
+    },
+    {
+      "nombre": "rpc.public.reservar_con_partido(text,uuid,date,time without time zone,time without time zone,text,jsonb)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.saldo_cancha(uuid)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.set_post_like(uuid,boolean)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=t (esperado t), service_role=t (informativo para RPC de cliente)"
+    },
+    {
+      "nombre": "rpc.public.tomar_reembolso()",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f (esperado f), authenticated=f (esperado f), service_role=t (true)"
+    }
+  ],
+  "rollback_state_equal": true,
+  "temporary_objects_gone": true,
+  "wrong_history_detected": true,
+  "successful_unauthorized_update_reported_failure": true,
+  "failure_paths_rollback_equal": true
+}

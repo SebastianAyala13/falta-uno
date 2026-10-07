@@ -1,6 +1,6 @@
 # Estado Codex · cola del 6 de octubre, noche
 
-Rama: codex/fiabilidad. Sin producción ni push a main. Al 6 de octubre 20:55, responsable informa primera tanda aplicada/verificada (17), conciliar-pagos y moderar-contenido v1 desplegadas y web main 795cd59 con EXPO_PUBLIC_SITE_URL. Los 11 commits anteriores están integrados en integracion/retencion 52edd0f, PR #2 borrador/CI verde. Son datos aportados por responsable, **no verificación remota nuestra**. No escribir en integración ni main. La novena 20261006200000_retencion_eliminacion.sql y delete-user nuevo siguen separados. Plazos 10 años/90 días: **pendientes de aprobación, sin cambios**. No fusionar la rama para publicar política antes del backend.
+Rama: codex/fiabilidad. Sin producción ni push a main. Al 6 de octubre 20:55, responsable informa primera tanda aplicada/verificada (17), conciliar-pagos y moderar-contenido v1 desplegadas y web main 795cd59 con EXPO_PUBLIC_SITE_URL. Los 11 commits anteriores están integrados en integracion/retencion 52edd0f, PR #2 borrador/CI verde. Son datos aportados por responsable, **no verificación remota nuestra**. No escribir en integración ni main. Actualización del responsable: novena aplicada en producción (Actions #9, 18 migraciones), verificador integrado en PR #2 9c7ad9a y delete-user nuevo redesplegándose, merge posterior. No se comprobó producción desde Codex. Plazos 10 años/90 días: **pendientes de aprobación, sin cambios**. No fusionar la rama para publicar política antes del backend.
 
 ## 1 · Verificación posterior a primera tanda
 
@@ -41,7 +41,7 @@ Verificación real: cotejo de rutas y controles actuales, comprobación de estru
 
 ## Cola 20:55 · 1 · Verificación posterior a segunda tanda
 
-Commit de este punto: `test(tanda2): verificar retencion permisos y cierre con rollback`; hash mediante `git log -1 --format=%h -- scripts/db/verificar_produccion_tanda2.sql` (identificador reproducible del propio commit).
+Commit: **2726186** (integrado por responsable en PR #2, 9c7ad9a).
 
 Antes solo había verificador de 17, que no prueba la retención ni debe aceptar 18 como primera tanda. Se entrega scripts/db/verificar_produccion_tanda2.sql para SQL Editor, formato nombre | ok/falla | detalle, BEGIN/ROLLBACK completo. Comprueba versiones exactas 18/última 20261006200000, tres tablas/RLS/condiciones de políticas y permisos de tabla, seis firmas/EXECUTE efectivos por rol, nueve triggers activos con eventos y función (incluido Storage), columna de desidentificación y ausencia de cron del purgador. Los grants default de baseline conceden service_role EXECUTE también a helpers; anon/authenticated deben carecer de EXECUTE. No confundir una función purgadora existente con un job autorizado.
 
@@ -56,3 +56,14 @@ Pendiente: responsable aprueba plazos antes de fase 6, aplica novena en tanda pr
 ## Cola 20:55 · 2 · Plan B Storage
 
 **Baja prioridad/en espera por actualización del responsable**: postgres sí tiene TRIGGER sobre storage.objects. No se creó codex/plan-b-storage ni se modificó la migración del PR. No hay implementación ni pruebas de variante sin trigger que declarar. Si vuelve a necesitarse, exclusivamente rama separada; sin fallback silencioso ni push a integración/main. Se priorizó entregar el verificador para la aplicación inmediata de novena.
+
+
+## Cola fase 7 / beta · 1 · Guía de panel para Valen
+
+Commit: `docs(fase7): guia de panel con SQL ensayado y pausa de ambos jobs`; hash mediante `git log -1 --format=%h -- docs/auditoria/PASOS-FASE-7.md`.
+
+Antes había scripts separados con metacomandos de terminal y varias tablas de resultados: era fácil omitir un requisito, interpretar encolada como fallo o confundir un cron succeeded con Edge ok. PASOS-FASE-7.md explica generar 64 caracteres aleatorios en gestor de Windows, Edge Secrets/Vault por interfaz (sin valores en SQL/historial/chat), nombres exactos, flag de devoluciones false, JWT exclusivo de conciliar, extensiones, bloques completos de instalación en orden, primeros tres ciclos y pausa cron.alter_job de ambos. El verificador ahora entrega una sola tabla de seis filas, también con job/última ejecución diaria de retención. Requisitos en tabla única; no hay selección manual de fragmentos SQL. ⚠️ diferencia liberación de vencimientos y purga irreversible, no cancela HTTP ya encolado ni deshace cambios. Aprobación explícita de plazos sigue siendo requisito antes de activar retención; no se supone por tener novena aplicada.
+
+Pruebas reales: tests/fase7_editor.py extrajo los cinco bloques del documento, verificó identidad de los tres scripts sin línea psql y los ejecutó en PostgreSQL 17 con 18 migraciones. **13/13 controles pasaron**: requisitos, dos jobs únicos, instalación sin HTTP/purga, reintento sin duplicados, tres ciclos (encolada=1; ok=0/1/2), expiración SQL real de reserva sintética, seis filas de observación sin secreto, pausa activa=false de ambos y petición en curso conservada. JSON fase7-editor-local-2026-10-06.json. scheduler_sql.py pasó también errores HTTP, falta de configuración, sin respuesta, alarma y permisos. **61 unitarias**, TypeScript y Expo lint pasaron; diff --check limpio. Vault/cron/net son dobles SQL: no se ejecutó worker ni HTTP Edge real, panel/Windows ni producción.
+
+Pendientes: Valen sigue la guía con respaldo/aprobación y registra tres ciclos reales; confirmar nombres/rótulos de panel si difieren. Monitor externo/avisos sigue pendiente. Intento de consulta de documentación web oficial bloqueado por proxy (403), por eso no se afirma haber recorrido interfaz actual. Ningún cambio de cliente necesario; cambia únicamente salida del script administrativo de solo lectura. No se modificaron instaladores ni función Edge, ni main/integración.

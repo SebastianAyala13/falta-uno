@@ -1,0 +1,232 @@
+{
+  "scope": "PostgreSQL 17 isolated with 18 real migrations; Auth/Storage metadata and cron catalog stubs, no production, cron worker or real Auth/Storage",
+  "checks": [
+    {
+      "nombre": "actor_demo",
+      "estado": "ok",
+      "detalle": "Juan seed a0e00000-0000-4000-a000-000000000005; ajeno due\u00f1o seed termina 000001"
+    },
+    {
+      "nombre": "columna.reportes.desidentificado_at",
+      "estado": "ok",
+      "detalle": "timestamptz esperada"
+    },
+    {
+      "nombre": "cuenta_y_solicitud_conservadas",
+      "estado": "ok",
+      "detalle": "Auth, perfil y solicitud siguen presentes tras intento de cierre; rollback final pendiente"
+    },
+    {
+      "nombre": "guard_cierre_auth",
+      "estado": "ok",
+      "detalle": "Cascada Auth rechazada SQLSTATE=23514; intento revertido"
+    },
+    {
+      "nombre": "migraciones_18",
+      "estado": "ok",
+      "detalle": "esperadas=18; aplicadas=18; versiones=20260711225940,20260711230642,20260712001946,20260712002743,20260712003321,20260712005302,20260714203828,20260715120000,20260716120000,20261005200000,20261006120000,20261006130000,20261006140000,20261006150000,20261006160000,20261006170000,20261006180000,20261006200000"
+    },
+    {
+      "nombre": "negativa.insertar_archivo",
+      "estado": "ok",
+      "detalle": "Rechazo expl\u00edcito SQLSTATE=42501; intento revertido"
+    },
+    {
+      "nombre": "negativa.insertar_ejecucion",
+      "estado": "ok",
+      "detalle": "Rechazo expl\u00edcito SQLSTATE=42501; intento revertido"
+    },
+    {
+      "nombre": "negativa.leer_archivo_ajeno",
+      "estado": "ok",
+      "detalle": "Filas visibles/operaci\u00f3n aceptada=0; intento revertido"
+    },
+    {
+      "nombre": "negativa.leer_solicitud_ajena",
+      "estado": "ok",
+      "detalle": "Filas visibles/operaci\u00f3n aceptada=0; intento revertido"
+    },
+    {
+      "nombre": "negativa.rpc_solicitud_directa",
+      "estado": "ok",
+      "detalle": "Rechazo expl\u00edcito SQLSTATE=42501; intento revertido"
+    },
+    {
+      "nombre": "permisos.public.archivo_contable",
+      "estado": "ok",
+      "detalle": "SELECT authenticated/service_role; anon sin lectura; anon/authenticated sin DML"
+    },
+    {
+      "nombre": "permisos.public.ejecuciones_retencion",
+      "estado": "ok",
+      "detalle": "SELECT authenticated/service_role; anon sin lectura; anon/authenticated sin DML"
+    },
+    {
+      "nombre": "permisos.public.solicitudes_eliminacion",
+      "estado": "ok",
+      "detalle": "SELECT authenticated/service_role; anon sin lectura; anon/authenticated sin DML"
+    },
+    {
+      "nombre": "politica.public.archivo_contable",
+      "estado": "ok",
+      "detalle": "SELECT authenticated con condici\u00f3n esperada; total pol\u00edticas=1"
+    },
+    {
+      "nombre": "politica.public.ejecuciones_retencion",
+      "estado": "ok",
+      "detalle": "SELECT authenticated con condici\u00f3n esperada; total pol\u00edticas=1"
+    },
+    {
+      "nombre": "politica.public.solicitudes_eliminacion",
+      "estado": "ok",
+      "detalle": "SELECT authenticated con condici\u00f3n esperada; total pol\u00edticas=1"
+    },
+    {
+      "nombre": "purgador_no_programado",
+      "estado": "ok",
+      "detalle": "cron.job ausente; purgador existe si comprobaci\u00f3n RPC es ok"
+    },
+    {
+      "nombre": "rls.public.archivo_contable",
+      "estado": "ok",
+      "detalle": "RLS debe estar activo"
+    },
+    {
+      "nombre": "rls.public.ejecuciones_retencion",
+      "estado": "ok",
+      "detalle": "RLS debe estar activo"
+    },
+    {
+      "nombre": "rls.public.solicitudes_eliminacion",
+      "estado": "ok",
+      "detalle": "RLS debe estar activo"
+    },
+    {
+      "nombre": "rpc.public.aplicar_retencion(integer)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f authenticated=f service_role=t (esperado servicio=t)"
+    },
+    {
+      "nombre": "rpc.public.guard_obligaciones_eliminacion()",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f authenticated=f service_role=t (esperado servicio=t)"
+    },
+    {
+      "nombre": "rpc.public.guard_storage_eliminacion()",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f authenticated=f service_role=t (esperado servicio=t)"
+    },
+    {
+      "nombre": "rpc.public.motivos_no_eliminar(uuid)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f authenticated=f service_role=t (esperado servicio=t)"
+    },
+    {
+      "nombre": "rpc.public.retencion_antes_eliminar_perfil()",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f authenticated=f service_role=t (esperado servicio=t)"
+    },
+    {
+      "nombre": "rpc.public.solicitar_eliminacion(uuid)",
+      "estado": "ok",
+      "detalle": "EXECUTE efectivo anon=f authenticated=f service_role=t (esperado servicio=t)"
+    },
+    {
+      "nombre": "solicitud_pendiente",
+      "estado": "ok",
+      "detalle": "Solicitud registrada dentro del ensayo; obligaci\u00f3n pendiente; se revierte al terminar"
+    },
+    {
+      "nombre": "solicitud_propia_visible",
+      "estado": "ok",
+      "detalle": "Jugador puede consultar su recibo pendiente"
+    },
+    {
+      "nombre": "tabla.public.archivo_contable",
+      "estado": "ok",
+      "detalle": "Tabla persistente esperada"
+    },
+    {
+      "nombre": "tabla.public.ejecuciones_retencion",
+      "estado": "ok",
+      "detalle": "Tabla persistente esperada"
+    },
+    {
+      "nombre": "tabla.public.solicitudes_eliminacion",
+      "estado": "ok",
+      "detalle": "Tabla persistente esperada"
+    },
+    {
+      "nombre": "trigger.public.canchas.a_guard_eliminacion",
+      "estado": "ok",
+      "detalle": "Funci\u00f3n, eventos, fila BEFORE y habilitaci\u00f3n comprobados"
+    },
+    {
+      "nombre": "trigger.public.movimientos_cancha.a_guard_eliminacion",
+      "estado": "ok",
+      "detalle": "Funci\u00f3n, eventos, fila BEFORE y habilitaci\u00f3n comprobados"
+    },
+    {
+      "nombre": "trigger.public.pagos.a_guard_eliminacion",
+      "estado": "ok",
+      "detalle": "Funci\u00f3n, eventos, fila BEFORE y habilitaci\u00f3n comprobados"
+    },
+    {
+      "nombre": "trigger.public.partido_jugadores.a_guard_eliminacion",
+      "estado": "ok",
+      "detalle": "Funci\u00f3n, eventos, fila BEFORE y habilitaci\u00f3n comprobados"
+    },
+    {
+      "nombre": "trigger.public.partidos.a_guard_eliminacion",
+      "estado": "ok",
+      "detalle": "Funci\u00f3n, eventos, fila BEFORE y habilitaci\u00f3n comprobados"
+    },
+    {
+      "nombre": "trigger.public.profiles.a_retencion_perfil",
+      "estado": "ok",
+      "detalle": "Funci\u00f3n, eventos, fila BEFORE y habilitaci\u00f3n comprobados"
+    },
+    {
+      "nombre": "trigger.public.reservas.a_guard_eliminacion",
+      "estado": "ok",
+      "detalle": "Funci\u00f3n, eventos, fila BEFORE y habilitaci\u00f3n comprobados"
+    },
+    {
+      "nombre": "trigger.public.retiros.a_guard_eliminacion",
+      "estado": "ok",
+      "detalle": "Funci\u00f3n, eventos, fila BEFORE y habilitaci\u00f3n comprobados"
+    },
+    {
+      "nombre": "trigger.storage.objects.a_guard_eliminacion_storage",
+      "estado": "ok",
+      "detalle": "Funci\u00f3n, eventos, fila BEFORE y habilitaci\u00f3n comprobados"
+    },
+    {
+      "nombre": "ultima_migracion",
+      "estado": "ok",
+      "detalle": "Esperada 20261006200000_retencion_eliminacion"
+    }
+  ],
+  "count": 41,
+  "all_ok": true,
+  "rows_catalog_auth_storage_history_rollback_equal": true,
+  "temporary_objects_gone": true,
+  "cron_absent_and_empty_verified": true,
+  "uninstalled_ninth_reports_failures_without_aborting": true,
+  "negative_control_failures": [
+    "guard_cierre_auth",
+    "negativa.insertar_archivo",
+    "negativa.insertar_ejecucion",
+    "negativa.leer_archivo_ajeno",
+    "negativa.leer_solicitud_ajena",
+    "permisos.public.archivo_contable",
+    "permisos.public.ejecuciones_retencion",
+    "politica.public.archivo_contable",
+    "politica.public.ejecuciones_retencion",
+    "politica.public.solicitudes_eliminacion",
+    "purgador_no_programado",
+    "trigger.public.profiles.a_retencion_perfil",
+    "trigger.storage.objects.a_guard_eliminacion_storage"
+  ],
+  "unexpected_successful_insert_and_auth_cascade_rolled_back": true
+}

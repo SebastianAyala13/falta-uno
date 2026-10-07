@@ -1,6 +1,7 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');const {loadTs}=require('./load-ts.cjs');
-function fixture({job=null,provider=null,enabled=true,saveError=null}={}){
+function fixture({job=null,provider=null,enabled=true,saveError=null,jobSecret='test-job'}={}){
  const env={CONCILIACION_JOB_SECRET:'test-job',SUPABASE_URL:'https://example.test',SUPABASE_SERVICE_ROLE_KEY:'test-service',RAPYD_REEMBOLSOS_ACTIVOS:String(enabled),RAPYD_ACCESS_KEY:'test-access',RAPYD_SECRET_KEY:'test-key'};
+ if(jobSecret===null)delete env.CONCILIACION_JOB_SECRET;else env.CONCILIACION_JOB_SECRET=jobSecret;
  const calls=[],requests=[];let handler;const old=global.Deno;global.Deno={serve:fn=>handler=fn};
  try{loadTs('supabase/functions/conciliar-pagos/index.ts',{'jsr:@supabase/supabase-js@2':{createClient:()=>({rpc:async(name,args)=>{calls.push({name,args});return name==='caducar_pagos_pendientes'?{data:{pagos:1,reservas:1},error:null}:name==='tomar_reembolso'?{data:job,error:null}:{data:null,error:saveError};}})}});}finally{global.Deno=old;}
  return {calls,requests,invoke:async(token='test-job',method='POST')=>{const prevD=global.Deno,prevF=global.fetch;global.Deno={env:{get:key=>env[key]}};global.fetch=async(url,args)=>{requests.push({url,args});if(provider instanceof Error) throw provider;return new Response(JSON.stringify({status:{status:'SUCCESS'},data:provider}));};try{return await handler(new Request('https://example.test/job',{method,headers:{Authorization:`Bearer ${token}`}}));}finally{global.Deno=prevD;global.fetch=prevF;}}};
@@ -12,3 +13,5 @@ test('refund accepted by provider remains pending until completed',async()=>{con
 test('existing refund is polled with GET and matching completion closes debt',async()=>{const f=fixture({job:{...job,proveedor_reembolso_id:'refund-test'},provider:{id:'refund-test',payment:'payment-test',amount:50000,currency:'COP',status:'COM'}});assert.equal((await f.invoke()).status,200);assert.equal(f.requests[0].args.method,'GET');assert.equal(f.calls[2].args.p_estado,'reembolsado');});
 test('ambiguous provider timeout stays manual and never falsely closes debt',async()=>{const f=fixture({job,provider:new Error('network')});assert.equal((await f.invoke()).status,200);assert.equal(f.calls[2].args.p_estado,'revision_manual');assert.equal(f.requests.length,1);});
 test('wrong refund currency or amount is not accepted as repayment',async()=>{const f=fixture({job,provider:{id:'refund-test',payment:'payment-test',amount:1,currency:'USD',status:'COM'}});await f.invoke();assert.equal(f.calls[2].args.p_estado,'revision_manual');});
+
+test('absent or empty job secret rejects even Bearer undefined without any database/provider call',async()=>{for(const jobSecret of [null,'']){for(const token of ['undefined','test-job','']){const f=fixture({jobSecret});const r=await f.invoke(token);assert.equal(r.status,401);assert.deepEqual(f.calls,[]);assert.deepEqual(f.requests,[]);}}});

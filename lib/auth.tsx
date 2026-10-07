@@ -7,7 +7,7 @@ import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 
-import { APP, POLITICA_VERSION, type Nivel, type Posicion } from '@/constants/config';
+import { APP, CORREO_SOPORTE, POLITICA_VERSION, URL_ELIMINAR_CUENTA, type Nivel, type Posicion } from '@/constants/config';
 import { supabase, supabaseConfigurado } from '@/lib/supabase';
 import { useStore } from '@/lib/store';
 import { comprobarRespuesta } from '@/lib/data-utils';
@@ -62,8 +62,23 @@ interface AuthState {
   signUp: (datos: DatosRegistro) => Promise<{ needsConfirmation: boolean }>;
   signInAsGuest: () => Promise<void>;
   signOut: () => Promise<void>;
-  /** Elimina la cuenta y sus datos (requerido por App Store y Play Store). */
+  /**
+   * Elimina la cuenta y sus datos (requerido por App Store y Play Store).
+   *
+   * Si quedan obligaciones sin liquidar lanza `BorradoPendiente` con los
+   * motivos. En ese caso la solicitud queda registrada y la sesión NO se cierra:
+   * la cuenta sigue existiendo hasta que se resuelvan.
+   */
   eliminarCuenta: () => Promise<void>;
+  /** Estado de la solicitud de borrado, o `null` si no hay ninguna. */
+  solicitudBorrado: () => Promise<SolicitudBorrado | null>;
+  /**
+   * `true` cuando la política vigente cambió desde que esta persona la aceptó.
+   * Nunca se actualiza el consentimiento por detrás: lo tiene que aceptar ella.
+   */
+  politicaDesactualizada: boolean;
+  /** Registra la aceptación de la versión vigente de la política. */
+  aceptarPolitica: () => Promise<void>;
   updateProfile: (cambios: Partial<Profile>) => Promise<void>;
   /**
    * Relee el perfil desde el servidor.
@@ -75,6 +90,68 @@ interface AuthState {
    * hasta volver a entrar.
    */
   refrescarPerfil: () => Promise<void>;
+}
+
+/**
+ * Por qué el servidor todavía no puede cerrar la cuenta. Son obligaciones
+ * pendientes, no fallos: borrar la cuenta no puede hacer desaparecer el dinero
+ * ni los compromisos con otra persona.
+ */
+export type MotivoBorrado =
+  | 'reservas_futuras'
+  | 'partidos_futuros'
+  | 'pagos_pendientes'
+  | 'reservas_pago_pendiente'
+  | 'devoluciones_pendientes'
+  | 'saldo_por_liquidar'
+  | 'retiros_en_curso';
+
+/** Texto que ve el usuario para cada motivo. */
+export const TEXTO_MOTIVO_BORRADO: Record<MotivoBorrado, string> = {
+  reservas_futuras: 'Tenés reservas de cancha que todavía no pasaron.',
+  partidos_futuros: 'Estás anotado o organizando partidos que todavía no se jugaron.',
+  pagos_pendientes: 'Hay pagos tuyos que la pasarela no terminó de confirmar.',
+  reservas_pago_pendiente: 'Hay reservas con el pago sin resolver.',
+  devoluciones_pendientes: 'Te debemos una devolución que todavía no se completó.',
+  saldo_por_liquidar: 'Tu cancha tiene saldo sin liquidar.',
+  retiros_en_curso: 'Tenés un retiro en curso.',
+};
+
+/**
+ * La cuenta NO se cerró porque quedan obligaciones, pero la solicitud sí quedó
+ * registrada: el usuario no tiene que volver a pedirla.
+ */
+/** Solicitud de borrado registrada en el servidor. */
+export interface SolicitudBorrado {
+  /** `pendiente`: falta liquidar. `lista`: se puede cerrar. `completada`: ya se cerró. */
+  estado: 'pendiente' | 'lista' | 'completada';
+  motivos: MotivoBorrado[];
+  solicitada_at: string;
+}
+
+export class BorradoPendiente extends Error {
+  readonly motivos: MotivoBorrado[];
+  constructor(mensaje: string, motivos: MotivoBorrado[]) {
+    super(mensaje);
+    this.name = 'BorradoPendiente';
+    this.motivos = motivos;
+  }
+}
+
+/**
+ * `functions.invoke` no devuelve el cuerpo cuando la respuesta es de error: lo
+ * deja en `context`, que es el `Response` original. Sin leerlo, un 409 con el
+ * detalle de lo que falta liquidar se vería igual que una caída del servidor, y
+ * el usuario repetiría el borrado sin entender por qué no pasa nada.
+ */
+async function cuerpoDeError(error: unknown): Promise<Record<string, unknown> | null> {
+  const contexto = (error as { context?: unknown })?.context;
+  if (!contexto || typeof (contexto as Response).json !== 'function') return null;
+  try {
+    return (await (contexto as Response).json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -149,7 +226,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const {error} = await supabase.auth.signOut();
         if (error) throw new Error('Tu cuenta está suspendida.');
         aplicarPerfil(null);
-        Alert.alert('Cuenta suspendida','Tu cuenta fue suspendida por incumplir las normas de la comunidad. Si creés que es un error, escribinos.');
+        Alert.alert(
+          'Cuenta suspendida',
+          'Tu cuenta fue suspendida por incumplir las normas de la comunidad. Si creés que es un error, escribinos a ' +
+            CORREO_SOPORTE +
+            '. Para pedir el borrado de tu cuenta sin entrar a la app, entrá a ' +
+            URL_ELIMINAR_CUENTA,
+        );
         throw new Error('Tu cuenta está suspendida.');
       }
       aplicarPerfil(data);
@@ -300,6 +383,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // `delete-user` con service_role (el cliente no tiene policy de DELETE).
         // Si falla, NO cerramos sesión y propagamos el error para avisar al usuario.
         const { data, error } = await supabase.functions.invoke('delete-user');
+        if (error) {
+          const cuerpo = await cuerpoDeError(error);
+          if (cuerpo?.solicitud_recibida === true) {
+            const motivos = Array.isArray(cuerpo.motivos) ? (cuerpo.motivos as MotivoBorrado[]) : [];
+            throw new BorradoPendiente(
+              typeof cuerpo.error === 'string'
+                ? cuerpo.error
+                : 'Registramos tu solicitud de borrado. Primero hay que liquidar lo que quedó pendiente.',
+              motivos,
+            );
+          }
+        }
         if (error || data?.ok !== true) {
           throw new Error('No pudimos eliminar tu cuenta. Intentá de nuevo o escribinos a soporte.');
         }
@@ -309,6 +404,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await cancelarTodosRecordatorios();
         await AsyncStorage.multiRemove([DEMO_KEY,PENDING_KEY]);
         aplicarPerfil(null);
+      },
+
+      // Solo a quien de verdad aceptó una versión anterior. Un invitado del modo
+      // demo nunca aceptó nada: pedirle que reacepte no tendría sentido.
+      politicaDesactualizada:
+        !!profile && !profile.id.startsWith("demo") && profile.politica_version !== POLITICA_VERSION,
+
+      async aceptarPolitica() {
+        if (!profile) return;
+        const cambios = {
+          politica_version: POLITICA_VERSION,
+          politica_aceptada_at: new Date().toISOString(),
+        };
+        if (!supabaseConfigurado) {
+          const actualizado = { ...profile, ...cambios };
+          await AsyncStorage.setItem(DEMO_KEY, JSON.stringify(actualizado));
+          aplicarPerfil(actualizado);
+          return;
+        }
+        const actual = version.current;
+        const { error } = await supabase.from('profiles').update(cambios as never).eq('id', profile.id);
+        if (error) throw new Error('No pudimos registrar tu aceptación. Probá de nuevo.');
+        if (actual === version.current && perfilActual.current?.id === profile.id) {
+          aplicarPerfil({ ...profile, ...cambios });
+        }
+      },
+
+      async solicitudBorrado() {
+        if (!supabaseConfigurado || !profile) return null;
+        const { data, error } = await supabase
+          .from('solicitudes_eliminacion')
+          .select('estado, motivos, solicitada_at')
+          .eq('usuario_id', profile.id)
+          .maybeSingle();
+        // No es crítico: si no se puede leer, la pantalla sigue funcionando sin
+        // el aviso. Lo que no hacemos es inventar que no hay solicitud.
+        if (error || !data) return null;
+        const fila = data as { estado: string; motivos: unknown; solicitada_at: string };
+        return {
+          estado: fila.estado as SolicitudBorrado['estado'],
+          motivos: Array.isArray(fila.motivos) ? (fila.motivos as MotivoBorrado[]) : [],
+          solicitada_at: fila.solicitada_at,
+        };
       },
 
       async updateProfile(cambios) {

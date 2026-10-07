@@ -2,15 +2,17 @@ import { Alert } from '@/lib/alert';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 
 import Avatar from '@/components/Avatar';
+import AvisoPolitica from '@/components/AvisoPolitica';
 import Badge from '@/components/Badge';
 import FadeIn from '@/components/FadeIn';
 import Screen from '@/components/Screen';
 import StatCard from '@/components/StatCard';
-import { URL_PRIVACIDAD, URL_TERMINOS, URL_COMUNIDAD, URL_SOPORTE } from '@/constants/config';
-import { useAuth } from '@/lib/auth';
+import { URL_ELIMINAR_CUENTA, URL_PRIVACIDAD, URL_TERMINOS, URL_COMUNIDAD, URL_SOPORTE } from '@/constants/config';
+import { BorradoPendiente, TEXTO_MOTIVO_BORRADO, useAuth, type SolicitudBorrado } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -18,9 +20,24 @@ import { useShallow } from 'zustand/react/shallow';
 
 export default function Perfil() {
   const router = useRouter();
-  const { profile, signOut, eliminarCuenta, demo } = useAuth();
+  const { profile, signOut, eliminarCuenta, solicitudBorrado, demo } = useAuth();
   const misPartidos = useStore(useShallow((s) => s.misPartidos()));
   const c = useTheme();
+
+  const [solicitud, setSolicitud] = useState<SolicitudBorrado | null>(null);
+  useEffect(() => {
+    let vigente = true;
+    solicitudBorrado()
+      .then((s) => { if (vigente) setSolicitud(s); })
+      .catch(() => {}); // no es crítico: la pantalla funciona igual sin el aviso
+    return () => { vigente = false; };
+  }, [solicitudBorrado, profile?.id]);
+
+  const abrirSoporte = useCallback(() => {
+    Linking.openURL(URL_SOPORTE).catch(() =>
+      Alert.alert('Soporte', 'Escribinos a vasecom22@gmail.com para recibir ayuda o denunciar contenido.'),
+    );
+  }, []);
 
   const abrirPrivacidad = () => {
     haptics.tap();
@@ -41,6 +58,20 @@ export default function Perfil() {
               await eliminarCuenta();
               router.replace('/(auth)/welcome');
             } catch (e) {
+              // Un 409 no es un fallo: la solicitud quedó guardada y lo que falta
+              // es liquidar plata o compromisos. Decirle "no se pudo" haría que
+              // lo reintentara para siempre sin entender nada.
+              if (e instanceof BorradoPendiente) {
+                setSolicitud({ estado: 'pendiente', motivos: e.motivos, solicitada_at: new Date().toISOString() });
+                const detalle = e.motivos.length
+                  ? '\n\n' + e.motivos.map((m) => '• ' + (TEXTO_MOTIVO_BORRADO[m] ?? m)).join('\n')
+                  : '';
+                Alert.alert('Tu solicitud quedó registrada', e.message + detalle, [
+                  { text: 'Escribir a soporte', onPress: abrirSoporte },
+                  { text: 'Entendido', style: 'cancel' },
+                ]);
+                return;
+              }
               Alert.alert('No se pudo eliminar', e instanceof Error ? e.message : 'Intentá de nuevo, parce.');
             }
           },
@@ -66,6 +97,7 @@ export default function Perfil() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+        <AvisoPolitica className="mx-6 mt-3" />
         <View className="flex-row items-center justify-between px-6 pb-2 pt-2">
           <Text className="font-display text-4xl uppercase text-cream" style={{ lineHeight: 44, paddingTop: 2 }}>Mi perfil</Text>
           <Pressable onPress={cerrarSesion} hitSlop={12} className="h-11 w-11 items-center justify-center rounded-full border border-border bg-card">
@@ -231,6 +263,38 @@ export default function Perfil() {
               </View>
               <Text className="ml-3 flex-1 font-body-semibold text-base text-cream">Política de privacidad</Text>
               <Ionicons name="open-outline" size={18} color={c.muted} />
+            </Pressable>
+            {solicitud && solicitud.estado !== 'completada' ? (
+              <View className="border-b border-border px-4 py-4">
+                <Text className="font-body-bold text-sm text-cream">
+                  {solicitud.estado === 'lista'
+                    ? 'Tu solicitud de borrado está lista'
+                    : 'Tu solicitud de borrado está en curso'}
+                </Text>
+                <Text className="mt-1 font-body text-xs text-muted">
+                  {solicitud.estado === 'lista'
+                    ? 'Ya no queda nada pendiente. Volvé a tocar "Eliminar mi cuenta" para cerrarla.'
+                    : 'La recibimos. Para cerrarla falta resolver lo siguiente, y no perdés tu dinero:'}
+                </Text>
+                {solicitud.estado !== 'lista'
+                  ? solicitud.motivos.map((m) => (
+                      <Text key={m} className="mt-1 font-body text-xs text-muted">
+                        • {TEXTO_MOTIVO_BORRADO[m] ?? m}
+                      </Text>
+                    ))
+                  : null}
+                <Pressable accessibilityRole="button" onPress={abrirSoporte} className="mt-2 self-start">
+                  <Text className="font-body-semibold text-xs text-primary">Escribir a soporte</Text>
+                </Pressable>
+              </View>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => Linking.openURL(URL_ELIMINAR_CUENTA).catch(() => Alert.alert('Cómo eliminar tu cuenta', URL_ELIMINAR_CUENTA))}
+              className="flex-row items-center border-b border-border px-4 py-4 active:bg-border/40">
+              <Ionicons name="document-text-outline" size={18} color={c.muted} />
+              <Text className="ml-3 flex-1 font-body text-sm text-cream">Cómo eliminar tu cuenta</Text>
+              <Ionicons name="open-outline" size={16} color={c.muted} />
             </Pressable>
             <Pressable onPress={borrarCuenta} className="flex-row items-center px-4 py-4 active:bg-border/40">
               <View className="h-9 w-9 items-center justify-center rounded-sm bg-danger/15">

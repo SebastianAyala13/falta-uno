@@ -114,7 +114,8 @@ export default function MisReservas() {
         ) : (
           reservas.map((r, i) => {
             const color = colorEstado(r.estado, c);
-            const cancelable = (r.estado === 'pendiente' || (r.estado === 'confirmada' && r.medio === 'efectivo')) && r.fecha >= hoy;
+            const archivada = !!r.archivado_at;
+            const cancelable = !archivada && (r.estado === 'pendiente' || (r.estado === 'confirmada' && r.medio === 'efectivo')) && r.fecha >= hoy;
             return (
               <FadeIn key={r.id} delay={60 + i * 50}>
                 <View className="mb-3 rounded-md border border-border bg-card p-4">
@@ -131,7 +132,7 @@ export default function MisReservas() {
                       <Text className="font-display text-lg text-cream">{precioCOP(r.precio)}</Text>
                       <View className="mt-1 rounded-full px-2 py-0.5" style={{ backgroundColor: color + '22' }}>
                         <Text className="font-body-semibold text-xs uppercase tracking-wide" style={{ color }}>
-                          {ESTADO_LABEL[r.estado]}
+                          {ESTADO_LABEL[r.estado]}{archivada ? ' · archivada' : ''}
                         </Text>
                       </View>
                     </View>

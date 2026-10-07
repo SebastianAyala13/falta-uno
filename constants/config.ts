@@ -15,21 +15,35 @@ export const APP = {
  * Fallback sin la var: el hosting actual en GitHub Pages, para no romper builds.
  * Lo usan el registro (aceptación de términos) y el Perfil.
  */
-const SITE_URL_ENV = process.env.EXPO_PUBLIC_SITE_URL?.trim();
+/**
+ * Quita las barras finales. Si en el panel de despliegue alguien escribe
+ * `https://falta-uno.kodarify.com/`, sin esto el enlace legal queda como
+ * `…com//legal/privacidad.html` y algunos servidores lo responden con 404.
+ * Si el valor fuera solo barras, queda vacío y cae al fallback.
+ */
+const sinBarraFinal = (url: string) => {
+  let limpia = url;
+  while (limpia.endsWith('/')) limpia = limpia.slice(0, -1);
+  return limpia;
+};
+
+const SITE_URL_CRUDA = process.env.EXPO_PUBLIC_SITE_URL?.trim();
+const SITE_URL_ENV = SITE_URL_CRUDA ? sinBarraFinal(SITE_URL_CRUDA) || undefined : undefined;
 const SITE_URL = SITE_URL_ENV || 'https://sebastianayala13.github.io/falta-uno-legal';
 export const LEGAL_URL = SITE_URL_ENV ? `${SITE_URL}/legal` : SITE_URL;
 export const URL_PRIVACIDAD = `${LEGAL_URL}/privacidad.html`;
 export const URL_TERMINOS = `${LEGAL_URL}/terminos.html`;
 export const URL_ELIMINAR_CUENTA = `${LEGAL_URL}/eliminar-cuenta.html`;
 export const URL_COMUNIDAD = `${LEGAL_URL}/normas-comunidad.html`;
-export const URL_SOPORTE = 'mailto:vasecom22@gmail.com?subject=Soporte%20Falta%20Uno';
+export const CORREO_SOPORTE = 'vasecom22@gmail.com';
+export const URL_SOPORTE = `mailto:${CORREO_SOPORTE}?subject=Soporte%20Falta%20Uno`;
 
 /**
  * Versión vigente de la Política de Privacidad / autorización de tratamiento de
  * datos (Ley 1581 de 2012). Se guarda junto a la aceptación del usuario como
  * prueba del consentimiento (habeas data). Subila cuando cambie la política.
  */
-export const POLITICA_VERSION = '2026-10-06';
+export const POLITICA_VERSION = '2026-10-06.1';
 
 /** Posiciones de juego disponibles en el registro y perfil. */
 export const POSICIONES = ['Portero', 'Defensa', 'Mediocampista', 'Delantero'] as const;

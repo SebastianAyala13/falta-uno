@@ -238,15 +238,64 @@ function mensajeDeReserva(error: { code?: string; message?: string }): string {
   return 'No pudimos reservar. Probá de nuevo.';
 }
 
+/**
+ * Reservas del jugador, incluidas las que ya solo existen como comprobante.
+ *
+ * Cuando la contraparte cierra su cuenta, la fila original de `reservas` se
+ * elimina y el servidor guarda un comprobante en `archivo_contable` a nombre de
+ * quien sigue existiendo. Si no lo leyéramos, el historial mostraría cero donde
+ * sí hubo una reserva y un pago: la persona pensaría que se le perdió la plata.
+ *
+ * El archivo es opcional: si no se puede leer, devolvemos las reservas vivas en
+ * vez de romper la pantalla entera.
+ */
 export async function misReservas(jugadorId: string): Promise<Reserva[]> {
   if (!supabaseConfigurado) return [];
-  const { data, error } = await supabase
-    .from('reservas')
-    .select('*')
-    .eq('jugador_id', jugadorId)
-    .order('fecha', { ascending: false });
-  if (error) throw new Error('No pudimos cargar los datos de la cancha. Revisá tu conexión.');
-  return (data ?? []) as Reserva[];
+  const [vivas, archivadas] = await Promise.all([
+    supabase.from('reservas').select('*').eq('jugador_id', jugadorId).order('fecha', { ascending: false }),
+    supabase
+      .from('archivo_contable')
+      .select('origen_id, datos, archivado_at')
+      .eq('tipo', 'reserva')
+      .eq('titular_vigente', jugadorId),
+  ]);
+  if (vivas.error) throw new Error('No pudimos cargar los datos de la cancha. Revisá tu conexión.');
+  const filas = (vivas.data ?? []) as Reserva[];
+  const presentes = new Set(filas.map((r) => r.id));
+  const deArchivo = ((archivadas.data ?? []) as ArchivoReserva[])
+    .filter((a) => !presentes.has(a.origen_id))
+    .map((a) => reservaDesdeArchivo(a, jugadorId));
+  return [...filas, ...deArchivo].sort((a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0));
+}
+
+interface ArchivoReserva {
+  origen_id: string;
+  datos: Record<string, unknown>;
+  archivado_at: string;
+}
+
+/** Arma una `Reserva` de solo lectura a partir del comprobante guardado. */
+function reservaDesdeArchivo(a: ArchivoReserva, jugadorId: string): Reserva {
+  const d = a.datos ?? {};
+  const texto = (k: string) => (typeof d[k] === 'string' ? (d[k] as string) : '');
+  const numero = (k: string) => (typeof d[k] === 'number' ? (d[k] as number) : 0);
+  return {
+    id: a.origen_id,
+    cancha_id: texto('cancha'),
+    jugador_id: jugadorId,
+    fecha: texto('fecha'),
+    hora_inicio: texto('inicio'),
+    hora_fin: texto('fin'),
+    precio: numero('precio'),
+    comision: numero('comision'),
+    estado: (texto('estado') || 'completada') as Reserva['estado'],
+    medio: texto('medio') || 'efectivo',
+    pago_id: null,
+    partido_id: null,
+    referencia: texto('referencia'),
+    created_at: a.archivado_at,
+    archivado_at: a.archivado_at,
+  };
 }
 
 export async function reservasDeCancha(canchaId: string, fecha?: string): Promise<Reserva[]> {

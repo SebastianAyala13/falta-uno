@@ -1,6 +1,6 @@
 # Estado Codex · cola del 6 de octubre, noche
 
-Rama: codex/fiabilidad. Sin producción ni push a main. La primera tanda de 8 (9→17) y su aplicación en curso son información aportada por responsable, **no verificación remota nuestra**. La novena 20261006200000_retencion_eliminacion.sql y delete-user nuevo siguen separados. Plazos 10 años/90 días: **pendientes de aprobación, sin cambios**. No fusionar la rama para publicar política antes del backend.
+Rama: codex/fiabilidad. Sin producción ni push a main. Al 6 de octubre 20:55, responsable informa primera tanda aplicada/verificada (17), conciliar-pagos y moderar-contenido v1 desplegadas y web main 795cd59 con EXPO_PUBLIC_SITE_URL. Los 11 commits anteriores están integrados en integracion/retencion 52edd0f, PR #2 borrador/CI verde. Son datos aportados por responsable, **no verificación remota nuestra**. No escribir en integración ni main. La novena 20261006200000_retencion_eliminacion.sql y delete-user nuevo siguen separados. Plazos 10 años/90 días: **pendientes de aprobación, sin cambios**. No fusionar la rama para publicar política antes del backend.
 
 ## 1 · Verificación posterior a primera tanda
 
@@ -32,8 +32,27 @@ Pruebas reales: 61 unitarias pasaron, todas las regresiones database.py, 67 comp
 
 ## 4 · Guion tres cuentas
 
-Commit: guion de este punto (`git log -1 --format=%h -- docs/auditoria/GUION-FUNCIONAL-3-CUENTAS.md`).
+Commit: **1037012**.
 
 Faltaba un recorrido reproducible con dos teléfonos y navegador que distinguiera resultado esperado de prueba ejecutada. Se entregan 29 pasos con actor, pantalla, esperado y evidencia de fallo: partido/chat, carrera de reserva en efectivo, historiales, muro/bloqueo/reporte/moderación/suspensión y solicitud de borrado con/sin obligaciones. D necesita admin habilitado por responsable solo en ensayo; no se concede automáticamente a dueños. Online apagado exige variable ausente/vacía, no texto false. Saldo ficticio para caso pendiente solo en ensayo autorizado; no hay desembolsos, borrados de datos para pasar ni falsa liquidación. Se termina con D pendiente, no borrando al único admin.
 
 Verificación real: cotejo de rutas y controles actuales, comprobación de estructura de 29 filas, referencias locales existentes y diff --check. Guion NO ejecutado en dispositivos, ni Auth/Storage/gateway reales. No se afirma éxito funcional remoto. Pruebas de código de punto 3: 61 unitarias/regresiones/tsc/lint pasadas, sin presentarlas como ejecución de este recorrido. Pendiente: dos personas completan estados y evidencias en staging; novena + delete-user nuevo + UX de 409 antes de borrado; liquidación final del dueño requiere otro ensayo controlado. Plazos no aprobados. Cliente: lib/auth.tsx:302, constants/config.ts:32 y configuración constants/config.ts:71, descritos en guion; archivos protegidos intactos.
+
+
+## Cola 20:55 · 1 · Verificación posterior a segunda tanda
+
+Commit de este punto: `test(tanda2): verificar retencion permisos y cierre con rollback`; hash mediante `git log -1 --format=%h -- scripts/db/verificar_produccion_tanda2.sql` (identificador reproducible del propio commit).
+
+Antes solo había verificador de 17, que no prueba la retención ni debe aceptar 18 como primera tanda. Se entrega scripts/db/verificar_produccion_tanda2.sql para SQL Editor, formato nombre | ok/falla | detalle, BEGIN/ROLLBACK completo. Comprueba versiones exactas 18/última 20261006200000, tres tablas/RLS/condiciones de políticas y permisos de tabla, seis firmas/EXECUTE efectivos por rol, nueve triggers activos con eventos y función (incluido Storage), columna de desidentificación y ausencia de cron del purgador. Los grants default de baseline conceden service_role EXECUTE también a helpers; anon/authenticated deben carecer de EXECUTE. No confundir una función purgadora existente con un job autorizado.
+
+Negativas con Juan seed a0e00000-0000-4000-a000-000000000005, no admin/no suspendido: solicitudes/archivo ajenos invisibles e INSERT en archivo/ejecuciones rechazados. También se rechaza RPC directa de solicitud de jugador; Edge la llama con service_role. Se ensaya ese permiso de servidor y se registra recibo en la transacción del operador; Juan ve su recibo pendiente y el guard bloquea la cascada Auth privilegiada. Se usan registros centinela mínimos para lectura ajena (titular dueño seed termina 000001), solo dentro de rollback. No hay nuevas cuentas, ejecución del seed destructivo ni secretos en salida. Requiere obligación real ya presente en seed; si ninguna sigue pendiente, informa falla/no ejecutado, no fabrica aprobación.
+
+Pruebas reales: python3 tests/verificar_tanda2.py → **41/41 ok** con 18 migraciones. Snapshot de filas/catálogo/ACL públicos, Auth, Storage, historial y cron igual después; tabla TEMP ausente. Con 17, faltantes informados sin abortar. cron ausente y catálogo vacío pasan; job incluso inactivo detectado como falla. Controles defectuosos deliberados detectan 13 fallas: permisos/políticas ampliados, cuatro negativas vulneradas, guard de perfil/Storage desactivados y cron registrado. INSERT indebido y cascada Auth inesperadamente aceptados quedan revertidos. Evidencia: tanda2-verificacion-local-2026-10-06.json. **61 unitarias** y **27 controles de privacy_retention.py** pasaron; diff --check limpio. PostgreSQL 17 aislado con metadatos Auth/Storage y catálogo cron simulados; no gateway, SDK Auth/Storage ni worker cron reales. Ninguna ejecución nuestra contra producción.
+
+Uso: después de aplicar novena, abrir SQL completo y ejecutar en una sola sesión de base autorizada; no cambiar ROLLBACK. Guardar solo las 41 filas redactadas. Si falta actor/obligación, no contar ese bloque como pasado. Si cron no permite lectura completa (RLS/privilegios), informa falla, no concluye ausencia a partir de lista filtrada. No imprime cron.command ni ejecuta purga. No deja solicitud o archivo centinela persistido; no prueba una solicitud real a través de HTTP.
+
+Pendiente: responsable aprueba plazos antes de fase 6, aplica novena en tanda propia y ejecuta verificador. El permiso TRIGGER sobre storage.objects y dos triggers propios existentes fueron confirmados por otra sesión según actualización del responsable; no lo verificó Codex. Ningún cambio de cliente requerido por este verificador; siguen los pendientes de UX/consentimiento ya documentados. Migración del PR intacta.
+
+## Cola 20:55 · 2 · Plan B Storage
+
+**Baja prioridad/en espera por actualización del responsable**: postgres sí tiene TRIGGER sobre storage.objects. No se creó codex/plan-b-storage ni se modificó la migración del PR. No hay implementación ni pruebas de variante sin trigger que declarar. Si vuelve a necesitarse, exclusivamente rama separada; sin fallback silencioso ni push a integración/main. Se priorizó entregar el verificador para la aplicación inmediata de novena.

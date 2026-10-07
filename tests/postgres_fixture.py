@@ -39,5 +39,7 @@ class Postgres:
             setup=setup.replace(statement,"do $$begin if not exists(select 1 from pg_roles where rolname='"+role+"') then "+statement+" end if; end$$;")
         self.sql(setup,database)
     def migrate(self,database='postgres'):
+        self.sql('create schema if not exists supabase_migrations;create table if not exists supabase_migrations.schema_migrations(version text primary key);',database)
         for p in sorted((ROOT/'supabase/migrations').glob('*.sql')):
             self.sql(p.read_text().replace('CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";','-- Isolated fixture has no Vault HTTP service.'),database)
+            self.sql("insert into supabase_migrations.schema_migrations values('"+p.name.split('_')[0]+"') on conflict do nothing",database)

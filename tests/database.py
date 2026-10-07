@@ -101,7 +101,7 @@ def main():
         preflight = (ROOT / "scripts/preflight-fiabilidad.sql").read_text()
         output = sql(preflight, database="preflight_fixture").stdout.strip()
         rows = [row.split("|",2) for row in output.splitlines()]
-        assert len(rows)==4 and all(row[1]=='1' for row in rows), output
+        assert len(rows)==10 and all(row[1]==('1' if row[0] in ('reservas_solapadas','referencias_duplicadas','intervalos_invalidos','disponibilidad_invalida') else '0') for row in rows), output
         assert uid(201) in output and uid(203) in output
         assert sql(preflight, database="preflight_fixture").stdout.strip()==output
         sql("begin read only; update public.reservas set precio=0;", database="preflight_fixture",ok=False)

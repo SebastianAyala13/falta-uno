@@ -107,6 +107,13 @@ export interface Reserva {
   partido_id: string | null; // si se abrió como partido para que otros se sumen
   referencia: string;
   created_at: string;
+  /**
+   * Fecha en que esta reserva quedó como comprobante archivado, porque la
+   * contraparte cerró su cuenta y la fila original se eliminó. `null` o ausente
+   * en una reserva viva. Una archivada es de solo lectura: no se puede cancelar
+   * ni modificar.
+   */
+  archivado_at?: string | null;
 }
 
 export type TipoMovimiento = 'ingreso_reserva' | 'comision' | 'retiro' | 'ajuste';
@@ -286,6 +293,49 @@ export interface Pago {
 }
 
 /**
+ * Solicitud de borrado de cuenta.
+ *
+ * Queda registrada aunque el cierre esté bloqueado por obligaciones sin
+ * liquidar: la persona siempre puede pedir el borrado, y lo que no puede pasar
+ * es que ese borrado haga desaparecer plata o compromisos con terceros.
+ * El cliente solo la lee; crearla y resolverla es cosa del servidor.
+ */
+export interface SolicitudEliminacion {
+  id: string;
+  usuario_id: string | null;
+  /** `pendiente`: falta liquidar. `lista`: se puede cerrar. `completada`: cerrada. */
+  estado: 'pendiente' | 'lista' | 'completada';
+  /** Códigos de lo que falta resolver. Ver `MotivoBorrado` en `lib/auth`. */
+  motivos: string[];
+  solicitada_at: string;
+  completada_at: string | null;
+  conservar_hasta: string | null;
+}
+
+/**
+ * Comprobante conservado cuando el registro original desaparece.
+ *
+ * Existe para que, si la contraparte borra su cuenta o se da de baja una
+ * cancha, el otro lado no vea su historial como si nunca hubiera pasado nada.
+ * Solo lo lee quien figura como titular vigente, o un admin.
+ */
+export interface ArchivoContable {
+  tipo: 'pago' | 'reserva' | 'movimiento' | 'retiro';
+  origen_id: string;
+  titular_vigente: string | null;
+  datos: Record<string, unknown>;
+  archivado_at: string;
+  conservar_hasta: string;
+}
+
+/** Corrida del proceso de retención. Solo la lee un admin. */
+export interface EjecucionRetencion {
+  id: string;
+  ejecutada_at: string;
+  conteos: Record<string, unknown>;
+}
+
+/**
  * Forma del esquema esperado por `@supabase/supabase-js`.
  * Tiparlo así habilita autocompletado en `supabase.from('...')`.
  */
@@ -371,6 +421,24 @@ export interface Database {
         Row: MovimientoCancha;
         Insert: Omit<MovimientoCancha, 'id' | 'created_at'>;
         Update: Partial<MovimientoCancha>;
+        Relationships: [];
+      };
+      solicitudes_eliminacion: {
+        Row: SolicitudEliminacion;
+        Insert: never; // solo el servidor
+        Update: never;
+        Relationships: [];
+      };
+      archivo_contable: {
+        Row: ArchivoContable;
+        Insert: never; // solo el servidor
+        Update: never;
+        Relationships: [];
+      };
+      ejecuciones_retencion: {
+        Row: EjecucionRetencion;
+        Insert: never; // solo el servidor
+        Update: never;
         Relationships: [];
       };
       retiros: {

@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import Avatar from '@/components/Avatar';
+import AvisoPolitica from '@/components/AvisoPolitica';
 import EmptyState from '@/components/EmptyState';
 import ErrorBanner from '@/components/ErrorBanner';
 import FadeIn from '@/components/FadeIn';
@@ -63,6 +64,7 @@ export default function Home() {
   return (
     <Screen edges={['top']}>
       <ErrorBanner message={errorCarga} className="mx-6 mt-2" />
+      <AvisoPolitica className="mx-6 mt-3" />
       <ScrollView
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}

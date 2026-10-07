@@ -1,0 +1,45 @@
+{
+  "scope": "PostgreSQL 17 isolated with 19 migrations; guide SQL pasted without psql commands, SQL doubles for Vault/pg_cron/pg_net; not Dashboard, Windows, live HTTP, cron worker or production",
+  "checks": {
+    "requirements_sql_editor_syntax": true,
+    "timezone_and_logging_probe": true,
+    "schema_not_changed_by_editor_installer": true,
+    "two_unique_active_jobs": true,
+    "no_http_or_purge_during_install": true,
+    "daily_retention_schedule": true,
+    "repeat_install_no_duplicate_jobs": true,
+    "single_result_six_rows_before_first_cycle": true,
+    "three_normal_cycles_observed": true,
+    "actual_expiry_observed": true,
+    "one_line_pause_both_jobs": true,
+    "pause_preserves_inflight_request": true,
+    "retention_never_manually_executed": true,
+    "verifier_has_no_secret_headers_or_values": true
+  },
+  "count": 14,
+  "passed": true,
+  "first_three_simulated_cycles": [
+    {
+      "cycle": 1,
+      "encolada": 1,
+      "ok": 0,
+      "cron_succeeded": 1,
+      "last_success_present": false
+    },
+    {
+      "cycle": 2,
+      "encolada": 1,
+      "ok": 1,
+      "cron_succeeded": 2,
+      "last_success_present": true
+    },
+    {
+      "cycle": 3,
+      "encolada": 1,
+      "ok": 2,
+      "cron_succeeded": 3,
+      "last_success_present": true
+    }
+  ],
+  "retention_not_invoked": true
+}
